@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerenciador de Evangelismo</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/supabase/2.45.4/supabase.min.js"></script>
+<style>
+  :root {
+    --ink: #1c2128; --paper: #f7f5f0; --card: #ffffff; --line: #e2ded4;
+    --accent: #3a5a49; --accent-soft: #e7efe9; --warn: #a24030; --warn-soft: #f6e8e5; --muted: #6b6558;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", system-ui, -apple-system, sans-serif; background: var(--paper); color: var(--ink); min-height: 100vh; }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 32px 20px 80px; }
+  .center-screen { max-width: 420px; margin: 15vh auto; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 32px; text-align: center; }
+  .eyebrow { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 4px; }
+  h1 { font-size: 1.4rem; margin: 0 0 6px; }
+  p.sub { color: var(--muted); font-size: 0.88rem; }
+  button { font-family: inherit; cursor: pointer; border: none; border-radius: 8px; padding: 10px 16px; font-size: 0.9rem; font-weight: 600; }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { background: #2e4a3c; }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+  .btn-sm { padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; }
+  input, select { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 0.9rem; margin-bottom: 12px; font-family: inherit; background: white; }
+  label { display: block; font-size: 0.75rem; color: var(--muted); margin-bottom: 4px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 22px; margin-bottom: 20px; }
+  .card h2 { font-size: 1rem; margin: 0 0 16px; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 22px; flex-wrap: wrap; }
+  .tab-btn { background: var(--card); border: 1px solid var(--line); color: var(--muted); }
+  .tab-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  th { text-align: left; color: var(--muted); font-weight: 600; font-size: 0.72rem; text-transform: uppercase; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  td { padding: 9px 10px; border-bottom: 1px solid var(--line); }
+  .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+  .street-group { margin-bottom: 18px; }
+  .street-group h3 { font-size: 0.85rem; margin: 0 0 6px; color: var(--accent); }
+  #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--ink); color: white; padding: 10px 18px; border-radius: 8px; font-size: 0.85rem; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+  #toast.show { opacity: 1; }
+  #sorteio-resultado { font-size: 1.4rem; font-weight: 700; color: var(--accent); margin-top: 14px; min-height: 1.8rem; }
+</style>
+</head>
+<body>
+
+<div id="tela-invalida" class="center-screen" style="display:none">
+  <div class="eyebrow">Acesso</div>
+  <h1>Link inválido ou expirado</h1>
+  <p class="sub">Fale com quem te enviou este link para gerar um novo acesso.</p>
+</div>
+
+<div id="tela-carregando" class="center-screen">
+  <p class="sub">Verificando acesso...</p>
+</div>
+
+<div id="tela-login-google" class="center-screen" style="display:none">
+  <div class="eyebrow">Gerenciador de Evangelismo</div>
+  <h1>Conecte sua conta Google</h1>
+  <p class="sub">Você vai autorizar o acesso à planilha que servirá de banco de dados do seu evangelismo.</p>
+  <div id="google-btn-container" style="display:flex; justify-content:center; margin-top: 16px;"></div>
+</div>
+
+<div id="tela-planilha" class="center-screen" style="display:none">
+  <div class="eyebrow">Passo 2</div>
+  <h1>Escolha a planilha</h1>
+  <p class="sub">Cole o link ou o ID da planilha do Google Sheets que você quer usar.</p>
+  <label for="input-sheet-url">Link ou ID da planilha</label>
+  <input id="input-sheet-url" type="text" placeholder="https://docs.google.com/spreadsheets/d/..." />
+  <button class="btn-primary" style="width:100%" onclick="conectarPlanilha()">Gerar colunas e abas</button>
+</div>
+
+<div id="app-screen" style="display:none">
+  <div class="wrap">
+    <header style="margin-bottom: 24px;">
+      <div class="eyebrow">Gerenciador de Evangelismo</div>
+      <h1 id="titulo-usuario">Painel</h1>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="cadastro" onclick="trocarAba('cadastro')">Cadastro</button>
+      <button class="tab-btn" data-tab="presenca" onclick="trocarAba('presenca')">Presença</button>
+      <button class="tab-btn" data-tab="sorteio" onclick="trocarAba('sorteio')">Sorteio</button>
+      <button class="tab-btn" data-tab="diretorio" onclick="trocarAba('diretorio')">Diretório de ruas</button>
+    </div>
+
+    <!-- CADASTRO -->
+    <div class="tab-panel active" id="tab-cadastro">
+      <div class="card">
+        <h2>Cadastrar participante</h2>
+        <div class="form-row">
+          <div><label>Nome</label><input id="c-nome" /></div>
+          <div><label>Rua</label><input id="c-rua" /></div>
+          <div><label>Número</label><input id="c-numero" /></div>
+          <div><label>Bairro</label><input id="c-bairro" /></div>
+          <div><label>Telefone</label><input id="c-telefone" /></div>
+        </div>
+        <button class="btn-primary" onclick="cadastrarParticipante()">Cadastrar</button>
+      </div>
+      <div class="card">
+        <h2>Participantes cadastrados</h2>
+        <table><thead><tr><th>Nome</th><th>Rua</th><th>Bairro</th><th>Telefone</th></tr></thead>
+        <tbody id="tbody-cadastro"></tbody></table>
+      </div>
+    </div>
+
+    <!-- PRESENÇA -->
+    <div class="tab-panel" id="tab-presenca">
+      <div class="card">
+        <h2>Registrar presença</h2>
+        <label>Data</label>
+        <input id="p-data" type="date" style="max-width:220px" />
+        <table><thead><tr><th>Nome</th><th>Presente</th></tr></thead>
+        <tbody id="tbody-presenca-lista"></tbody></table>
+        <button class="btn-primary" onclick="salvarPresenca()" style="margin-top:12px">Salvar presença do dia</button>
+      </div>
+    </div>
+
+    <!-- SORTEIO -->
+    <div class="tab-panel" id="tab-sorteio">
+      <div class="card">
+        <h2>Sorteio</h2>
+        <p class="sub">Sorteia aleatoriamente entre todos os participantes cadastrados.</p>
+        <button class="btn-primary" onclick="realizarSorteio()">Sortear</button>
+        <div id="sorteio-resultado"></div>
+      </div>
+    </div>
+
+    <!-- DIRETÓRIO -->
+    <div class="tab-panel" id="tab-diretorio">
+      <div class="card">
+        <h2>Diretório por rua</h2>
+        <div id="diretorio-lista"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  // ==== CONFIGURAÇÃO ====
+  const SUPABASE_URL = "https://jmogaclwihvsouqixozo.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imptb2dhY2x3aWh2c291cWl4b3pvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyNTk5MzIsImV4cCI6MjEwMjgzNTkzMn0.kzvlfUAzRrEeb2UGlEViCOVh0vIMuHVkR_EzUSjn87U";
+  const GOOGLE_CLIENT_ID = "COLOQUE_AQUI_SEU_CLIENT_ID.apps.googleusercontent.com";
+  const SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets";
+  // =======================
+
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  let accessToken = null;
+  let spreadsheetId = null;
+  let cacheParticipantes = [];
+
+  function showToast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), 2200);
+  }
+
+  function pegarToken() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("token");
+  }
+
+  async function validarAcesso() {
+    const token = pegarToken();
+    if (!token) { mostrarInvalido(); return; }
+
+    const { data, error } = await sb
+      .from("usuarios_evangelismo_validacao")
+      .select("*")
+      .eq("token", token)
+      .maybeSingle();
+
+    if (error || !data) { mostrarInvalido(); return; }
+    if (data.status !== "ativo" || new Date(data.data_expiracao) < new Date()) { mostrarInvalido(); return; }
+
+    document.getElementById("tela-carregando").style.display = "none";
+    document.getElementById("tela-login-google").style.display = "block";
+    iniciarLoginGoogle();
+  }
+
+  function mostrarInvalido() {
+    document.getElementById("tela-carregando").style.display = "none";
+    document.getElementById("tela-invalida").style.display = "block";
+  }
+
+  function iniciarLoginGoogle() {
+    const tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: SHEETS_SCOPE,
+      callback: (resp) => {
+        if (resp.error) { showToast("Falha ao autorizar com o Google."); return; }
+        accessToken = resp.access_token;
+        document.getElementById("tela-login-google").style.display = "none";
+        document.getElementById("tela-planilha").style.display = "block";
+      }
+    });
+    document.getElementById("google-btn-container").innerHTML =
+      `<button class="btn-primary" onclick='window.__tc.requestAccessToken()'>Entrar com Google</button>`;
+    window.__tc = tokenClient;
+  }
+
+  function extrairIdPlanilha(texto) {
+    const m = texto.match(/\/d\/([a-zA-Z0-9-_]+)/);
+    return m ? m[1] : texto.trim();
+  }
+
+  async function sheetsFetch(path, options = {}) {
+    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${path}`, {
+      ...options,
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+        ...(options.headers || {})
+      }
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Erro na Sheets API: ${res.status} - ${body}`);
+    }
+    return res.json();
+  }
+
+  async function conectarPlanilha() {
+    const raw = document.getElementById("input-sheet-url").value;
+    if (!raw.trim()) { showToast("Cole o link ou ID da planilha."); return; }
+    spreadsheetId = extrairIdPlanilha(raw);
+
+    try {
+      const meta = await sheetsFetch(`${spreadsheetId}`);
+      const abasExistentes = meta.sheets.map(s => s.properties.title);
+      const abasNecessarias = ["Cadastro", "Presenca", "Sorteio"];
+      const abasParaCriar = abasNecessarias.filter(a => !abasExistentes.includes(a));
+
+      if (abasParaCriar.length) {
+        await sheetsFetch(`${spreadsheetId}:batchUpdate`, {
+          method: "POST",
+          body: JSON.stringify({
+            requests: abasParaCriar.map(nome => ({ addSheet: { properties: { title: nome } } }))
+          })
+        });
+      }
+
+      const cabecalhos = {
+        Cadastro: ["ID", "Nome", "Rua", "Numero", "Bairro", "Telefone", "Data_Cadastro"],
+        Presenca: ["ID", "ID_Participante", "Nome", "Data", "Presente"],
+        Sorteio: ["ID", "Data", "Nome_Sorteado", "ID_Participante"]
+      };
+      for (const [aba, colunas] of Object.entries(cabecalhos)) {
+        await sheetsFetch(`${spreadsheetId}/values/${aba}!A1?valueInputOption=RAW`, {
+          method: "PUT",
+          body: JSON.stringify({ values: [colunas] })
+        });
+      }
+
+      showToast("Planilha conectada e estruturada.");
+      document.getElementById("tela-planilha").style.display = "none";
+      document.getElementById("app-screen").style.display = "block";
+      document.getElementById("titulo-usuario").textContent = "Painel de evangelismo";
+      await carregarParticipantes();
+    } catch (e) {
+      showToast("Não foi possível conectar. Confira o link e se você tem acesso de edição à planilha.");
+      console.error(e);
+    }
+  }
+
+  function trocarAba(nome) {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === nome));
+    document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+    document.getElementById(`tab-${nome}`).classList.add("active");
+    if (nome === "presenca") montarListaPresenca();
+    if (nome === "diretorio") montarDiretorio();
+  }
+
+  async function carregarParticipantes() {
+    const data = await sheetsFetch(`${spreadsheetId}/values/Cadastro!A2:G`);
+    const linhas = data.values || [];
+    cacheParticipantes = linhas.map(l => ({
+      id: l[0], nome: l[1], rua: l[2], numero: l[3], bairro: l[4], telefone: l[5]
+    }));
+    renderizarTabelaCadastro();
+  }
+
+  function renderizarTabelaCadastro() {
+    const tbody = document.getElementById("tbody-cadastro");
+    tbody.innerHTML = cacheParticipantes.map(p =>
+      `<tr><td>${p.nome}</td><td>${p.rua || ""}</td><td>${p.bairro || ""}</td><td>${p.telefone || ""}</td></tr>`
+    ).join("") || `<tr><td colspan="4" style="color:var(--muted)">Nenhum participante ainda.</td></tr>`;
+  }
+
+  async function cadastrarParticipante() {
+    const nome = document.getElementById("c-nome").value.trim();
+    if (!nome) { showToast("Digite o nome."); return; }
+    const id = crypto.randomUUID().slice(0, 8);
+    const linha = [
+      id, nome,
+      document.getElementById("c-rua").value.trim(),
+      document.getElementById("c-numero").value.trim(),
+      document.getElementById("c-bairro").value.trim(),
+      document.getElementById("c-telefone").value.trim(),
+      new Date().toLocaleDateString("pt-BR")
+    ];
+    await sheetsFetch(`${spreadsheetId}/values/Cadastro!A:G:append?valueInputOption=RAW`, {
+      method: "POST",
+      body: JSON.stringify({ values: [linha] })
+    });
+    ["c-nome", "c-rua", "c-numero", "c-bairro", "c-telefone"].forEach(id2 => document.getElementById(id2).value = "");
+    showToast("Participante cadastrado.");
+    await carregarParticipantes();
+  }
+
+  function montarListaPresenca() {
+    const tbody = document.getElementById("tbody-presenca-lista");
+    tbody.innerHTML = cacheParticipantes.map(p =>
+      `<tr><td>${p.nome}</td><td><input type="checkbox" data-id="${p.id}" data-nome="${p.nome}" /></td></tr>`
+    ).join("") || `<tr><td colspan="2" style="color:var(--muted)">Cadastre participantes primeiro.</td></tr>`;
+    if (!document.getElementById("p-data").value) {
+      document.getElementById("p-data").value = new Date().toISOString().slice(0, 10);
+    }
+  }
+
+  async function salvarPresenca() {
+    const data = document.getElementById("p-data").value;
+    if (!data) { showToast("Escolha a data."); return; }
+    const checks = [...document.querySelectorAll("#tbody-presenca-lista input[type=checkbox]")];
+    const linhas = checks.map(chk => [
+      crypto.randomUUID().slice(0, 8),
+      chk.dataset.id,
+      chk.dataset.nome,
+      data,
+      chk.checked ? "TRUE" : "FALSE"
+    ]);
+    if (!linhas.length) { showToast("Nenhum participante para registrar."); return; }
+    await sheetsFetch(`${spreadsheetId}/values/Presenca!A:E:append?valueInputOption=RAW`, {
+      method: "POST",
+      body: JSON.stringify({ values: linhas })
+    });
+    showToast("Presença salva.");
+  }
+
+  async function realizarSorteio() {
+    if (!cacheParticipantes.length) { showToast("Nenhum participante cadastrado."); return; }
+    const idx = crypto.getRandomValues(new Uint32Array(1))[0] % cacheParticipantes.length;
+    const sorteado = cacheParticipantes[idx];
+    document.getElementById("sorteio-resultado").textContent = `🎉 ${sorteado.nome}`;
+    await sheetsFetch(`${spreadsheetId}/values/Sorteio!A:D:append?valueInputOption=RAW`, {
+      method: "POST",
+      body: JSON.stringify({
+        values: [[crypto.randomUUID().slice(0, 8), new Date().toLocaleDateString("pt-BR"), sorteado.nome, sorteado.id]]
+      })
+    });
+    showToast("Sorteio registrado na planilha.");
+  }
+
+  function montarDiretorio() {
+    const porRua = {};
+    cacheParticipantes.forEach(p => {
+      const rua = p.rua || "Sem rua informada";
+      if (!porRua[rua]) porRua[rua] = [];
+      porRua[rua].push(p);
+    });
+    const container = document.getElementById("diretorio-lista");
+    const ruas = Object.keys(porRua).sort();
+    if (!ruas.length) { container.innerHTML = `<p style="color:var(--muted)">Nenhum participante cadastrado.</p>`; return; }
+    container.innerHTML = ruas.map(rua => `
+      <div class="street-group">
+        <h3>${rua}</h3>
+        <table><tbody>
+          ${porRua[rua].map(p => `<tr><td>${p.nome}</td><td>${p.numero || ""}</td><td>${p.telefone || ""}</td></tr>`).join("")}
+        </tbody></table>
+      </div>
+    `).join("");
+  }
+
+  validarAcesso();
+</script>
+</body>
+</html>
