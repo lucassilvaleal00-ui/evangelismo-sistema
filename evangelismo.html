@@ -188,6 +188,11 @@
   }
 
   function iniciarLoginGoogle() {
+    if (typeof google === "undefined" || !google.accounts) {
+      // A biblioteca do Google ainda não carregou (é async) — tenta de novo em instantes.
+      setTimeout(iniciarLoginGoogle, 200);
+      return;
+    }
     const tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: GOOGLE_CLIENT_ID,
       scope: SHEETS_SCOPE,
