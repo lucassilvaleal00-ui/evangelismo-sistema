@@ -41,6 +41,22 @@
   #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--ink); color: white; padding: 10px 18px; border-radius: 8px; font-size: 0.85rem; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
   #toast.show { opacity: 1; }
   #sorteio-resultado { font-size: 1.4rem; font-weight: 700; color: var(--accent); margin-top: 14px; min-height: 1.8rem; }
+
+  .campo-check { display: flex; align-items: center; gap: 6px; margin: -6px 0 12px; font-size: 0.8rem; color: var(--muted); }
+  .campo-check input[type="checkbox"] { width: auto; margin: 0; }
+  input:disabled { background: #f2f0ea; color: var(--muted); }
+  .icon-btn { background: transparent; border: none; cursor: pointer; font-size: 1rem; padding: 2px 4px; border-radius: 5px; }
+  .icon-btn:hover { background: var(--accent-soft); }
+  .icones-linha { display: flex; gap: 2px; white-space: nowrap; }
+  .badge-edicao { display: inline-flex; align-items: center; gap: 6px; background: var(--accent-soft); color: var(--accent); padding: 6px 12px; border-radius: 8px; font-size: 0.82rem; margin-bottom: 12px; }
+  .badge-edicao button { background: transparent; border: none; color: var(--accent); text-decoration: underline; cursor: pointer; font-size: 0.8rem; padding: 0; }
+  #busca-presenca { margin-bottom: 14px; }
+  .lista-presenca { display: flex; flex-direction: column; gap: 4px; max-height: 320px; overflow-y: auto; }
+  .item-presenca { text-align: left; background: white; border: 1px solid var(--line); padding: 10px 12px; border-radius: 8px; font-size: 0.88rem; }
+  .item-presenca:hover { border-color: var(--accent); }
+  .item-presenca.selecionado { border-color: var(--accent); background: var(--accent-soft); }
+  #painel-confirmar-presenca { margin-top: 16px; padding: 16px; border: 1px dashed var(--line); border-radius: 10px; display: none; }
+  #painel-confirmar-presenca.show { display: block; }
 </style>
 </head>
 <body>
@@ -79,8 +95,8 @@
     </header>
 
     <div class="tabs">
-      <button class="tab-btn active" data-tab="cadastro" onclick="trocarAba('cadastro')">Cadastro</button>
-      <button class="tab-btn" data-tab="presenca" onclick="trocarAba('presenca')">Presença</button>
+      <button class="tab-btn active" data-tab="cadastro" onclick="trocarAba('cadastro')">📋 Cadastro</button>
+      <button class="tab-btn" data-tab="presenca" onclick="trocarAba('presenca')">✅ Registro de Presença</button>
       <button class="tab-btn" data-tab="sorteio" onclick="trocarAba('sorteio')">Sorteio</button>
       <button class="tab-btn" data-tab="diretorio" onclick="trocarAba('diretorio')">Diretório de ruas</button>
     </div>
@@ -88,32 +104,87 @@
     <!-- CADASTRO -->
     <div class="tab-panel active" id="tab-cadastro">
       <div class="card">
-        <h2>Cadastrar participante</h2>
-        <div class="form-row">
-          <div><label>Nome</label><input id="c-nome" /></div>
-          <div><label>Rua</label><input id="c-rua" /></div>
-          <div><label>Número</label><input id="c-numero" /></div>
-          <div><label>Bairro</label><input id="c-bairro" /></div>
-          <div><label>Telefone</label><input id="c-telefone" /></div>
+        <h2>📋 Cadastrar participante</h2>
+        <div id="badge-edicao" class="badge-edicao" style="display:none">
+          Editando cadastro de <strong id="badge-edicao-nome"></strong>
+          <button onclick="cancelarEdicaoCadastro()">cancelar edição</button>
         </div>
-        <button class="btn-primary" onclick="cadastrarParticipante()">Cadastrar</button>
+        <div class="form-row">
+          <div>
+            <label>Nome completo *</label>
+            <input id="c-nome" />
+          </div>
+          <div>
+            <label>Telefone *</label>
+            <input id="c-telefone" inputmode="numeric" placeholder="Somente números" oninput="this.value=this.value.replace(/[^0-9]/g,'')" />
+            <div class="campo-check">
+              <input type="checkbox" id="c-sem-telefone" onchange="alternarCampo('c-telefone','c-sem-telefone')" />
+              <label for="c-sem-telefone" style="margin:0">Não possui telefone</label>
+            </div>
+          </div>
+          <div>
+            <label>Idade *</label>
+            <input id="c-idade" inputmode="numeric" placeholder="Ex: 11" oninput="this.value=this.value.replace(/[^0-9]/g,'')" />
+            <div class="campo-check">
+              <input type="checkbox" id="c-idade-nao-informada" onchange="alternarCampo('c-idade','c-idade-nao-informada')" />
+              <label for="c-idade-nao-informada" style="margin:0">Não quis informar</label>
+            </div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div>
+            <label>Rua *</label>
+            <input id="c-rua" list="lista-ruas" placeholder="Digite ou selecione" />
+            <datalist id="lista-ruas"></datalist>
+          </div>
+          <div>
+            <label>Bairro</label>
+            <input id="c-bairro" list="lista-bairros" placeholder="Digite ou selecione" />
+            <datalist id="lista-bairros"></datalist>
+          </div>
+          <div>
+            <label>Número</label>
+            <input id="c-numero" placeholder="Ex: 123, Quadra 4 Lote 2..." />
+            <div class="campo-check">
+              <input type="checkbox" id="c-sem-numero" onchange="alternarCampo('c-numero','c-sem-numero')" />
+              <label for="c-sem-numero" style="margin:0">Sem número</label>
+            </div>
+          </div>
+          <div>
+            <label>Ponto de referência</label>
+            <input id="c-ponto-referencia" />
+            <div class="campo-check">
+              <input type="checkbox" id="c-sem-referencia" onchange="alternarCampo('c-ponto-referencia','c-sem-referencia')" />
+              <label for="c-sem-referencia" style="margin:0">Sem ponto de referência</label>
+            </div>
+          </div>
+        </div>
+        <button class="btn-primary" id="btn-salvar-cadastro" onclick="salvarCadastro()">Salvar</button>
       </div>
       <div class="card">
         <h2>Participantes cadastrados</h2>
-        <table><thead><tr><th>Nome</th><th>Rua</th><th>Bairro</th><th>Telefone</th></tr></thead>
-        <tbody id="tbody-cadastro"></tbody></table>
+        <table>
+          <thead>
+            <tr><th></th><th>Data</th><th>Nome</th><th>Telefone</th><th>Idade</th><th>Rua</th><th>Número</th><th>Bairro</th><th>Ponto de referência</th></tr>
+          </thead>
+          <tbody id="tbody-cadastro"></tbody>
+        </table>
       </div>
     </div>
 
     <!-- PRESENÇA -->
     <div class="tab-panel" id="tab-presenca">
       <div class="card">
-        <h2>Registrar presença</h2>
-        <label>Data</label>
-        <input id="p-data" type="date" style="max-width:220px" />
-        <table><thead><tr><th>Nome</th><th>Presente</th></tr></thead>
-        <tbody id="tbody-presenca-lista"></tbody></table>
-        <button class="btn-primary" onclick="salvarPresenca()" style="margin-top:12px">Salvar presença do dia</button>
+        <h2>✅ Registro de Presença</h2>
+        <p class="sub">Use isso apenas quando a pessoa já cadastrada estiver retornando. O cadastro em si já conta como a primeira presença.</p>
+        <label for="busca-presenca">Buscar participante</label>
+        <input id="busca-presenca" type="text" placeholder="Digite o nome..." oninput="filtrarListaPresenca()" />
+        <div class="lista-presenca" id="lista-presenca"></div>
+        <div id="painel-confirmar-presenca">
+          <p style="margin:0 0 10px">Registrar presença de <strong id="nome-selecionado-presenca"></strong>?</p>
+          <button class="btn-primary" onclick="confirmarPresenca()">Registrar presença</button>
+          <button class="btn-ghost" onclick="limparSelecaoPresenca()">Cancelar</button>
+        </div>
       </div>
     </div>
 
@@ -150,7 +221,11 @@
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   let accessToken = null;
   let spreadsheetId = null;
+  let sheetIdCadastro = null; // ID numérico interno da aba cadastros_do_evento, usado pra excluir linhas
   let cacheParticipantes = [];
+  let linhaEmEdicao = null; // número da linha da planilha sendo editada, ou null
+  let participanteSelecionadoPresenca = null;
+  let cachePresencasHoje = []; // nomes já registrados hoje na aba registro_de_presenca
 
   function showToast(msg) {
     const t = document.getElementById("toast");
@@ -235,9 +310,28 @@
     spreadsheetId = extrairIdPlanilha(raw);
 
     try {
-      const meta = await sheetsFetch(`${spreadsheetId}`);
-      const abasExistentes = meta.sheets.map(s => s.properties.title);
-      const abasNecessarias = ["Cadastro", "Presenca", "Sorteio"];
+      let meta = await sheetsFetch(`${spreadsheetId}`);
+      let abasExistentes = meta.sheets.map(s => s.properties.title);
+
+      // Migração: renomeia abas do formato antigo, se existirem, pro novo nome
+      const migracoes = { "Cadastro": "cadastros_do_evento", "Presenca": "registro_de_presenca" };
+      const renomear = Object.entries(migracoes)
+        .filter(([antigo, novo]) => abasExistentes.includes(antigo) && !abasExistentes.includes(novo));
+      if (renomear.length) {
+        await sheetsFetch(`${spreadsheetId}:batchUpdate`, {
+          method: "POST",
+          body: JSON.stringify({
+            requests: renomear.map(([antigo, novo]) => {
+              const sheetId = meta.sheets.find(s => s.properties.title === antigo).properties.sheetId;
+              return { updateSheetProperties: { properties: { sheetId, title: novo }, fields: "title" } };
+            })
+          })
+        });
+        meta = await sheetsFetch(`${spreadsheetId}`);
+        abasExistentes = meta.sheets.map(s => s.properties.title);
+      }
+
+      const abasNecessarias = ["cadastros_do_evento", "registro_de_presenca", "Sorteio"];
       const abasParaCriar = abasNecessarias.filter(a => !abasExistentes.includes(a));
 
       if (abasParaCriar.length) {
@@ -247,15 +341,18 @@
             requests: abasParaCriar.map(nome => ({ addSheet: { properties: { title: nome } } }))
           })
         });
+        meta = await sheetsFetch(`${spreadsheetId}`);
       }
 
+      sheetIdCadastro = meta.sheets.find(s => s.properties.title === "cadastros_do_evento").properties.sheetId;
+
       const cabecalhos = {
-        Cadastro: ["ID", "Nome", "Rua", "Numero", "Bairro", "Telefone", "Data_Cadastro"],
-        Presenca: ["ID", "ID_Participante", "Nome", "Data", "Presente"],
+        cadastros_do_evento: ["ID", "Nome", "Telefone", "Idade", "Rua", "Bairro", "Numero", "PontoReferencia", "DataCadastro"],
+        registro_de_presenca: ["Data", "Nome"],
         Sorteio: ["ID", "Data", "Nome_Sorteado", "ID_Participante"]
       };
       for (const [aba, colunas] of Object.entries(cabecalhos)) {
-        await sheetsFetch(`${spreadsheetId}/values/${aba}!A1?valueInputOption=RAW`, {
+        await sheetsFetch(`${spreadsheetId}/values/${aba}!A1:I1?valueInputOption=RAW`, {
           method: "PUT",
           body: JSON.stringify({ values: [colunas] })
         });
@@ -280,70 +377,244 @@
     if (nome === "diretorio") montarDiretorio();
   }
 
+  const SEM_TELEFONE = "Não possui telefone";
+  const IDADE_NAO_INFORMADA = "Não quis informar";
+  const SEM_NUMERO = "Sem número";
+  const SEM_REFERENCIA = "Sem ponto de referência";
+
+  function capitalizarNome(txt) {
+    return txt.trim().split(/\s+/).map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(" ");
+  }
+
+  function alternarCampo(idCampo, idCheckbox) {
+    const campo = document.getElementById(idCampo);
+    const marcado = document.getElementById(idCheckbox).checked;
+    campo.disabled = marcado;
+    if (marcado) campo.value = "";
+  }
+
+  function hojeFormatado() {
+    return new Date().toLocaleDateString("pt-BR");
+  }
+
   async function carregarParticipantes() {
-    const data = await sheetsFetch(`${spreadsheetId}/values/Cadastro!A2:G`);
+    const data = await sheetsFetch(`${spreadsheetId}/values/cadastros_do_evento!A2:I`);
     const linhas = data.values || [];
-    cacheParticipantes = linhas.map(l => ({
-      id: l[0], nome: l[1], rua: l[2], numero: l[3], bairro: l[4], telefone: l[5]
+    cacheParticipantes = linhas.map((l, i) => ({
+      linha: i + 2,
+      id: l[0] || "", nome: l[1] || "", telefone: l[2] || "", idade: l[3] || "",
+      rua: l[4] || "", bairro: l[5] || "", numero: l[6] || "",
+      pontoReferencia: l[7] || "", dataCadastro: l[8] || ""
     }));
     renderizarTabelaCadastro();
+    atualizarListasAutocomplete();
+  }
+
+  function atualizarListasAutocomplete() {
+    const ruas = [...new Set(cacheParticipantes.map(p => p.rua).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+    const bairros = [...new Set(cacheParticipantes.map(p => p.bairro).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+    document.getElementById("lista-ruas").innerHTML = ruas.map(r => `<option value="${r}"></option>`).join("");
+    document.getElementById("lista-bairros").innerHTML = bairros.map(b => `<option value="${b}"></option>`).join("");
   }
 
   function renderizarTabelaCadastro() {
     const tbody = document.getElementById("tbody-cadastro");
-    tbody.innerHTML = cacheParticipantes.map(p =>
-      `<tr><td>${p.nome}</td><td>${p.rua || ""}</td><td>${p.bairro || ""}</td><td>${p.telefone || ""}</td></tr>`
-    ).join("") || `<tr><td colspan="4" style="color:var(--muted)">Nenhum participante ainda.</td></tr>`;
+    const linhas = [...cacheParticipantes].reverse();
+    tbody.innerHTML = linhas.map(p => `
+      <tr>
+        <td>
+          <div class="icones-linha">
+            <button class="icon-btn" title="Editar" onclick="carregarParaEdicao(${p.linha})">✏️</button>
+            <button class="icon-btn" title="Excluir" onclick="deletarCadastro(${p.linha}, '${p.nome.replace(/'/g, "\\'")}')">🗑️</button>
+          </div>
+        </td>
+        <td>${p.dataCadastro}</td>
+        <td>${p.nome}</td>
+        <td>${p.telefone}</td>
+        <td>${p.idade}</td>
+        <td>${p.rua}</td>
+        <td>${p.numero}</td>
+        <td>${p.bairro}</td>
+        <td>${p.pontoReferencia}</td>
+      </tr>
+    `).join("") || `<tr><td colspan="9" style="color:var(--muted); text-align:center">Nenhum participante ainda.</td></tr>`;
   }
 
-  async function cadastrarParticipante() {
-    const nome = document.getElementById("c-nome").value.trim();
-    if (!nome) { showToast("Digite o nome."); return; }
-    const id = crypto.randomUUID().slice(0, 8);
-    const linha = [
-      id, nome,
-      document.getElementById("c-rua").value.trim(),
-      document.getElementById("c-numero").value.trim(),
-      document.getElementById("c-bairro").value.trim(),
-      document.getElementById("c-telefone").value.trim(),
-      new Date().toLocaleDateString("pt-BR")
-    ];
-    await sheetsFetch(`${spreadsheetId}/values/Cadastro!A:G:append?valueInputOption=RAW`, {
-      method: "POST",
-      body: JSON.stringify({ values: [linha] })
-    });
-    ["c-nome", "c-rua", "c-numero", "c-bairro", "c-telefone"].forEach(id2 => document.getElementById(id2).value = "");
-    showToast("Participante cadastrado.");
-    await carregarParticipantes();
+  function lerCampoComCheckbox(idCampo, idCheckbox, valorSeMarcado) {
+    return document.getElementById(idCheckbox).checked ? valorSeMarcado : document.getElementById(idCampo).value.trim();
   }
 
-  function montarListaPresenca() {
-    const tbody = document.getElementById("tbody-presenca-lista");
-    tbody.innerHTML = cacheParticipantes.map(p =>
-      `<tr><td>${p.nome}</td><td><input type="checkbox" data-id="${p.id}" data-nome="${p.nome}" /></td></tr>`
-    ).join("") || `<tr><td colspan="2" style="color:var(--muted)">Cadastre participantes primeiro.</td></tr>`;
-    if (!document.getElementById("p-data").value) {
-      document.getElementById("p-data").value = new Date().toISOString().slice(0, 10);
+  async function salvarCadastro() {
+    const nomeDigitado = document.getElementById("c-nome").value.trim();
+    if (!nomeDigitado) { showToast("O nome é obrigatório."); return; }
+    const nome = capitalizarNome(nomeDigitado);
+
+    const telefone = lerCampoComCheckbox("c-telefone", "c-sem-telefone", SEM_TELEFONE);
+    if (!telefone) { showToast("Informe o telefone ou marque 'Não possui telefone'."); return; }
+
+    const idade = lerCampoComCheckbox("c-idade", "c-idade-nao-informada", IDADE_NAO_INFORMADA);
+    if (!idade) { showToast("Informe a idade ou marque 'Não quis informar'."); return; }
+
+    const rua = document.getElementById("c-rua").value.trim();
+    if (!rua) { showToast("A rua é obrigatória."); return; }
+
+    const bairro = document.getElementById("c-bairro").value.trim();
+    const numero = lerCampoComCheckbox("c-numero", "c-sem-numero", SEM_NUMERO);
+    const pontoReferencia = lerCampoComCheckbox("c-ponto-referencia", "c-sem-referencia", SEM_REFERENCIA);
+
+    try {
+      if (linhaEmEdicao) {
+        await sheetsFetch(`${spreadsheetId}/values/cadastros_do_evento!B${linhaEmEdicao}:H${linhaEmEdicao}?valueInputOption=RAW`, {
+          method: "PUT",
+          body: JSON.stringify({ values: [[nome, telefone, idade, rua, bairro, numero, pontoReferencia]] })
+        });
+        showToast(`${nome} foi atualizado com sucesso.`);
+      } else {
+        const linha = [crypto.randomUUID(), nome, telefone, idade, rua, bairro, numero, pontoReferencia, hojeFormatado()];
+        await sheetsFetch(`${spreadsheetId}/values/cadastros_do_evento!A:I:append?valueInputOption=RAW`, {
+          method: "POST",
+          body: JSON.stringify({ values: [linha] })
+        });
+        showToast(`${nome} foi salvo com sucesso.`);
+      }
+      limparFormularioCadastro();
+      await carregarParticipantes();
+    } catch (e) {
+      showToast("Erro ao salvar. Confira sua conexão e tente de novo.");
+      console.error(e);
     }
   }
 
-  async function salvarPresenca() {
-    const data = document.getElementById("p-data").value;
-    if (!data) { showToast("Escolha a data."); return; }
-    const checks = [...document.querySelectorAll("#tbody-presenca-lista input[type=checkbox]")];
-    const linhas = checks.map(chk => [
-      crypto.randomUUID().slice(0, 8),
-      chk.dataset.id,
-      chk.dataset.nome,
-      data,
-      chk.checked ? "TRUE" : "FALSE"
-    ]);
-    if (!linhas.length) { showToast("Nenhum participante para registrar."); return; }
-    await sheetsFetch(`${spreadsheetId}/values/Presenca!A:E:append?valueInputOption=RAW`, {
-      method: "POST",
-      body: JSON.stringify({ values: linhas })
-    });
-    showToast("Presença salva.");
+  function limparFormularioCadastro() {
+    ["c-nome", "c-telefone", "c-idade", "c-rua", "c-bairro", "c-numero", "c-ponto-referencia"].forEach(id => document.getElementById(id).value = "");
+    ["c-sem-telefone", "c-idade-nao-informada", "c-sem-numero", "c-sem-referencia"].forEach(id => document.getElementById(id).checked = false);
+    ["c-telefone", "c-idade", "c-numero", "c-ponto-referencia"].forEach(id => document.getElementById(id).disabled = false);
+    linhaEmEdicao = null;
+    document.getElementById("badge-edicao").style.display = "none";
+    document.getElementById("btn-salvar-cadastro").textContent = "Salvar";
+  }
+
+  function carregarParaEdicao(linhaNum) {
+    const p = cacheParticipantes.find(x => x.linha === linhaNum);
+    if (!p) return;
+    linhaEmEdicao = linhaNum;
+
+    document.getElementById("c-nome").value = p.nome;
+    document.getElementById("c-rua").value = p.rua;
+    document.getElementById("c-bairro").value = p.bairro;
+
+    const setComCheckbox = (valor, idCampo, idCheckbox, valorEspecial) => {
+      const marcado = valor === valorEspecial;
+      document.getElementById(idCheckbox).checked = marcado;
+      document.getElementById(idCampo).disabled = marcado;
+      document.getElementById(idCampo).value = marcado ? "" : valor;
+    };
+    setComCheckbox(p.telefone, "c-telefone", "c-sem-telefone", SEM_TELEFONE);
+    setComCheckbox(p.idade, "c-idade", "c-idade-nao-informada", IDADE_NAO_INFORMADA);
+    setComCheckbox(p.numero, "c-numero", "c-sem-numero", SEM_NUMERO);
+    setComCheckbox(p.pontoReferencia, "c-ponto-referencia", "c-sem-referencia", SEM_REFERENCIA);
+
+    document.getElementById("badge-edicao-nome").textContent = p.nome;
+    document.getElementById("badge-edicao").style.display = "inline-flex";
+    document.getElementById("btn-salvar-cadastro").textContent = "Salvar edição";
+    document.getElementById("tab-cadastro").scrollIntoView({ behavior: "smooth" });
+  }
+
+  function cancelarEdicaoCadastro() {
+    limparFormularioCadastro();
+  }
+
+  async function deletarCadastro(linhaNum, nome) {
+    if (!confirm(`Excluir o cadastro de "${nome}"? Isso remove a linha permanentemente da planilha.`)) return;
+    try {
+      await sheetsFetch(`${spreadsheetId}:batchUpdate`, {
+        method: "POST",
+        body: JSON.stringify({
+          requests: [{
+            deleteDimension: {
+              range: { sheetId: sheetIdCadastro, dimension: "ROWS", startIndex: linhaNum - 1, endIndex: linhaNum }
+            }
+          }]
+        })
+      });
+      showToast(`Cadastro de ${nome} excluído.`);
+      if (linhaEmEdicao === linhaNum) limparFormularioCadastro();
+      await carregarParticipantes();
+    } catch (e) {
+      showToast("Erro ao excluir.");
+      console.error(e);
+    }
+  }
+
+  async function montarListaPresenca() {
+    document.getElementById("busca-presenca").value = "";
+    limparSelecaoPresenca();
+    try {
+      const data = await sheetsFetch(`${spreadsheetId}/values/registro_de_presenca!A2:B`);
+      const hoje = hojeFormatado();
+      cachePresencasHoje = (data.values || [])
+        .filter(l => l[0] === hoje)
+        .map(l => l[1]);
+    } catch (e) {
+      cachePresencasHoje = [];
+    }
+    filtrarListaPresenca();
+  }
+
+  function filtrarListaPresenca() {
+    const termo = document.getElementById("busca-presenca").value.trim().toLowerCase();
+    const ordenados = [...cacheParticipantes].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+    const filtrados = termo ? ordenados.filter(p => p.nome.toLowerCase().includes(termo)) : ordenados;
+
+    const container = document.getElementById("lista-presenca");
+    container.innerHTML = filtrados.map(p => `
+      <button type="button" class="item-presenca ${participanteSelecionadoPresenca === p.linha ? 'selecionado' : ''}"
+        onclick="selecionarParticipantePresenca(${p.linha})">
+        ${p.nome}${p.rua ? ` <span style="color:var(--muted)">— ${p.rua}</span>` : ""}
+      </button>
+    `).join("") || `<p style="color:var(--muted); font-size:0.85rem">Nenhum participante encontrado.</p>`;
+  }
+
+  function selecionarParticipantePresenca(linhaNum) {
+    participanteSelecionadoPresenca = linhaNum;
+    filtrarListaPresenca();
+    const p = cacheParticipantes.find(x => x.linha === linhaNum);
+    document.getElementById("nome-selecionado-presenca").textContent = p.nome;
+    document.getElementById("painel-confirmar-presenca").classList.add("show");
+  }
+
+  function limparSelecaoPresenca() {
+    participanteSelecionadoPresenca = null;
+    document.getElementById("painel-confirmar-presenca").classList.remove("show");
+    filtrarListaPresenca();
+  }
+
+  async function confirmarPresenca() {
+    const p = cacheParticipantes.find(x => x.linha === participanteSelecionadoPresenca);
+    if (!p) return;
+    const hoje = hojeFormatado();
+
+    if (p.dataCadastro === hoje) {
+      showToast(`${p.nome} foi cadastrado(a) hoje — a presença já está contabilizada automaticamente.`);
+      return;
+    }
+    if (cachePresencasHoje.includes(p.nome)) {
+      showToast(`A presença de ${p.nome} já foi registrada hoje.`);
+      return;
+    }
+
+    try {
+      await sheetsFetch(`${spreadsheetId}/values/registro_de_presenca!A:B:append?valueInputOption=RAW`, {
+        method: "POST",
+        body: JSON.stringify({ values: [[hoje, p.nome]] })
+      });
+      cachePresencasHoje.push(p.nome);
+      showToast(`Presença de ${p.nome} registrada.`);
+      limparSelecaoPresenca();
+    } catch (e) {
+      showToast("Erro ao registrar presença.");
+      console.error(e);
+    }
   }
 
   async function realizarSorteio() {
