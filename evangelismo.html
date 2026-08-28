@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gerenciador de Evangelismo</title>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
@@ -71,20 +70,13 @@
   <p class="sub">Verificando acesso...</p>
 </div>
 
-<div id="tela-login-google" class="center-screen" style="display:none">
-  <div class="eyebrow">Gerenciador de Evangelismo</div>
-  <h1>Conecte sua conta Google</h1>
-  <p class="sub">Você vai autorizar o acesso à planilha que servirá de banco de dados do seu evangelismo.</p>
-  <div id="google-btn-container" style="display:flex; justify-content:center; margin-top: 16px;"></div>
-</div>
-
 <div id="tela-planilha" class="center-screen" style="display:none">
-  <div class="eyebrow">Passo 2</div>
-  <h1>Escolha a planilha</h1>
-  <p class="sub">Cole o link ou o ID da planilha do Google Sheets que você quer usar.</p>
-  <label for="input-sheet-url">Link ou ID da planilha</label>
-  <input id="input-sheet-url" type="text" placeholder="https://docs.google.com/spreadsheets/d/..." />
-  <button class="btn-primary" style="width:100%" onclick="conectarPlanilha()">Gerar colunas e abas</button>
+  <div class="eyebrow">Conectar</div>
+  <h1>Conectar a planilha</h1>
+  <p class="sub">Cole aqui a URL do Web App do Apps Script gerada na planilha (termina em <code>/exec</code>). Se ainda não configurou, siga o passo a passo que você recebeu.</p>
+  <label for="input-sheet-url">URL do Web App</label>
+  <input id="input-sheet-url" type="text" placeholder="https://script.google.com/macros/s/.../exec" />
+  <button class="btn-primary" style="width:100%" onclick="conectarPlanilha()">Conectar</button>
 </div>
 
 <div id="app-screen" style="display:none">
@@ -214,18 +206,15 @@
   // ==== CONFIGURAÇÃO ====
   const SUPABASE_URL = "https://jmogaclwihvsouqixozo.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imptb2dhY2x3aWh2c291cWl4b3pvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyNTk5MzIsImV4cCI6MjEwMjgzNTkzMn0.kzvlfUAzRrEeb2UGlEViCOVh0vIMuHVkR_EzUSjn87U";
-  const GOOGLE_CLIENT_ID = "181978254226-qehjo7ila54fdq1vrcqc8qhfvf7qqann.apps.googleusercontent.com";
-  const SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets";
   // =======================
 
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  let accessToken = null;
-  let spreadsheetId = null;
-  let sheetIdCadastro = null; // ID numérico interno da aba cadastros_do_evento, usado pra excluir linhas
+  let tokenAtual = null;
+  let webAppUrl = null;
   let cacheParticipantes = [];
-  let linhaEmEdicao = null; // número da linha da planilha sendo editada, ou null
+  let linhaEmEdicao = null;
   let participanteSelecionadoPresenca = null;
-  let cachePresencasHoje = []; // nomes já registrados hoje na aba registro_de_presenca
+  let cachePresencasHoje = [];
 
   function showToast(msg) {
     const t = document.getElementById("toast");
@@ -242,6 +231,7 @@
   async function validarAcesso() {
     const token = pegarToken();
     if (!token) { mostrarInvalido(); return; }
+    tokenAtual = token;
 
     const { data, error } = await sb
       .from("usuarios_evangelismo_validacao")
@@ -253,8 +243,14 @@
     if (data.status !== "ativo" || new Date(data.data_expiracao) < new Date()) { mostrarInvalido(); return; }
 
     document.getElementById("tela-carregando").style.display = "none";
-    document.getElementById("tela-login-google").style.display = "block";
-    iniciarLoginGoogle();
+
+    if (data.webapp_url) {
+      // Esse link já foi conectado antes (por você ou por outra pessoa da equipe) — entra direto.
+      webAppUrl = data.webapp_url;
+      await abrirPainel();
+    } else {
+      document.getElementById("tela-planilha").style.display = "block";
+    }
   }
 
   function mostrarInvalido() {
@@ -262,111 +258,41 @@
     document.getElementById("tela-invalida").style.display = "block";
   }
 
-  function iniciarLoginGoogle() {
-    if (typeof google === "undefined" || !google.accounts) {
-      // A biblioteca do Google ainda não carregou (é async) — tenta de novo em instantes.
-      setTimeout(iniciarLoginGoogle, 200);
-      return;
-    }
-    const tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: GOOGLE_CLIENT_ID,
-      scope: SHEETS_SCOPE,
-      callback: (resp) => {
-        if (resp.error) { showToast("Falha ao autorizar com o Google."); return; }
-        accessToken = resp.access_token;
-        document.getElementById("tela-login-google").style.display = "none";
-        document.getElementById("tela-planilha").style.display = "block";
-      }
+  async function appsScriptFetch(action, extra = {}) {
+    const res = await fetch(webAppUrl, {
+      method: "POST",
+      body: JSON.stringify({ action, ...extra })
     });
-    document.getElementById("google-btn-container").innerHTML =
-      `<button class="btn-primary" onclick='window.__tc.requestAccessToken()'>Entrar com Google</button>`;
-    window.__tc = tokenClient;
-  }
-
-  function extrairIdPlanilha(texto) {
-    const m = texto.match(/\/d\/([a-zA-Z0-9-_]+)/);
-    return m ? m[1] : texto.trim();
-  }
-
-  async function sheetsFetch(path, options = {}) {
-    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${path}`, {
-      ...options,
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-        ...(options.headers || {})
-      }
-    });
-    if (!res.ok) {
-      const body = await res.text();
-      throw new Error(`Erro na Sheets API: ${res.status} - ${body}`);
-    }
-    return res.json();
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.erro || "Erro desconhecido no backend da planilha.");
+    return json.dados;
   }
 
   async function conectarPlanilha() {
-    const raw = document.getElementById("input-sheet-url").value;
-    if (!raw.trim()) { showToast("Cole o link ou ID da planilha."); return; }
-    spreadsheetId = extrairIdPlanilha(raw);
-
+    const url = document.getElementById("input-sheet-url").value.trim();
+    if (!url.startsWith("https://script.google.com/")) {
+      showToast("Cole a URL do Web App do Apps Script (começa com https://script.google.com/...).");
+      return;
+    }
+    webAppUrl = url;
     try {
-      let meta = await sheetsFetch(`${spreadsheetId}`);
-      let abasExistentes = meta.sheets.map(s => s.properties.title);
-
-      // Migração: renomeia abas do formato antigo, se existirem, pro novo nome
-      const migracoes = { "Cadastro": "cadastros_do_evento", "Presenca": "registro_de_presenca" };
-      const renomear = Object.entries(migracoes)
-        .filter(([antigo, novo]) => abasExistentes.includes(antigo) && !abasExistentes.includes(novo));
-      if (renomear.length) {
-        await sheetsFetch(`${spreadsheetId}:batchUpdate`, {
-          method: "POST",
-          body: JSON.stringify({
-            requests: renomear.map(([antigo, novo]) => {
-              const sheetId = meta.sheets.find(s => s.properties.title === antigo).properties.sheetId;
-              return { updateSheetProperties: { properties: { sheetId, title: novo }, fields: "title" } };
-            })
-          })
-        });
-        meta = await sheetsFetch(`${spreadsheetId}`);
-        abasExistentes = meta.sheets.map(s => s.properties.title);
-      }
-
-      const abasNecessarias = ["cadastros_do_evento", "registro_de_presenca", "Sorteio"];
-      const abasParaCriar = abasNecessarias.filter(a => !abasExistentes.includes(a));
-
-      if (abasParaCriar.length) {
-        await sheetsFetch(`${spreadsheetId}:batchUpdate`, {
-          method: "POST",
-          body: JSON.stringify({
-            requests: abasParaCriar.map(nome => ({ addSheet: { properties: { title: nome } } }))
-          })
-        });
-        meta = await sheetsFetch(`${spreadsheetId}`);
-      }
-
-      sheetIdCadastro = meta.sheets.find(s => s.properties.title === "cadastros_do_evento").properties.sheetId;
-
-      const cabecalhos = {
-        cadastros_do_evento: ["ID", "Nome", "Telefone", "Idade", "Rua", "Bairro", "Numero", "PontoReferencia", "DataCadastro"],
-        registro_de_presenca: ["Data", "Nome"],
-        Sorteio: ["ID", "Data", "Nome_Sorteado", "ID_Participante"]
-      };
-      for (const [aba, colunas] of Object.entries(cabecalhos)) {
-        await sheetsFetch(`${spreadsheetId}/values/${aba}!A1:I1?valueInputOption=RAW`, {
-          method: "PUT",
-          body: JSON.stringify({ values: [colunas] })
-        });
-      }
-
-      showToast("Planilha conectada e estruturada.");
+      await appsScriptFetch("setup");
+      const { error } = await sb.rpc("vincular_planilha", { p_token: tokenAtual, p_url: url });
+      if (error) { showToast("Planilha conectada, mas não consegui salvar o vínculo: " + error.message); }
+      showToast("Planilha conectada com sucesso.");
       document.getElementById("tela-planilha").style.display = "none";
-      document.getElementById("app-screen").style.display = "block";
-      document.getElementById("titulo-usuario").textContent = "Painel de evangelismo";
-      await carregarParticipantes();
+      await abrirPainel();
     } catch (e) {
-      showToast("Não foi possível conectar. Confira o link e se você tem acesso de edição à planilha.");
+      webAppUrl = null;
+      showToast("Não foi possível conectar. Confira se a URL está correta e se o Web App foi implantado com acesso 'Qualquer pessoa'.");
       console.error(e);
     }
+  }
+
+  async function abrirPainel() {
+    document.getElementById("app-screen").style.display = "block";
+    document.getElementById("titulo-usuario").textContent = "Painel de evangelismo";
+    await carregarParticipantes();
   }
 
   function trocarAba(nome) {
@@ -398,14 +324,7 @@
   }
 
   async function carregarParticipantes() {
-    const data = await sheetsFetch(`${spreadsheetId}/values/cadastros_do_evento!A2:I`);
-    const linhas = data.values || [];
-    cacheParticipantes = linhas.map((l, i) => ({
-      linha: i + 2,
-      id: l[0] || "", nome: l[1] || "", telefone: l[2] || "", idade: l[3] || "",
-      rua: l[4] || "", bairro: l[5] || "", numero: l[6] || "",
-      pontoReferencia: l[7] || "", dataCadastro: l[8] || ""
-    }));
+    cacheParticipantes = await appsScriptFetch("listarCadastros");
     renderizarTabelaCadastro();
     atualizarListasAutocomplete();
   }
@@ -463,18 +382,12 @@
     const pontoReferencia = lerCampoComCheckbox("c-ponto-referencia", "c-sem-referencia", SEM_REFERENCIA);
 
     try {
+      const dadosLinha = { nome, telefone, idade, rua, bairro, numero, pontoReferencia };
       if (linhaEmEdicao) {
-        await sheetsFetch(`${spreadsheetId}/values/cadastros_do_evento!B${linhaEmEdicao}:H${linhaEmEdicao}?valueInputOption=RAW`, {
-          method: "PUT",
-          body: JSON.stringify({ values: [[nome, telefone, idade, rua, bairro, numero, pontoReferencia]] })
-        });
+        await appsScriptFetch("editarCadastro", { linha: linhaEmEdicao, dados: dadosLinha });
         showToast(`${nome} foi atualizado com sucesso.`);
       } else {
-        const linha = [crypto.randomUUID(), nome, telefone, idade, rua, bairro, numero, pontoReferencia, hojeFormatado()];
-        await sheetsFetch(`${spreadsheetId}/values/cadastros_do_evento!A:I:append?valueInputOption=RAW`, {
-          method: "POST",
-          body: JSON.stringify({ values: [linha] })
-        });
+        await appsScriptFetch("cadastrar", { dados: dadosLinha });
         showToast(`${nome} foi salvo com sucesso.`);
       }
       limparFormularioCadastro();
@@ -527,16 +440,7 @@
   async function deletarCadastro(linhaNum, nome) {
     if (!confirm(`Excluir o cadastro de "${nome}"? Isso remove a linha permanentemente da planilha.`)) return;
     try {
-      await sheetsFetch(`${spreadsheetId}:batchUpdate`, {
-        method: "POST",
-        body: JSON.stringify({
-          requests: [{
-            deleteDimension: {
-              range: { sheetId: sheetIdCadastro, dimension: "ROWS", startIndex: linhaNum - 1, endIndex: linhaNum }
-            }
-          }]
-        })
-      });
+      await appsScriptFetch("deletarCadastro", { linha: linhaNum });
       showToast(`Cadastro de ${nome} excluído.`);
       if (linhaEmEdicao === linhaNum) limparFormularioCadastro();
       await carregarParticipantes();
@@ -550,11 +454,7 @@
     document.getElementById("busca-presenca").value = "";
     limparSelecaoPresenca();
     try {
-      const data = await sheetsFetch(`${spreadsheetId}/values/registro_de_presenca!A2:B`);
-      const hoje = hojeFormatado();
-      cachePresencasHoje = (data.values || [])
-        .filter(l => l[0] === hoje)
-        .map(l => l[1]);
+      cachePresencasHoje = await appsScriptFetch("listarPresencasHoje");
     } catch (e) {
       cachePresencasHoje = [];
     }
@@ -570,7 +470,7 @@
     container.innerHTML = filtrados.map(p => `
       <button type="button" class="item-presenca ${participanteSelecionadoPresenca === p.linha ? 'selecionado' : ''}"
         onclick="selecionarParticipantePresenca(${p.linha})">
-        ${p.nome}${p.rua ? ` <span style="color:var(--muted)">— ${p.rua}</span>` : ""}
+        ${cachePresencasHoje.includes(p.nome) || p.dataCadastro === hojeFormatado() ? "✅ " : ""}${p.nome}${p.rua ? ` <span style="color:var(--muted)">— ${p.rua}</span>` : ""}
       </button>
     `).join("") || `<p style="color:var(--muted); font-size:0.85rem">Nenhum participante encontrado.</p>`;
   }
@@ -604,10 +504,13 @@
     }
 
     try {
-      await sheetsFetch(`${spreadsheetId}/values/registro_de_presenca!A:B:append?valueInputOption=RAW`, {
-        method: "POST",
-        body: JSON.stringify({ values: [[hoje, p.nome]] })
-      });
+      const resultado = await appsScriptFetch("registrarPresenca", { nome: p.nome });
+      if (resultado.duplicado) {
+        showToast(`A presença de ${p.nome} já havia sido registrada hoje.`);
+        cachePresencasHoje.push(p.nome);
+        limparSelecaoPresenca();
+        return;
+      }
       cachePresencasHoje.push(p.nome);
       showToast(`Presença de ${p.nome} registrada.`);
       limparSelecaoPresenca();
@@ -622,13 +525,13 @@
     const idx = crypto.getRandomValues(new Uint32Array(1))[0] % cacheParticipantes.length;
     const sorteado = cacheParticipantes[idx];
     document.getElementById("sorteio-resultado").textContent = `🎉 ${sorteado.nome}`;
-    await sheetsFetch(`${spreadsheetId}/values/Sorteio!A:D:append?valueInputOption=RAW`, {
-      method: "POST",
-      body: JSON.stringify({
-        values: [[crypto.randomUUID().slice(0, 8), new Date().toLocaleDateString("pt-BR"), sorteado.nome, sorteado.id]]
-      })
-    });
-    showToast("Sorteio registrado na planilha.");
+    try {
+      await appsScriptFetch("registrarSorteio", { nome: sorteado.nome, idParticipante: sorteado.id });
+      showToast("Sorteio registrado na planilha.");
+    } catch (e) {
+      showToast("Sorteado, mas não consegui registrar na planilha.");
+      console.error(e);
+    }
   }
 
   function montarDiretorio() {
