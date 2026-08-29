@@ -29,6 +29,8 @@
   .tabs { display: flex; gap: 6px; margin-bottom: 22px; flex-wrap: wrap; }
   .tab-btn { background: var(--card); border: 1px solid var(--line); color: var(--muted); }
   .tab-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+  .subtab-btn { background: var(--card); border: 1px solid var(--line); color: var(--muted); cursor: pointer; border-radius: 8px; padding: 10px 16px; font-size: 0.9rem; font-weight: 600; font-family: inherit; }
+  .subtab-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
   .tab-panel { display: none; }
   .tab-panel.active { display: block; }
   table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
@@ -56,6 +58,8 @@
   .item-presenca.selecionado { border-color: var(--accent); background: var(--accent-soft); }
   #painel-confirmar-presenca { margin-top: 16px; padding: 16px; border: 1px dashed var(--line); border-radius: 10px; display: none; }
   #painel-confirmar-presenca.show { display: block; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { background: var(--accent-soft); color: var(--accent); padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
 </style>
 </head>
 <body>
@@ -89,7 +93,7 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="cadastro" onclick="trocarAba('cadastro')">📋 Cadastro</button>
       <button class="tab-btn" data-tab="presenca" onclick="trocarAba('presenca')">✅ Registro de Presença</button>
-      <button class="tab-btn" data-tab="sorteio" onclick="trocarAba('sorteio')">Sorteio</button>
+      <button class="tab-btn" data-tab="sorteio" onclick="trocarAba('sorteio')">🎲 Sorteio</button>
       <button class="tab-btn" data-tab="diretorio" onclick="trocarAba('diretorio')">Diretório de ruas</button>
     </div>
 
@@ -182,11 +186,42 @@
 
     <!-- SORTEIO -->
     <div class="tab-panel" id="tab-sorteio">
-      <div class="card">
-        <h2>Sorteio</h2>
-        <p class="sub">Sorteia aleatoriamente entre todos os participantes cadastrados.</p>
-        <button class="btn-primary" onclick="realizarSorteio()">Sortear</button>
-        <div id="sorteio-resultado"></div>
+      <div class="tabs" style="margin-bottom:16px">
+        <button class="subtab-btn active" id="subtab-btn-numero" onclick="trocarSubAbaSorteio('numero')">Sorteio por número</button>
+        <button class="subtab-btn" id="subtab-btn-nome" onclick="trocarSubAbaSorteio('nome')">Sorteio por nome</button>
+      </div>
+
+      <!-- SORTEIO POR NÚMERO -->
+      <div id="subtab-sorteio-numero">
+        <div class="card">
+          <h2>🎲 Sorteio por número</h2>
+          <div class="form-row" style="max-width:420px">
+            <div><label>Número mínimo</label><input id="sorteio-num-min" inputmode="numeric" placeholder="Ex: 1" oninput="this.value=this.value.replace(/[^0-9]/g,'')" /></div>
+            <div><label>Número máximo</label><input id="sorteio-num-max" inputmode="numeric" placeholder="Ex: 100" oninput="this.value=this.value.replace(/[^0-9]/g,'')" /></div>
+          </div>
+          <div id="sorteio-num-animacao" style="font-size:2.2rem; font-weight:700; color:var(--accent); text-align:center; margin: 10px 0; min-height:56px">—</div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap">
+            <button class="btn-primary" id="btn-sortear-numero" onclick="sortearNumero()">Sortear número</button>
+            <button class="btn-ghost" onclick="reiniciarSorteioNumero()">Reiniciar sorteio</button>
+          </div>
+          <h2 style="margin-top:22px">Números já sorteados</h2>
+          <div class="chips" id="lista-numeros-sorteados"><span style="color:var(--muted); font-size:0.85rem">Nenhum número sorteado ainda.</span></div>
+        </div>
+      </div>
+
+      <!-- SORTEIO POR NOME -->
+      <div id="subtab-sorteio-nome" style="display:none">
+        <div class="card">
+          <h2>🎲 Sorteio por nome</h2>
+          <p class="sub" id="sorteio-nome-elegiveis-info">Concorrem apenas os participantes com presença registrada hoje.</p>
+          <div id="sorteio-nome-animacao" style="font-size:1.6rem; font-weight:700; color:var(--accent); text-align:center; margin: 10px 0; min-height:44px">—</div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap">
+            <button class="btn-primary" id="btn-sortear-nome" onclick="sortearNome()">Sortear nome</button>
+            <button class="btn-ghost" onclick="reiniciarSorteioNome()">Reiniciar sorteio</button>
+          </div>
+          <h2 style="margin-top:22px">Ganhadores</h2>
+          <div class="chips" id="lista-nomes-sorteados"><span style="color:var(--muted); font-size:0.85rem">Nenhum ganhador ainda.</span></div>
+        </div>
       </div>
     </div>
 
@@ -301,6 +336,7 @@
     document.getElementById(`tab-${nome}`).classList.add("active");
     if (nome === "presenca") montarListaPresenca();
     if (nome === "diretorio") montarDiretorio();
+    if (nome === "sorteio" && document.getElementById("subtab-btn-nome").classList.contains("active")) carregarElegiveisSorteioNome();
   }
 
   const SEM_TELEFONE = "Não possui telefone";
@@ -381,6 +417,8 @@
     const numero = lerCampoComCheckbox("c-numero", "c-sem-numero", SEM_NUMERO);
     const pontoReferencia = lerCampoComCheckbox("c-ponto-referencia", "c-sem-referencia", SEM_REFERENCIA);
 
+    const botao = document.getElementById("btn-salvar-cadastro");
+    botao.disabled = true;
     try {
       const dadosLinha = { nome, telefone, idade, rua, bairro, numero, pontoReferencia };
       if (linhaEmEdicao) {
@@ -395,6 +433,8 @@
     } catch (e) {
       showToast("Erro ao salvar. Confira sua conexão e tente de novo.");
       console.error(e);
+    } finally {
+      botao.disabled = false;
     }
   }
 
@@ -503,6 +543,8 @@
       return;
     }
 
+    const botao = document.querySelector('#painel-confirmar-presenca .btn-primary');
+    botao.disabled = true;
     try {
       const resultado = await appsScriptFetch("registrarPresenca", { nome: p.nome });
       if (resultado.duplicado) {
@@ -517,21 +559,137 @@
     } catch (e) {
       showToast("Erro ao registrar presença.");
       console.error(e);
+    } finally {
+      botao.disabled = false;
     }
   }
 
-  async function realizarSorteio() {
-    if (!cacheParticipantes.length) { showToast("Nenhum participante cadastrado."); return; }
-    const idx = crypto.getRandomValues(new Uint32Array(1))[0] % cacheParticipantes.length;
-    const sorteado = cacheParticipantes[idx];
-    document.getElementById("sorteio-resultado").textContent = `🎉 ${sorteado.nome}`;
-    try {
-      await appsScriptFetch("registrarSorteio", { nome: sorteado.nome, idParticipante: sorteado.id });
-      showToast("Sorteio registrado na planilha.");
-    } catch (e) {
-      showToast("Sorteado, mas não consegui registrar na planilha.");
-      console.error(e);
+  // ---- Sorteio ----
+  function randomInt(min, max) {
+    // Inteiro aleatório uniforme entre min e max (inclusive), sem viés de módulo
+    const faixa = max - min + 1;
+    const maxUint32 = 4294967295;
+    const limite = maxUint32 - (maxUint32 % faixa);
+    let x;
+    do { x = crypto.getRandomValues(new Uint32Array(1))[0]; } while (x >= limite);
+    return min + (x % faixa);
+  }
+
+  let sorteioNumerosSorteados = new Set();
+  let sorteioElegiveisNomes = [];
+  let sorteioNomesSorteadosSet = new Set();
+
+  function trocarSubAbaSorteio(tipo) {
+    document.getElementById("subtab-btn-numero").classList.toggle("active", tipo === "numero");
+    document.getElementById("subtab-btn-nome").classList.toggle("active", tipo === "nome");
+    document.getElementById("subtab-sorteio-numero").style.display = tipo === "numero" ? "block" : "none";
+    document.getElementById("subtab-sorteio-nome").style.display = tipo === "nome" ? "block" : "none";
+    if (tipo === "nome") carregarElegiveisSorteioNome();
+  }
+  function sortearNumero() {
+    const min = parseInt(document.getElementById("sorteio-num-min").value, 10);
+    const max = parseInt(document.getElementById("sorteio-num-max").value, 10);
+    if (isNaN(min) || isNaN(max) || min > max) { showToast("Informe um intervalo válido (mínimo menor ou igual ao máximo)."); return; }
+
+    const totalNumeros = max - min + 1;
+    if (sorteioNumerosSorteados.size >= totalNumeros) {
+      showToast("Todos os números desse intervalo já foram sorteados. Reinicie o sorteio pra continuar.");
+      return;
     }
+
+    const botao = document.getElementById("btn-sortear-numero");
+    botao.disabled = true;
+    let numeroFinal;
+    do { numeroFinal = randomInt(min, max); } while (sorteioNumerosSorteados.has(numeroFinal));
+
+    let ticks = 0;
+    const el = document.getElementById("sorteio-num-animacao");
+    const intervalo = setInterval(() => {
+      el.textContent = randomInt(min, max);
+      ticks++;
+      if (ticks >= 18) {
+        clearInterval(intervalo);
+        el.textContent = numeroFinal;
+        sorteioNumerosSorteados.add(numeroFinal);
+        renderizarNumerosSorteados();
+        botao.disabled = false;
+        appsScriptFetch("registrarSorteio", { nome: `Número ${numeroFinal}`, idParticipante: "" }).catch(() => {});
+      }
+    }, 70);
+  }
+
+  function renderizarNumerosSorteados() {
+    const container = document.getElementById("lista-numeros-sorteados");
+    const nums = [...sorteioNumerosSorteados].sort((a, b) => a - b);
+    container.innerHTML = nums.length
+      ? nums.map(n => `<span class="chip">${n}</span>`).join("")
+      : `<span style="color:var(--muted); font-size:0.85rem">Nenhum número sorteado ainda.</span>`;
+  }
+
+  function reiniciarSorteioNumero() {
+    if (!confirm("Reiniciar o sorteio por número? Os números já sorteados voltam a valer.")) return;
+    sorteioNumerosSorteados.clear();
+    renderizarNumerosSorteados();
+    document.getElementById("sorteio-num-animacao").textContent = "—";
+  }
+
+  async function carregarElegiveisSorteioNome() {
+    const info = document.getElementById("sorteio-nome-elegiveis-info");
+    info.textContent = "Carregando participantes com presença hoje...";
+    try {
+      const presentesHoje = await appsScriptFetch("listarPresencasHoje");
+      const hoje = hojeFormatado();
+      const mapa = new Map();
+      cacheParticipantes.forEach(p => {
+        if (p.dataCadastro === hoje || presentesHoje.includes(p.nome)) mapa.set(p.id, p);
+      });
+      sorteioElegiveisNomes = [...mapa.values()];
+      info.textContent = `Concorrem ${sorteioElegiveisNomes.length} participante(s) com presença registrada hoje.`;
+    } catch (e) {
+      sorteioElegiveisNomes = [];
+      info.textContent = "Não foi possível carregar a lista de presença de hoje.";
+    }
+    renderizarNomesSorteados();
+  }
+
+  function sortearNome() {
+    const disponiveis = sorteioElegiveisNomes.filter(p => !sorteioNomesSorteadosSet.has(p.id));
+    if (!disponiveis.length) { showToast("Não há mais participantes disponíveis. Reinicie o sorteio ou registre mais presenças."); return; }
+
+    const botao = document.getElementById("btn-sortear-nome");
+    botao.disabled = true;
+    const sorteado = disponiveis[randomInt(0, disponiveis.length - 1)];
+    const poolVisual = sorteioElegiveisNomes.map(p => p.nome);
+
+    let ticks = 0;
+    const el = document.getElementById("sorteio-nome-animacao");
+    const intervalo = setInterval(() => {
+      el.textContent = poolVisual[randomInt(0, poolVisual.length - 1)];
+      ticks++;
+      if (ticks >= 18) {
+        clearInterval(intervalo);
+        el.textContent = `🎉 ${sorteado.nome}`;
+        sorteioNomesSorteadosSet.add(sorteado.id);
+        renderizarNomesSorteados();
+        botao.disabled = false;
+        appsScriptFetch("registrarSorteio", { nome: sorteado.nome, idParticipante: sorteado.id }).catch(() => {});
+      }
+    }, 70);
+  }
+
+  function renderizarNomesSorteados() {
+    const container = document.getElementById("lista-nomes-sorteados");
+    const ganhadores = sorteioElegiveisNomes.filter(p => sorteioNomesSorteadosSet.has(p.id));
+    container.innerHTML = ganhadores.length
+      ? ganhadores.map(p => `<span class="chip">${p.nome}</span>`).join("")
+      : `<span style="color:var(--muted); font-size:0.85rem">Nenhum ganhador ainda.</span>`;
+  }
+
+  function reiniciarSorteioNome() {
+    if (!confirm("Reiniciar o sorteio por nome? Os ganhadores já sorteados voltam a concorrer.")) return;
+    sorteioNomesSorteadosSet.clear();
+    renderizarNomesSorteados();
+    document.getElementById("sorteio-nome-animacao").textContent = "—";
   }
 
   function montarDiretorio() {
