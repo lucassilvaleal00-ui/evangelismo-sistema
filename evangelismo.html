@@ -60,6 +60,26 @@
   #painel-confirmar-presenca.show { display: block; }
   .chips { display: flex; flex-wrap: wrap; gap: 8px; }
   .chip { background: var(--accent-soft); color: var(--accent); padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
+  .painel-sorteio {
+    background: var(--accent-soft);
+    border: 2px solid var(--accent);
+    border-radius: 14px;
+    text-align: center;
+    padding: 28px 16px;
+    margin: 16px 0;
+  }
+  #sorteio-num-animacao { font-size: 3.2rem; font-weight: 800; color: var(--accent); min-height: 64px; }
+  #sorteio-nome-animacao { font-size: 1.9rem; font-weight: 800; color: var(--accent); min-height: 48px; }
+
+  .dir-street-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 16px; background: var(--accent-soft); border-radius: 10px 10px 0 0; }
+  .dir-street-bar h3 { font-family: inherit; font-size: 1rem; margin: 0; color: var(--accent); }
+  .dir-tally { font-size: 0.75rem; color: var(--muted); background: white; border-radius: 20px; padding: 2px 10px; }
+  .dir-wa-btn { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; background: #25923a; color: white; font-size: 0.8rem; font-weight: 600; padding: 7px 12px; border-radius: 7px; border: none; cursor: pointer; }
+  .dir-wa-btn:hover { background: #1f7a30; }
+  .dir-table-wrap { border: 1px solid var(--line); border-top: none; border-radius: 0 0 10px 10px; overflow-x: auto; margin-bottom: 18px; }
+  tr.dir-novato { background: var(--warn-soft) !important; }
+  tr.dir-novato td { color: var(--warn); }
+  .dir-badge-novo { display: inline-block; margin-left: 6px; font-size: 0.65rem; text-transform: uppercase; background: var(--warn); color: white; border-radius: 20px; padding: 1px 8px; vertical-align: middle; }
 </style>
 </head>
 <body>
@@ -199,7 +219,7 @@
             <div><label>Número mínimo</label><input id="sorteio-num-min" inputmode="numeric" placeholder="Ex: 1" oninput="this.value=this.value.replace(/[^0-9]/g,'')" /></div>
             <div><label>Número máximo</label><input id="sorteio-num-max" inputmode="numeric" placeholder="Ex: 100" oninput="this.value=this.value.replace(/[^0-9]/g,'')" /></div>
           </div>
-          <div id="sorteio-num-animacao" style="font-size:2.2rem; font-weight:700; color:var(--accent); text-align:center; margin: 10px 0; min-height:56px">—</div>
+          <div id="sorteio-num-animacao" class="painel-sorteio">—</div>
           <div style="display:flex; gap:10px; flex-wrap:wrap">
             <button class="btn-primary" id="btn-sortear-numero" onclick="sortearNumero()">Sortear número</button>
             <button class="btn-ghost" onclick="reiniciarSorteioNumero()">Reiniciar sorteio</button>
@@ -214,7 +234,7 @@
         <div class="card">
           <h2>🎲 Sorteio por nome</h2>
           <p class="sub" id="sorteio-nome-elegiveis-info">Concorrem apenas os participantes com presença registrada hoje.</p>
-          <div id="sorteio-nome-animacao" style="font-size:1.6rem; font-weight:700; color:var(--accent); text-align:center; margin: 10px 0; min-height:44px">—</div>
+          <div id="sorteio-nome-animacao" class="painel-sorteio">—</div>
           <div style="display:flex; gap:10px; flex-wrap:wrap">
             <button class="btn-primary" id="btn-sortear-nome" onclick="sortearNome()">Sortear nome</button>
             <button class="btn-ghost" onclick="reiniciarSorteioNome()">Reiniciar sorteio</button>
@@ -228,7 +248,10 @@
     <!-- DIRETÓRIO -->
     <div class="tab-panel" id="tab-diretorio">
       <div class="card">
-        <h2>Diretório por rua</h2>
+        <h2>🗺️ Diretório por rua</h2>
+        <p class="sub"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:var(--warn-soft);border:1px solid var(--warn);vertical-align:middle;margin-right:4px"></span>Em destaque: cadastros feitos na data mais recente encontrada (novatos)</p>
+        <label for="busca-diretorio">Buscar por nome ou telefone</label>
+        <input id="busca-diretorio" type="text" placeholder="Digite para filtrar..." oninput="montarDiretorio()" />
         <div id="diretorio-lista"></div>
       </div>
     </div>
@@ -692,24 +715,100 @@
     document.getElementById("sorteio-nome-animacao").textContent = "—";
   }
 
+  function normalizarTexto(txt) {
+    return (txt || "").toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  }
+
+  function converterDataBr(str) {
+    // "dd/mm/aaaa" -> Date, pra poder comparar e achar a mais recente
+    if (!str) return null;
+    const [d, m, y] = str.split("/").map(Number);
+    if (!d || !m || !y) return null;
+    const dt = new Date(y, m - 1, d);
+    return isNaN(dt.getTime()) ? null : dt;
+  }
+
   function montarDiretorio() {
+    const termo = normalizarTexto(document.getElementById("busca-diretorio").value.trim());
+    const container = document.getElementById("diretorio-lista");
+
+    if (!cacheParticipantes.length) {
+      container.innerHTML = `<p style="color:var(--muted)">Nenhum participante cadastrado.</p>`;
+      return;
+    }
+
+    // Descobre a data de cadastro mais recente entre todos, pra marcar quem é "novato"
+    let maisRecente = null;
+    cacheParticipantes.forEach(p => {
+      const dt = converterDataBr(p.dataCadastro);
+      if (dt && (!maisRecente || dt > maisRecente)) maisRecente = dt;
+    });
+
     const porRua = {};
     cacheParticipantes.forEach(p => {
       const rua = p.rua || "Sem rua informada";
       if (!porRua[rua]) porRua[rua] = [];
       porRua[rua].push(p);
     });
-    const container = document.getElementById("diretorio-lista");
-    const ruas = Object.keys(porRua).sort();
-    if (!ruas.length) { container.innerHTML = `<p style="color:var(--muted)">Nenhum participante cadastrado.</p>`; return; }
-    container.innerHTML = ruas.map(rua => `
-      <div class="street-group">
-        <h3>${rua}</h3>
-        <table><tbody>
-          ${porRua[rua].map(p => `<tr><td>${p.nome}</td><td>${p.numero || ""}</td><td>${p.telefone || ""}</td></tr>`).join("")}
-        </tbody></table>
-      </div>
-    `).join("");
+    const ruas = Object.keys(porRua).sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+    const blocos = ruas.map(rua => {
+      const pessoas = porRua[rua].filter(p => {
+        if (!termo) return true;
+        return normalizarTexto(p.nome).includes(termo) || normalizarTexto(p.telefone).includes(termo);
+      });
+      if (!pessoas.length) return "";
+
+      const linhas = pessoas.map(p => {
+        const dt = converterDataBr(p.dataCadastro);
+        const novato = dt && maisRecente && dt.getTime() === maisRecente.getTime();
+        return `
+          <tr class="${novato ? 'dir-novato' : ''}">
+            <td data-label="Telefone">${p.telefone}</td>
+            <td data-label="Nome">${p.nome}${novato ? '<span class="dir-badge-novo">novo</span>' : ''}</td>
+            <td data-label="Idade">${p.idade}</td>
+            <td data-label="Data">${p.dataCadastro}</td>
+            <td data-label="Número">${p.numero}</td>
+            <td data-label="Bairro">${p.bairro}</td>
+            <td data-label="Ponto de referência">${p.pontoReferencia}</td>
+          </tr>`;
+      }).join("");
+
+      return `
+        <div style="margin-bottom:20px">
+          <div class="dir-street-bar">
+            <h3>${rua}</h3>
+            <span class="dir-tally">${pessoas.length} pessoa${pessoas.length === 1 ? "" : "s"}</span>
+            <button class="dir-wa-btn" onclick="enviarRuaWhatsApp('${rua.replace(/'/g, "\\'")}')" type="button">📲 Enviar via WhatsApp</button>
+          </div>
+          <div class="dir-table-wrap">
+            <table>
+              <thead><tr><th>Telefone</th><th>Nome</th><th>Idade</th><th>Data</th><th>Número</th><th>Bairro</th><th>Ponto de referência</th></tr></thead>
+              <tbody>${linhas}</tbody>
+            </table>
+          </div>
+        </div>`;
+    }).join("");
+
+    container.innerHTML = blocos.trim() ? blocos : `<p style="color:var(--muted)">Nenhum resultado encontrado.</p>`;
+  }
+
+  function enviarRuaWhatsApp(rua) {
+    const termo = normalizarTexto(document.getElementById("busca-diretorio").value.trim());
+    const pessoas = cacheParticipantes.filter(p => {
+      if ((p.rua || "Sem rua informada") !== rua) return false;
+      if (!termo) return true;
+      return normalizarTexto(p.nome).includes(termo) || normalizarTexto(p.telefone).includes(termo);
+    });
+    const linhas = pessoas.map((p, i) => {
+      const partes = [p.nome || "Sem nome"];
+      if (p.numero) partes.push(`nº ${p.numero}`);
+      if (p.pontoReferencia && p.pontoReferencia !== SEM_REFERENCIA) partes.push(`(${p.pontoReferencia})`);
+      return `${i + 1}. ${partes.join(" — ")} — ${p.telefone || "sem telefone"}`;
+    }).join("\n");
+
+    const texto = `*Rua: ${rua}*\n${pessoas.length} pessoa${pessoas.length === 1 ? "" : "s"} cadastrada${pessoas.length === 1 ? "" : "s"}\n\n${linhas}\n\n_Lista gerada pelo Gerenciador de Evangelismo_`;
+    window.open("https://wa.me/?text=" + encodeURIComponent(texto), "_blank");
   }
 
   validarAcesso();
