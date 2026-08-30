@@ -95,6 +95,13 @@
   tr.linha-marcada { background: var(--accent-soft); }
   .area-rolavel { max-height: 420px; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
   .busca-rua { max-width: 260px; margin: 0 0 12px; }
+  .paginacao { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; justify-content: center; margin-top: 16px; }
+  .paginacao button { background: var(--card); border: 1px solid var(--line); color: var(--muted);
+                      min-width: 34px; padding: 6px 9px; font-size: 0.82rem; border-radius: 7px; }
+  .paginacao button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .paginacao button.atual { background: var(--accent); border-color: var(--accent); color: white; }
+  .paginacao button:disabled { opacity: 0.4; }
+  .paginacao .reticencias { color: var(--muted); padding: 0 2px; }
 
   .conta-lista { font-size: 0.8rem; color: var(--muted); margin-left: auto; }
 
@@ -285,6 +292,7 @@
             <tbody id="tbody-cadastro"></tbody>
           </table>
         </div>
+        <div class="paginacao" id="paginacao-cadastro"></div>
       </div>
     </div>
 
@@ -322,7 +330,7 @@
           <button class="btn-ghost btn-sm" id="btn-limpar-selecao" style="display:none">Limpar seleção</button>
           <button class="btn-ghost btn-sm" id="btn-atualizar-pontos">↻ Atualizar saldos</button>
         </div>
-        <p class="sub" id="aviso-limite-pontuacao" style="margin:-6px 0 12px"></p>
+        <p class="sub" id="conta-pontuacao" style="margin:-6px 0 12px"></p>
         <div class="tabela-rolavel">
         <table>
           <thead>
@@ -343,6 +351,7 @@
           <tbody id="tbody-pontuacao"></tbody>
         </table>
         </div>
+        <div class="paginacao" id="paginacao-pontuacao"></div>
       </div>
     </div>
 
@@ -492,6 +501,53 @@ let cacheSaldos = {};
 let codigoConsulta = null;
 let idPontuacaoAtual = null;
 let selecionadosCartao = new Set();
+
+const POR_PAGINA = 50;
+let paginaCadastro = 1;
+let paginaPontuacao = 1;
+
+/** Quais números de página mostrar: todos quando são poucos, ou uma janela com "…". */
+function paginasVisiveis(pagina, totalPaginas) {
+  if (totalPaginas <= 12) return Array.from({ length: totalPaginas }, (_, i) => i + 1);
+  const numeros = new Set([1, totalPaginas]);
+  for (let p = pagina - 2; p <= pagina + 2; p++) if (p >= 1 && p <= totalPaginas) numeros.add(p);
+  const ordenados = [...numeros].sort((a, b) => a - b);
+  const saida = [];
+  ordenados.forEach((p, i) => {
+    if (i > 0 && p - ordenados[i - 1] > 1) saida.push("…");
+    saida.push(p);
+  });
+  return saida;
+}
+
+function renderizarPaginacao(idContainer, totalItens, pagina, aoTrocar) {
+  const el = $(idContainer);
+  const totalPaginas = Math.max(1, Math.ceil(totalItens / POR_PAGINA));
+  if (totalPaginas <= 1) { el.innerHTML = ""; return; }
+
+  el.innerHTML = `
+    <button data-p="${pagina - 1}" ${pagina === 1 ? "disabled" : ""} aria-label="Página anterior">‹</button>
+    ${paginasVisiveis(pagina, totalPaginas).map(n => n === "…"
+      ? `<span class="reticencias">…</span>`
+      : `<button data-p="${n}" class="${n === pagina ? "atual" : ""}" ${n === pagina ? 'aria-current="page"' : ""}>${n}</button>`
+    ).join("")}
+    <button data-p="${pagina + 1}" ${pagina === totalPaginas ? "disabled" : ""} aria-label="Próxima página">›</button>`;
+
+  el.querySelectorAll("button[data-p]").forEach(b => {
+    b.addEventListener("click", () => {
+      aoTrocar(Number(b.dataset.p));
+      const cartao = el.closest(".card");
+      if (cartao) cartao.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
+}
+
+function faixaMostrada(inicio, quantidade, total, filtrando) {
+  if (!total) return "";
+  const fim = inicio + quantidade;
+  const alvo = filtrando ? `${total} encontrado${total === 1 ? "" : "s"}` : `${total} participantes`;
+  return total <= POR_PAGINA ? `${alvo}` : `Mostrando ${inicio + 1}–${fim} de ${alvo}`;
+}
 let tipoOperacaoAtual = "deposito";
 
 const SEM_TELEFONE = "Não possui telefone";
@@ -734,12 +790,15 @@ function renderizarTabelaCadastro() {
         || normalizarTexto(p.rua).includes(termo))
     : todos;
 
-  $("conta-cadastro").textContent = todos.length
-    ? (termo ? `${linhas.length} de ${todos.length} participantes` : `${todos.length} participantes`)
-    : "";
+  const totalPaginas = Math.max(1, Math.ceil(linhas.length / POR_PAGINA));
+  if (paginaCadastro > totalPaginas) paginaCadastro = totalPaginas;
+  const inicio = (paginaCadastro - 1) * POR_PAGINA;
+  const pagina = linhas.slice(inicio, inicio + POR_PAGINA);
+
+  $("conta-cadastro").textContent = faixaMostrada(inicio, pagina.length, linhas.length, !!termo);
 
   const tbody = $("tbody-cadastro");
-  tbody.innerHTML = linhas.map(p => `
+  tbody.innerHTML = pagina.map(p => `
     <tr>
       <td class="celula-acoes">
         <div class="icones-linha">
@@ -758,6 +817,11 @@ function renderizarTabelaCadastro() {
     </tr>
   `).join("") || `<tr><td colspan="9" style="color:var(--muted); text-align:center">${
     termo ? "Nenhum participante encontrado." : "Nenhum participante ainda."}</td></tr>`;
+
+  renderizarPaginacao("paginacao-cadastro", linhas.length, paginaCadastro, n => {
+    paginaCadastro = n;
+    renderizarTabelaCadastro();
+  });
 }
 
 function lerCampoComCheckbox(idCampo, idCheckbox, valorSeMarcado) {
@@ -1019,20 +1083,28 @@ function saldoDe(id) {
   return Number(cacheSaldos[id] || 0);
 }
 
-function renderizarPontuacao() {
+/**
+ * Todos os participantes que a busca da Pontuação alcança — de todas as páginas.
+ * É esta lista que a caixinha do cabeçalho seleciona, não só o que está na tela.
+ */
+function listaPontuacaoFiltrada() {
   const termo = normalizarTexto($("busca-pontuacao").value.trim());
   // Ordem de cadastro com o mais recente no topo — a planilha devolve na ordem
   // em que as linhas foram criadas.
-  const todos = [...cacheParticipantes].reverse()
+  return [...cacheParticipantes].reverse()
     .filter(p => !termo || normalizarTexto(p.nome).includes(termo));
+}
 
-  // Com centenas de participantes, desenhar a tabela inteira trava o celular.
-  // Mostra-se um bloco por vez; a busca alcança quem estiver fora dele.
-  const LIMITE = 150;
-  const lista = todos.slice(0, LIMITE);
-  $("aviso-limite-pontuacao").innerHTML = todos.length > LIMITE
-    ? `Mostrando ${LIMITE} de ${todos.length} participantes. Use a busca para encontrar alguém específico.`
-    : "";
+function renderizarPontuacao() {
+  const termo = normalizarTexto($("busca-pontuacao").value.trim());
+  const todos = listaPontuacaoFiltrada();
+
+  const totalPaginas = Math.max(1, Math.ceil(todos.length / POR_PAGINA));
+  if (paginaPontuacao > totalPaginas) paginaPontuacao = totalPaginas;
+  const inicio = (paginaPontuacao - 1) * POR_PAGINA;
+  const lista = todos.slice(inicio, inicio + POR_PAGINA);
+
+  $("conta-pontuacao").textContent = faixaMostrada(inicio, lista.length, todos.length, !!termo);
 
   const tbody = $("tbody-pontuacao");
   tbody.innerHTML = lista.map(p => {
@@ -1061,6 +1133,10 @@ function renderizarPontuacao() {
       </tr>`;
   }).join("") || `<tr><td colspan="11" style="color:var(--muted); text-align:center">Nenhum participante encontrado.</td></tr>`;
 
+  renderizarPaginacao("paginacao-pontuacao", todos.length, paginaPontuacao, n => {
+    paginaPontuacao = n;
+    renderizarPontuacao();
+  });
   atualizarBarraSelecao();
 }
 
@@ -1072,10 +1148,16 @@ function atualizarBarraSelecao() {
   botao.textContent = total === 1 ? "🪪 Gerar 1 cartão selecionado" : `🪪 Gerar ${total} cartões selecionados`;
   $("btn-limpar-selecao").style.display = total ? "" : "none";
 
-  const visiveis = [...document.querySelectorAll(".marcar-cartao")];
+  // A caixinha do cabeçalho fala pela lista inteira (todas as páginas), não só
+  // pelas linhas visíveis — é o que a pessoa espera ao clicar em "selecionar todos".
+  const filtrados = listaPontuacaoFiltrada();
+  const marcados = filtrados.reduce((n, p) => n + (selecionadosCartao.has(p.id) ? 1 : 0), 0);
   const marcarTodos = $("marcar-todos");
-  marcarTodos.checked = visiveis.length > 0 && visiveis.every(c => c.checked);
-  marcarTodos.indeterminate = !marcarTodos.checked && visiveis.some(c => c.checked);
+  marcarTodos.checked = filtrados.length > 0 && marcados === filtrados.length;
+  marcarTodos.indeterminate = marcados > 0 && marcados < filtrados.length;
+  marcarTodos.title = marcarTodos.checked
+    ? `Desmarcar os ${filtrados.length} participantes`
+    : `Selecionar todos os ${filtrados.length} participantes da lista`;
 }
 
 function abrirModalPontos(id, tipo) {
@@ -2034,7 +2116,7 @@ $("busca-rua").addEventListener("input", () => {
   dadosRuasCache = dadosRuas();
   graficoBarras($("gr-ruas"), dadosRuasCache.grafico, "Nenhuma rua encontrada com esse nome.");
 });
-$("busca-pontuacao").addEventListener("input", renderizarPontuacao);
+$("busca-pontuacao").addEventListener("input", () => { paginaPontuacao = 1; renderizarPontuacao(); });
 $("btn-atualizar-pontos").addEventListener("click", async () => {
   const b = $("btn-atualizar-pontos");
   b.disabled = true;
@@ -2061,12 +2143,10 @@ $("tbody-pontuacao").addEventListener("change", e => {
 });
 $("marcar-todos").addEventListener("change", () => {
   const marcar = $("marcar-todos").checked;
-  document.querySelectorAll(".marcar-cartao").forEach(c => {
-    c.checked = marcar;
-    if (marcar) selecionadosCartao.add(c.dataset.id); else selecionadosCartao.delete(c.dataset.id);
-    c.closest("tr").classList.toggle("linha-marcada", marcar);
+  listaPontuacaoFiltrada().forEach(p => {
+    if (marcar) selecionadosCartao.add(p.id); else selecionadosCartao.delete(p.id);
   });
-  atualizarBarraSelecao();
+  renderizarPontuacao();
 });
 $("btn-cartoes-selecionados").addEventListener("click", gerarCartoesSelecionados);
 $("btn-limpar-selecao").addEventListener("click", () => {
@@ -2116,7 +2196,7 @@ $("tbody-cadastro").addEventListener("click", e => {
   if (btn.dataset.acao === "excluir") deletarCadastro(btn.dataset.id);
 });
 
-$("busca-cadastro").addEventListener("input", renderizarTabelaCadastro);
+$("busca-cadastro").addEventListener("input", () => { paginaCadastro = 1; renderizarTabelaCadastro(); });
 
 // --- Gráficos ---
 $("btn-numeros").addEventListener("click", () => {
