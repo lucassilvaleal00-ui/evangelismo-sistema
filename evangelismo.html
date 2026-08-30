@@ -13,19 +13,23 @@
   * { box-sizing: border-box; }
   body { margin: 0; font-family: "Segoe UI", system-ui, -apple-system, sans-serif; background: var(--paper); color: var(--ink); min-height: 100vh; }
   .wrap { max-width: 960px; margin: 0 auto; padding: 32px 20px 80px; }
-  .center-screen { max-width: 420px; margin: 15vh auto; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 32px; text-align: center; }
+  .center-screen { max-width: 440px; margin: 12vh auto; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 32px; text-align: center; }
   .eyebrow { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 4px; }
   h1 { font-size: 1.4rem; margin: 0 0 6px; }
   p.sub { color: var(--muted); font-size: 0.88rem; }
   button { font-family: inherit; cursor: pointer; border: none; border-radius: 8px; padding: 10px 16px; font-size: 0.9rem; font-weight: 600; }
+  button:disabled { opacity: 0.55; cursor: default; }
   .btn-primary { background: var(--accent); color: white; }
-  .btn-primary:hover { background: #2e4a3c; }
+  .btn-primary:hover:not(:disabled) { background: #2e4a3c; }
   .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
   .btn-sm { padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; }
   input, select { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 0.9rem; margin-bottom: 12px; font-family: inherit; background: white; }
   label { display: block; font-size: 0.75rem; color: var(--muted); margin-bottom: 4px; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 22px; margin-bottom: 20px; }
   .card h2 { font-size: 1rem; margin: 0 0 16px; }
+  .card-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  .card-head h2 { margin: 0; }
+  .card-head .btn-sm { margin-left: auto; }
   .tabs { display: flex; gap: 6px; margin-bottom: 22px; flex-wrap: wrap; }
   .tab-btn { background: var(--card); border: 1px solid var(--line); color: var(--muted); }
   .tab-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
@@ -37,12 +41,10 @@
   th { text-align: left; color: var(--muted); font-weight: 600; font-size: 0.72rem; text-transform: uppercase; padding: 8px 10px; border-bottom: 1px solid var(--line); }
   td { padding: 9px 10px; border-bottom: 1px solid var(--line); }
   .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
-  .street-group { margin-bottom: 18px; }
-  .street-group h3 { font-size: 0.85rem; margin: 0 0 6px; color: var(--accent); }
-  #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--ink); color: white; padding: 10px 18px; border-radius: 8px; font-size: 0.85rem; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+  #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--ink); color: white; padding: 10px 18px; border-radius: 8px; font-size: 0.85rem; opacity: 0; pointer-events: none; transition: opacity 0.25s; max-width: 90vw; text-align: center; z-index: 50; }
   #toast.show { opacity: 1; }
-  #sorteio-resultado { font-size: 1.4rem; font-weight: 700; color: var(--accent); margin-top: 14px; min-height: 1.8rem; }
 
+  .aviso { background: var(--warn-soft); border: 1px solid var(--warn); color: var(--warn); border-radius: 10px; padding: 12px 16px; font-size: 0.85rem; margin-bottom: 18px; }
   .campo-check { display: flex; align-items: center; gap: 6px; margin: -6px 0 12px; font-size: 0.8rem; color: var(--muted); }
   .campo-check input[type="checkbox"] { width: auto; margin: 0; }
   input:disabled { background: #f2f0ea; color: var(--muted); }
@@ -53,23 +55,16 @@
   .badge-edicao button { background: transparent; border: none; color: var(--accent); text-decoration: underline; cursor: pointer; font-size: 0.8rem; padding: 0; }
   #busca-presenca { margin-bottom: 14px; }
   .lista-presenca { display: flex; flex-direction: column; gap: 4px; max-height: 320px; overflow-y: auto; }
-  .item-presenca { text-align: left; background: white; border: 1px solid var(--line); padding: 10px 12px; border-radius: 8px; font-size: 0.88rem; }
+  .item-presenca { text-align: left; background: white; border: 1px solid var(--line); padding: 10px 12px; border-radius: 8px; font-size: 0.88rem; width: 100%; font-weight: 500; }
   .item-presenca:hover { border-color: var(--accent); }
   .item-presenca.selecionado { border-color: var(--accent); background: var(--accent-soft); }
   #painel-confirmar-presenca { margin-top: 16px; padding: 16px; border: 1px dashed var(--line); border-radius: 10px; display: none; }
   #painel-confirmar-presenca.show { display: block; }
   .chips { display: flex; flex-wrap: wrap; gap: 8px; }
   .chip { background: var(--accent-soft); color: var(--accent); padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
-  .painel-sorteio {
-    background: var(--accent-soft);
-    border: 2px solid var(--accent);
-    border-radius: 14px;
-    text-align: center;
-    padding: 28px 16px;
-    margin: 16px 0;
-  }
+  .painel-sorteio { background: var(--accent-soft); border: 2px solid var(--accent); border-radius: 14px; text-align: center; padding: 28px 16px; margin: 16px 0; }
   #sorteio-num-animacao { font-size: 3.2rem; font-weight: 800; color: var(--accent); min-height: 64px; }
-  #sorteio-nome-animacao { font-size: 1.9rem; font-weight: 800; color: var(--accent); min-height: 48px; }
+  #sorteio-nome-animacao { font-size: 1.9rem; font-weight: 800; color: var(--accent); min-height: 48px; word-break: break-word; }
 
   .dir-street-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 16px; background: var(--accent-soft); border-radius: 10px 10px 0 0; }
   .dir-street-bar h3 { font-family: inherit; font-size: 1rem; margin: 0; color: var(--accent); }
@@ -80,6 +75,20 @@
   tr.dir-novato { background: var(--warn-soft) !important; }
   tr.dir-novato td { color: var(--warn); }
   .dir-badge-novo { display: inline-block; margin-left: 6px; font-size: 0.65rem; text-transform: uppercase; background: var(--warn); color: white; border-radius: 20px; padding: 1px 8px; vertical-align: middle; }
+
+  /* ---- Celular: tabelas viram cartões (usa os data-label de cada célula) ---- */
+  @media (max-width: 720px) {
+    .wrap { padding: 20px 14px 70px; }
+    .dir-table-wrap { overflow-x: visible; border: none; }
+    table thead { display: none; }
+    table tr { display: block; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 10px; background: white; padding: 4px 0; }
+    tr.dir-novato { border-color: var(--warn); }
+    table td { display: flex; justify-content: space-between; align-items: baseline; gap: 14px; border: none; padding: 5px 12px; text-align: right; }
+    table td[data-label]::before { content: attr(data-label); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); font-weight: 700; text-align: left; flex: 0 0 auto; }
+    table td.celula-acoes { justify-content: flex-end; padding-top: 8px; }
+    table td:empty { display: none; }
+    .dir-wa-btn { margin-left: 0; width: 100%; justify-content: center; }
+  }
 </style>
 </head>
 <body>
@@ -87,7 +96,7 @@
 <div id="tela-invalida" class="center-screen" style="display:none">
   <div class="eyebrow">Acesso</div>
   <h1>Link inválido ou expirado</h1>
-  <p class="sub">Fale com quem te enviou este link para gerar um novo acesso.</p>
+  <p class="sub" id="texto-invalido">Fale com quem te enviou este link para gerar um novo acesso.</p>
 </div>
 
 <div id="tela-carregando" class="center-screen">
@@ -100,7 +109,15 @@
   <p class="sub">Cole aqui a URL do Web App do Apps Script gerada na planilha (termina em <code>/exec</code>). Se ainda não configurou, siga o passo a passo que você recebeu.</p>
   <label for="input-sheet-url">URL do Web App</label>
   <input id="input-sheet-url" type="text" placeholder="https://script.google.com/macros/s/.../exec" />
-  <button class="btn-primary" style="width:100%" onclick="conectarPlanilha()">Conectar</button>
+  <button class="btn-primary" style="width:100%" id="btn-conectar">Conectar</button>
+  <p class="sub" id="erro-conexao" style="color:var(--warn); min-height:1em"></p>
+</div>
+
+<div id="tela-erro" class="center-screen" style="display:none">
+  <div class="eyebrow">Ops</div>
+  <h1>Não consegui abrir seus dados</h1>
+  <p class="sub" id="texto-erro"></p>
+  <button class="btn-primary" style="width:100%" id="btn-tentar-de-novo">Tentar de novo</button>
 </div>
 
 <div id="app-screen" style="display:none">
@@ -110,11 +127,17 @@
       <h1 id="titulo-usuario">Painel</h1>
     </header>
 
+    <div id="aviso-versao" class="aviso" style="display:none">
+      O código da sua planilha está desatualizado. Abra a planilha, vá em
+      <strong>Extensões &gt; Apps Script</strong>, cole a versão nova do código e depois em
+      <strong>Implantar &gt; Gerenciar implantações &gt; Nova versão</strong>.
+    </div>
+
     <div class="tabs">
-      <button class="tab-btn active" data-tab="cadastro" onclick="trocarAba('cadastro')">📋 Cadastro</button>
-      <button class="tab-btn" data-tab="presenca" onclick="trocarAba('presenca')">✅ Registro de Presença</button>
-      <button class="tab-btn" data-tab="sorteio" onclick="trocarAba('sorteio')">🎲 Sorteio</button>
-      <button class="tab-btn" data-tab="diretorio" onclick="trocarAba('diretorio')">Diretório de ruas</button>
+      <button class="tab-btn active" data-tab="cadastro">📋 Cadastro</button>
+      <button class="tab-btn" data-tab="presenca">✅ Registro de Presença</button>
+      <button class="tab-btn" data-tab="sorteio">🎲 Sorteio</button>
+      <button class="tab-btn" data-tab="diretorio">🗺️ Diretório de ruas</button>
     </div>
 
     <!-- CADASTRO -->
@@ -123,7 +146,7 @@
         <h2>📋 Cadastrar participante</h2>
         <div id="badge-edicao" class="badge-edicao" style="display:none">
           Editando cadastro de <strong id="badge-edicao-nome"></strong>
-          <button onclick="cancelarEdicaoCadastro()">cancelar edição</button>
+          <button id="btn-cancelar-edicao">cancelar edição</button>
         </div>
         <div class="form-row">
           <div>
@@ -132,17 +155,17 @@
           </div>
           <div>
             <label>Telefone *</label>
-            <input id="c-telefone" inputmode="numeric" placeholder="Somente números" oninput="this.value=this.value.replace(/[^0-9]/g,'')" />
+            <input id="c-telefone" inputmode="numeric" placeholder="Somente números" />
             <div class="campo-check">
-              <input type="checkbox" id="c-sem-telefone" onchange="alternarCampo('c-telefone','c-sem-telefone')" />
+              <input type="checkbox" id="c-sem-telefone" data-alvo="c-telefone" />
               <label for="c-sem-telefone" style="margin:0">Não possui telefone</label>
             </div>
           </div>
           <div>
             <label>Idade *</label>
-            <input id="c-idade" inputmode="numeric" placeholder="Ex: 11" oninput="this.value=this.value.replace(/[^0-9]/g,'')" />
+            <input id="c-idade" inputmode="numeric" placeholder="Ex: 11" />
             <div class="campo-check">
-              <input type="checkbox" id="c-idade-nao-informada" onchange="alternarCampo('c-idade','c-idade-nao-informada')" />
+              <input type="checkbox" id="c-idade-nao-informada" data-alvo="c-idade" />
               <label for="c-idade-nao-informada" style="margin:0">Não quis informar</label>
             </div>
           </div>
@@ -162,7 +185,7 @@
             <label>Número</label>
             <input id="c-numero" placeholder="Ex: 123, Quadra 4 Lote 2..." />
             <div class="campo-check">
-              <input type="checkbox" id="c-sem-numero" onchange="alternarCampo('c-numero','c-sem-numero')" />
+              <input type="checkbox" id="c-sem-numero" data-alvo="c-numero" />
               <label for="c-sem-numero" style="margin:0">Sem número</label>
             </div>
           </div>
@@ -170,15 +193,19 @@
             <label>Ponto de referência</label>
             <input id="c-ponto-referencia" />
             <div class="campo-check">
-              <input type="checkbox" id="c-sem-referencia" onchange="alternarCampo('c-ponto-referencia','c-sem-referencia')" />
+              <input type="checkbox" id="c-sem-referencia" data-alvo="c-ponto-referencia" />
               <label for="c-sem-referencia" style="margin:0">Sem ponto de referência</label>
             </div>
           </div>
         </div>
-        <button class="btn-primary" id="btn-salvar-cadastro" onclick="salvarCadastro()">Salvar</button>
+        <button class="btn-primary" id="btn-salvar-cadastro">Salvar</button>
       </div>
+
       <div class="card">
-        <h2>Participantes cadastrados</h2>
+        <div class="card-head">
+          <h2>Participantes cadastrados</h2>
+          <button class="btn-ghost btn-sm" id="btn-atualizar-lista">↻ Atualizar</button>
+        </div>
         <table>
           <thead>
             <tr><th></th><th>Data</th><th>Nome</th><th>Telefone</th><th>Idade</th><th>Rua</th><th>Número</th><th>Bairro</th><th>Ponto de referência</th></tr>
@@ -194,12 +221,12 @@
         <h2>✅ Registro de Presença</h2>
         <p class="sub">Use isso apenas quando a pessoa já cadastrada estiver retornando. O cadastro em si já conta como a primeira presença.</p>
         <label for="busca-presenca">Buscar participante</label>
-        <input id="busca-presenca" type="text" placeholder="Digite o nome..." oninput="filtrarListaPresenca()" />
+        <input id="busca-presenca" type="text" placeholder="Digite o nome..." />
         <div class="lista-presenca" id="lista-presenca"></div>
         <div id="painel-confirmar-presenca">
           <p style="margin:0 0 10px">Registrar presença de <strong id="nome-selecionado-presenca"></strong>?</p>
-          <button class="btn-primary" onclick="confirmarPresenca()">Registrar presença</button>
-          <button class="btn-ghost" onclick="limparSelecaoPresenca()">Cancelar</button>
+          <button class="btn-primary" id="btn-confirmar-presenca">Registrar presença</button>
+          <button class="btn-ghost" id="btn-cancelar-presenca">Cancelar</button>
         </div>
       </div>
     </div>
@@ -207,39 +234,37 @@
     <!-- SORTEIO -->
     <div class="tab-panel" id="tab-sorteio">
       <div class="tabs" style="margin-bottom:16px">
-        <button class="subtab-btn active" id="subtab-btn-numero" onclick="trocarSubAbaSorteio('numero')">Sorteio por número</button>
-        <button class="subtab-btn" id="subtab-btn-nome" onclick="trocarSubAbaSorteio('nome')">Sorteio por nome</button>
+        <button class="subtab-btn active" id="subtab-btn-numero">Sorteio por número</button>
+        <button class="subtab-btn" id="subtab-btn-nome">Sorteio por nome</button>
       </div>
 
-      <!-- SORTEIO POR NÚMERO -->
       <div id="subtab-sorteio-numero">
         <div class="card">
           <h2>🎲 Sorteio por número</h2>
           <div class="form-row" style="max-width:420px">
-            <div><label>Número mínimo</label><input id="sorteio-num-min" inputmode="numeric" placeholder="Ex: 1" oninput="this.value=this.value.replace(/[^0-9]/g,'')" /></div>
-            <div><label>Número máximo</label><input id="sorteio-num-max" inputmode="numeric" placeholder="Ex: 100" oninput="this.value=this.value.replace(/[^0-9]/g,'')" /></div>
+            <div><label>Número mínimo</label><input id="sorteio-num-min" inputmode="numeric" placeholder="Ex: 1" /></div>
+            <div><label>Número máximo</label><input id="sorteio-num-max" inputmode="numeric" placeholder="Ex: 100" /></div>
           </div>
           <div id="sorteio-num-animacao" class="painel-sorteio">—</div>
           <div style="display:flex; gap:10px; flex-wrap:wrap">
-            <button class="btn-primary" id="btn-sortear-numero" onclick="sortearNumero()">Sortear número</button>
-            <button class="btn-ghost" onclick="reiniciarSorteioNumero()">Reiniciar sorteio</button>
+            <button class="btn-primary" id="btn-sortear-numero">Sortear número</button>
+            <button class="btn-ghost" id="btn-reiniciar-numero">Reiniciar sorteio</button>
           </div>
-          <h2 style="margin-top:22px">Números já sorteados</h2>
+          <h2 style="margin-top:22px">Números já sorteados hoje</h2>
           <div class="chips" id="lista-numeros-sorteados"><span style="color:var(--muted); font-size:0.85rem">Nenhum número sorteado ainda.</span></div>
         </div>
       </div>
 
-      <!-- SORTEIO POR NOME -->
       <div id="subtab-sorteio-nome" style="display:none">
         <div class="card">
           <h2>🎲 Sorteio por nome</h2>
           <p class="sub" id="sorteio-nome-elegiveis-info">Concorrem apenas os participantes com presença registrada hoje.</p>
           <div id="sorteio-nome-animacao" class="painel-sorteio">—</div>
           <div style="display:flex; gap:10px; flex-wrap:wrap">
-            <button class="btn-primary" id="btn-sortear-nome" onclick="sortearNome()">Sortear nome</button>
-            <button class="btn-ghost" onclick="reiniciarSorteioNome()">Reiniciar sorteio</button>
+            <button class="btn-primary" id="btn-sortear-nome">Sortear nome</button>
+            <button class="btn-ghost" id="btn-reiniciar-nome">Reiniciar sorteio</button>
           </div>
-          <h2 style="margin-top:22px">Ganhadores</h2>
+          <h2 style="margin-top:22px">Ganhadores de hoje</h2>
           <div class="chips" id="lista-nomes-sorteados"><span style="color:var(--muted); font-size:0.85rem">Nenhum ganhador ainda.</span></div>
         </div>
       </div>
@@ -249,9 +274,9 @@
     <div class="tab-panel" id="tab-diretorio">
       <div class="card">
         <h2>🗺️ Diretório por rua</h2>
-        <p class="sub"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:var(--warn-soft);border:1px solid var(--warn);vertical-align:middle;margin-right:4px"></span>Em destaque: cadastros feitos na data mais recente encontrada (novatos)</p>
+        <p class="sub" id="legenda-novatos"></p>
         <label for="busca-diretorio">Buscar por nome ou telefone</label>
-        <input id="busca-diretorio" type="text" placeholder="Digite para filtrar..." oninput="montarDiretorio()" />
+        <input id="busca-diretorio" type="text" placeholder="Digite para filtrar..." />
         <div id="diretorio-lista"></div>
       </div>
     </div>
@@ -261,557 +286,779 @@
 <div id="toast"></div>
 
 <script>
-  // ==== CONFIGURAÇÃO ====
-  const SUPABASE_URL = "https://jmogaclwihvsouqixozo.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imptb2dhY2x3aWh2c291cWl4b3pvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyNTk5MzIsImV4cCI6MjEwMjgzNTkzMn0.kzvlfUAzRrEeb2UGlEViCOVh0vIMuHVkR_EzUSjn87U";
-  // =======================
+"use strict";
 
-  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  let tokenAtual = null;
-  let webAppUrl = null;
-  let cacheParticipantes = [];
-  let linhaEmEdicao = null;
-  let participanteSelecionadoPresenca = null;
-  let cachePresencasHoje = [];
+// ==== CONFIGURAÇÃO ====
+const SUPABASE_URL = "https://jmogaclwihvsouqixozo.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imptb2dhY2x3aWh2c291cWl4b3pvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyNTk5MzIsImV4cCI6MjEwMjgzNTkzMn0.kzvlfUAzRrEeb2UGlEViCOVh0vIMuHVkR_EzUSjn87U";
+const VERSAO_BACKEND_ESPERADA = 2;
+// =======================
 
-  function showToast(msg) {
-    const t = document.getElementById("toast");
-    t.textContent = msg;
-    t.classList.add("show");
-    setTimeout(() => t.classList.remove("show"), 2200);
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false } });
+
+let tokenAtual = null;
+let webAppUrl = null;
+let cacheParticipantes = [];
+let idEmEdicao = null;
+let idSelecionadoPresenca = null;
+let presencasHojeIds = new Set();
+let presencasHojeNomes = new Set();
+
+const SEM_TELEFONE = "Não possui telefone";
+const IDADE_NAO_INFORMADA = "Não quis informar";
+const SEM_NUMERO = "Sem número";
+const SEM_REFERENCIA = "Sem ponto de referência";
+
+// ---------------------------------------------------------------------------
+// Utilidades
+// ---------------------------------------------------------------------------
+
+/** Escapa texto vindo da planilha antes de jogar no HTML.
+ *  Sem isso, um nome com aspas ou com "<" quebrava (ou sequestrava) a página. */
+function esc(valor) {
+  return String(valor === null || valor === undefined ? "" : valor)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function $(id) { return document.getElementById(id); }
+
+let toastTimer = null;
+function showToast(msg) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 3200);
+}
+
+function somenteNumeros(el) {
+  el.addEventListener("input", () => { el.value = el.value.replace(/[^0-9]/g, ""); });
+}
+
+function capitalizarNome(txt) {
+  return txt.trim().split(/\s+/).map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(" ");
+}
+
+function hojeFormatado() {
+  return new Date().toLocaleDateString("pt-BR");
+}
+
+function normalizarTexto(txt) {
+  return (txt || "").toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+function converterDataBr(str) {
+  if (!str) return null;
+  const partes = String(str).split("/").map(Number);
+  const [d, m, y] = partes;
+  if (!d || !m || !y) return null;
+  const dt = new Date(y, m - 1, d);
+  return isNaN(dt.getTime()) ? null : dt;
+}
+
+function randomInt(min, max) {
+  const faixa = max - min + 1;
+  const maxUint32 = 4294967295;
+  const limite = maxUint32 - ((maxUint32 + 1) % faixa);
+  let x;
+  do { x = crypto.getRandomValues(new Uint32Array(1))[0]; } while (x > limite);
+  return min + (x % faixa);
+}
+
+// ---------------------------------------------------------------------------
+// Acesso
+// ---------------------------------------------------------------------------
+
+function pegarToken() {
+  return new URLSearchParams(window.location.search).get("token");
+}
+
+async function validarAcesso() {
+  const token = pegarToken();
+  if (!token) { mostrarInvalido(); return; }
+  tokenAtual = token;
+
+  // Antes isso lia uma view aberta, que devolvia a base inteira para quem
+  // pedisse. Agora é uma função que só responde pelo token exato.
+  const { data, error } = await sb.rpc("validar_token", { p_token: token });
+
+  if (error) {
+    mostrarInvalido("Não consegui falar com o servidor de acesso. Verifique sua internet e recarregue a página.");
+    return;
   }
 
-  function pegarToken() {
-    const params = new URLSearchParams(window.location.search);
-    return params.get("token");
+  const registro = Array.isArray(data) ? data[0] : data;
+  if (!registro) { mostrarInvalido(); return; }
+  if (registro.status !== "ativo") { mostrarInvalido("Este acesso está inativo. Fale com quem te enviou o link."); return; }
+  if (new Date(registro.data_expiracao) < new Date()) { mostrarInvalido("O prazo deste acesso terminou. Peça a renovação a quem te enviou o link."); return; }
+
+  $("tela-carregando").style.display = "none";
+  if (registro.nome) $("titulo-usuario").textContent = "Painel de " + registro.nome;
+
+  if (registro.webapp_url) {
+    webAppUrl = registro.webapp_url;
+    await abrirPainel();
+  } else {
+    $("tela-planilha").style.display = "block";
+  }
+}
+
+function mostrarInvalido(texto) {
+  $("tela-carregando").style.display = "none";
+  $("tela-planilha").style.display = "none";
+  $("tela-erro").style.display = "none";
+  $("app-screen").style.display = "none";
+  if (texto) $("texto-invalido").textContent = texto;
+  $("tela-invalida").style.display = "block";
+}
+
+function mostrarErro(texto) {
+  $("tela-carregando").style.display = "none";
+  $("app-screen").style.display = "none";
+  $("texto-erro").textContent = texto;
+  $("tela-erro").style.display = "block";
+}
+
+async function appsScriptFetch(action, extra = {}) {
+  // Sem cabeçalho Content-Type de propósito: mantém a requisição "simples" e
+  // evita o preflight de CORS, que o Apps Script não responde.
+  const res = await fetch(webAppUrl, {
+    method: "POST",
+    body: JSON.stringify({ action, token: tokenAtual, ...extra })
+  });
+  let json;
+  try {
+    json = await res.json();
+  } catch (e) {
+    throw new Error("A planilha respondeu algo inesperado. Confira se o Web App foi implantado com acesso 'Qualquer pessoa'.");
+  }
+  if (typeof json.versao === "number" && json.versao < VERSAO_BACKEND_ESPERADA) {
+    $("aviso-versao").style.display = "block";
+  }
+  if (!json.ok) throw new Error(json.erro || "Erro desconhecido no backend da planilha.");
+  return json.dados;
+}
+
+async function conectarPlanilha() {
+  const url = $("input-sheet-url").value.trim();
+  const erroBox = $("erro-conexao");
+  erroBox.textContent = "";
+
+  if (!/^https:\/\/script\.google\.com\/.+\/exec$/.test(url)) {
+    erroBox.textContent = "A URL precisa começar com https://script.google.com/ e terminar em /exec.";
+    return;
   }
 
-  async function validarAcesso() {
-    const token = pegarToken();
-    if (!token) { mostrarInvalido(); return; }
-    tokenAtual = token;
+  const botao = $("btn-conectar");
+  botao.disabled = true;
+  botao.textContent = "Conectando...";
+  webAppUrl = url;
 
-    const { data, error } = await sb
-      .from("usuarios_evangelismo_validacao")
-      .select("*")
-      .eq("token", token)
-      .maybeSingle();
-
-    if (error || !data) { mostrarInvalido(); return; }
-    if (data.status !== "ativo" || new Date(data.data_expiracao) < new Date()) { mostrarInvalido(); return; }
-
-    document.getElementById("tela-carregando").style.display = "none";
-
-    if (data.webapp_url) {
-      // Esse link já foi conectado antes (por você ou por outra pessoa da equipe) — entra direto.
-      webAppUrl = data.webapp_url;
-      await abrirPainel();
-    } else {
-      document.getElementById("tela-planilha").style.display = "block";
-    }
-  }
-
-  function mostrarInvalido() {
-    document.getElementById("tela-carregando").style.display = "none";
-    document.getElementById("tela-invalida").style.display = "block";
-  }
-
-  async function appsScriptFetch(action, extra = {}) {
-    const res = await fetch(webAppUrl, {
-      method: "POST",
-      body: JSON.stringify({ action, ...extra })
-    });
-    const json = await res.json();
-    if (!json.ok) throw new Error(json.erro || "Erro desconhecido no backend da planilha.");
-    return json.dados;
-  }
-
-  async function conectarPlanilha() {
-    const url = document.getElementById("input-sheet-url").value.trim();
-    if (!url.startsWith("https://script.google.com/")) {
-      showToast("Cole a URL do Web App do Apps Script (começa com https://script.google.com/...).");
-      return;
-    }
-    webAppUrl = url;
-    try {
-      await appsScriptFetch("setup");
-      const { error } = await sb.rpc("vincular_planilha", { p_token: tokenAtual, p_url: url });
-      if (error) { showToast("Planilha conectada, mas não consegui salvar o vínculo: " + error.message); }
-      showToast("Planilha conectada com sucesso.");
-      document.getElementById("tela-planilha").style.display = "none";
-      await abrirPainel();
-    } catch (e) {
+  try {
+    await appsScriptFetch("setup");
+    const { error } = await sb.rpc("vincular_planilha", { p_token: tokenAtual, p_url: url });
+    if (error) {
       webAppUrl = null;
-      showToast("Não foi possível conectar. Confira se a URL está correta e se o Web App foi implantado com acesso 'Qualquer pessoa'.");
-      console.error(e);
+      erroBox.textContent = "A planilha respondeu, mas não consegui salvar o vínculo: " + error.message;
+      return;
     }
+    showToast("Planilha conectada com sucesso.");
+    $("tela-planilha").style.display = "none";
+    await abrirPainel();
+  } catch (e) {
+    webAppUrl = null;
+    erroBox.textContent = e.message || "Não foi possível conectar. Confira a URL e a implantação do Web App.";
+    console.error(e);
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "Conectar";
   }
+}
 
-  async function abrirPainel() {
-    document.getElementById("app-screen").style.display = "block";
-    document.getElementById("titulo-usuario").textContent = "Painel de evangelismo";
+async function abrirPainel() {
+  // Antes, se a planilha falhasse aqui, a promessa estourava sem tratamento e
+  // o usuário ficava olhando uma tela em branco, sem nenhuma explicação.
+  try {
     await carregarParticipantes();
+    $("tela-erro").style.display = "none";
+    $("app-screen").style.display = "block";
+  } catch (e) {
+    console.error(e);
+    mostrarErro(e.message || "Não consegui ler a planilha. Confira sua conexão e a implantação do Web App.");
   }
+}
 
-  function trocarAba(nome) {
-    document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === nome));
-    document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
-    document.getElementById(`tab-${nome}`).classList.add("active");
-    if (nome === "presenca") montarListaPresenca();
-    if (nome === "diretorio") montarDiretorio();
-    if (nome === "sorteio" && document.getElementById("subtab-btn-nome").classList.contains("active")) carregarElegiveisSorteioNome();
+// ---------------------------------------------------------------------------
+// Abas
+// ---------------------------------------------------------------------------
+
+function trocarAba(nome) {
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === nome));
+  document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+  $("tab-" + nome).classList.add("active");
+  if (nome === "presenca") montarListaPresenca();
+  if (nome === "diretorio") montarDiretorio();
+  if (nome === "sorteio") {
+    carregarEstadoSorteio();
+    if ($("subtab-btn-nome").classList.contains("active")) carregarElegiveisSorteioNome();
   }
+}
 
-  const SEM_TELEFONE = "Não possui telefone";
-  const IDADE_NAO_INFORMADA = "Não quis informar";
-  const SEM_NUMERO = "Sem número";
-  const SEM_REFERENCIA = "Sem ponto de referência";
+// ---------------------------------------------------------------------------
+// Cadastro
+// ---------------------------------------------------------------------------
 
-  function capitalizarNome(txt) {
-    return txt.trim().split(/\s+/).map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join(" ");
-  }
+function alternarCampo(idCampo, idCheckbox) {
+  const campo = $(idCampo);
+  const marcado = $(idCheckbox).checked;
+  campo.disabled = marcado;
+  if (marcado) campo.value = "";
+}
 
-  function alternarCampo(idCampo, idCheckbox) {
-    const campo = document.getElementById(idCampo);
-    const marcado = document.getElementById(idCheckbox).checked;
-    campo.disabled = marcado;
-    if (marcado) campo.value = "";
-  }
+async function carregarParticipantes() {
+  cacheParticipantes = await appsScriptFetch("listarCadastros");
+  renderizarTabelaCadastro();
+  atualizarListasAutocomplete();
+}
 
-  function hojeFormatado() {
-    return new Date().toLocaleDateString("pt-BR");
-  }
+function atualizarListasAutocomplete() {
+  const ruas = [...new Set(cacheParticipantes.map(p => p.rua).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  const bairros = [...new Set(cacheParticipantes.map(p => p.bairro).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  $("lista-ruas").innerHTML = ruas.map(r => `<option value="${esc(r)}"></option>`).join("");
+  $("lista-bairros").innerHTML = bairros.map(b => `<option value="${esc(b)}"></option>`).join("");
+}
 
-  async function carregarParticipantes() {
-    cacheParticipantes = await appsScriptFetch("listarCadastros");
-    renderizarTabelaCadastro();
-    atualizarListasAutocomplete();
-  }
+function renderizarTabelaCadastro() {
+  const tbody = $("tbody-cadastro");
+  const linhas = [...cacheParticipantes].reverse();
+  tbody.innerHTML = linhas.map(p => `
+    <tr>
+      <td class="celula-acoes">
+        <div class="icones-linha">
+          <button class="icon-btn" title="Editar" data-acao="editar" data-id="${esc(p.id)}">✏️</button>
+          <button class="icon-btn" title="Excluir" data-acao="excluir" data-id="${esc(p.id)}">🗑️</button>
+        </div>
+      </td>
+      <td data-label="Data">${esc(p.dataCadastro)}</td>
+      <td data-label="Nome">${esc(p.nome)}</td>
+      <td data-label="Telefone">${esc(p.telefone)}</td>
+      <td data-label="Idade">${esc(p.idade)}</td>
+      <td data-label="Rua">${esc(p.rua)}</td>
+      <td data-label="Número">${esc(p.numero)}</td>
+      <td data-label="Bairro">${esc(p.bairro)}</td>
+      <td data-label="Ponto de referência">${esc(p.pontoReferencia)}</td>
+    </tr>
+  `).join("") || `<tr><td colspan="9" style="color:var(--muted); text-align:center">Nenhum participante ainda.</td></tr>`;
+}
 
-  function atualizarListasAutocomplete() {
-    const ruas = [...new Set(cacheParticipantes.map(p => p.rua).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
-    const bairros = [...new Set(cacheParticipantes.map(p => p.bairro).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-BR"));
-    document.getElementById("lista-ruas").innerHTML = ruas.map(r => `<option value="${r}"></option>`).join("");
-    document.getElementById("lista-bairros").innerHTML = bairros.map(b => `<option value="${b}"></option>`).join("");
-  }
+function lerCampoComCheckbox(idCampo, idCheckbox, valorSeMarcado) {
+  return $(idCheckbox).checked ? valorSeMarcado : $(idCampo).value.trim();
+}
 
-  function renderizarTabelaCadastro() {
-    const tbody = document.getElementById("tbody-cadastro");
-    const linhas = [...cacheParticipantes].reverse();
-    tbody.innerHTML = linhas.map(p => `
-      <tr>
-        <td>
-          <div class="icones-linha">
-            <button class="icon-btn" title="Editar" onclick="carregarParaEdicao(${p.linha})">✏️</button>
-            <button class="icon-btn" title="Excluir" onclick="deletarCadastro(${p.linha}, '${p.nome.replace(/'/g, "\\'")}')">🗑️</button>
-          </div>
-        </td>
-        <td>${p.dataCadastro}</td>
-        <td>${p.nome}</td>
-        <td>${p.telefone}</td>
-        <td>${p.idade}</td>
-        <td>${p.rua}</td>
-        <td>${p.numero}</td>
-        <td>${p.bairro}</td>
-        <td>${p.pontoReferencia}</td>
-      </tr>
-    `).join("") || `<tr><td colspan="9" style="color:var(--muted); text-align:center">Nenhum participante ainda.</td></tr>`;
-  }
+async function salvarCadastro() {
+  const nomeDigitado = $("c-nome").value.trim();
+  if (!nomeDigitado) { showToast("O nome é obrigatório."); return; }
+  const nome = capitalizarNome(nomeDigitado);
 
-  function lerCampoComCheckbox(idCampo, idCheckbox, valorSeMarcado) {
-    return document.getElementById(idCheckbox).checked ? valorSeMarcado : document.getElementById(idCampo).value.trim();
-  }
+  const telefone = lerCampoComCheckbox("c-telefone", "c-sem-telefone", SEM_TELEFONE);
+  if (!telefone) { showToast("Informe o telefone ou marque 'Não possui telefone'."); return; }
 
-  async function salvarCadastro() {
-    const nomeDigitado = document.getElementById("c-nome").value.trim();
-    if (!nomeDigitado) { showToast("O nome é obrigatório."); return; }
-    const nome = capitalizarNome(nomeDigitado);
+  const idade = lerCampoComCheckbox("c-idade", "c-idade-nao-informada", IDADE_NAO_INFORMADA);
+  if (!idade) { showToast("Informe a idade ou marque 'Não quis informar'."); return; }
 
-    const telefone = lerCampoComCheckbox("c-telefone", "c-sem-telefone", SEM_TELEFONE);
-    if (!telefone) { showToast("Informe o telefone ou marque 'Não possui telefone'."); return; }
+  const rua = $("c-rua").value.trim();
+  if (!rua) { showToast("A rua é obrigatória."); return; }
 
-    const idade = lerCampoComCheckbox("c-idade", "c-idade-nao-informada", IDADE_NAO_INFORMADA);
-    if (!idade) { showToast("Informe a idade ou marque 'Não quis informar'."); return; }
+  const bairro = $("c-bairro").value.trim();
+  const numero = lerCampoComCheckbox("c-numero", "c-sem-numero", SEM_NUMERO);
+  const pontoReferencia = lerCampoComCheckbox("c-ponto-referencia", "c-sem-referencia", SEM_REFERENCIA);
 
-    const rua = document.getElementById("c-rua").value.trim();
-    if (!rua) { showToast("A rua é obrigatória."); return; }
-
-    const bairro = document.getElementById("c-bairro").value.trim();
-    const numero = lerCampoComCheckbox("c-numero", "c-sem-numero", SEM_NUMERO);
-    const pontoReferencia = lerCampoComCheckbox("c-ponto-referencia", "c-sem-referencia", SEM_REFERENCIA);
-
-    const botao = document.getElementById("btn-salvar-cadastro");
-    botao.disabled = true;
-    try {
-      const dadosLinha = { nome, telefone, idade, rua, bairro, numero, pontoReferencia };
-      if (linhaEmEdicao) {
-        await appsScriptFetch("editarCadastro", { linha: linhaEmEdicao, dados: dadosLinha });
-        showToast(`${nome} foi atualizado com sucesso.`);
-      } else {
-        await appsScriptFetch("cadastrar", { dados: dadosLinha });
-        showToast(`${nome} foi salvo com sucesso.`);
-      }
-      limparFormularioCadastro();
-      await carregarParticipantes();
-    } catch (e) {
-      showToast("Erro ao salvar. Confira sua conexão e tente de novo.");
-      console.error(e);
-    } finally {
-      botao.disabled = false;
+  const botao = $("btn-salvar-cadastro");
+  botao.disabled = true;
+  try {
+    const dadosLinha = { nome, telefone, idade, rua, bairro, numero, pontoReferencia };
+    if (idEmEdicao) {
+      await appsScriptFetch("editarCadastro", { id: idEmEdicao, dados: dadosLinha });
+      showToast(`${nome} foi atualizado com sucesso.`);
+    } else {
+      await appsScriptFetch("cadastrar", { dados: dadosLinha });
+      showToast(`${nome} foi salvo com sucesso.`);
     }
-  }
-
-  function limparFormularioCadastro() {
-    ["c-nome", "c-telefone", "c-idade", "c-rua", "c-bairro", "c-numero", "c-ponto-referencia"].forEach(id => document.getElementById(id).value = "");
-    ["c-sem-telefone", "c-idade-nao-informada", "c-sem-numero", "c-sem-referencia"].forEach(id => document.getElementById(id).checked = false);
-    ["c-telefone", "c-idade", "c-numero", "c-ponto-referencia"].forEach(id => document.getElementById(id).disabled = false);
-    linhaEmEdicao = null;
-    document.getElementById("badge-edicao").style.display = "none";
-    document.getElementById("btn-salvar-cadastro").textContent = "Salvar";
-  }
-
-  function carregarParaEdicao(linhaNum) {
-    const p = cacheParticipantes.find(x => x.linha === linhaNum);
-    if (!p) return;
-    linhaEmEdicao = linhaNum;
-
-    document.getElementById("c-nome").value = p.nome;
-    document.getElementById("c-rua").value = p.rua;
-    document.getElementById("c-bairro").value = p.bairro;
-
-    const setComCheckbox = (valor, idCampo, idCheckbox, valorEspecial) => {
-      const marcado = valor === valorEspecial;
-      document.getElementById(idCheckbox).checked = marcado;
-      document.getElementById(idCampo).disabled = marcado;
-      document.getElementById(idCampo).value = marcado ? "" : valor;
-    };
-    setComCheckbox(p.telefone, "c-telefone", "c-sem-telefone", SEM_TELEFONE);
-    setComCheckbox(p.idade, "c-idade", "c-idade-nao-informada", IDADE_NAO_INFORMADA);
-    setComCheckbox(p.numero, "c-numero", "c-sem-numero", SEM_NUMERO);
-    setComCheckbox(p.pontoReferencia, "c-ponto-referencia", "c-sem-referencia", SEM_REFERENCIA);
-
-    document.getElementById("badge-edicao-nome").textContent = p.nome;
-    document.getElementById("badge-edicao").style.display = "inline-flex";
-    document.getElementById("btn-salvar-cadastro").textContent = "Salvar edição";
-    document.getElementById("tab-cadastro").scrollIntoView({ behavior: "smooth" });
-  }
-
-  function cancelarEdicaoCadastro() {
     limparFormularioCadastro();
+    await carregarParticipantes();
+  } catch (e) {
+    showToast(e.message || "Erro ao salvar. Confira sua conexão e tente de novo.");
+    console.error(e);
+  } finally {
+    botao.disabled = false;
+  }
+}
+
+function limparFormularioCadastro() {
+  ["c-nome", "c-telefone", "c-idade", "c-rua", "c-bairro", "c-numero", "c-ponto-referencia"].forEach(id => $(id).value = "");
+  ["c-sem-telefone", "c-idade-nao-informada", "c-sem-numero", "c-sem-referencia"].forEach(id => $(id).checked = false);
+  ["c-telefone", "c-idade", "c-numero", "c-ponto-referencia"].forEach(id => $(id).disabled = false);
+  idEmEdicao = null;
+  $("badge-edicao").style.display = "none";
+  $("btn-salvar-cadastro").textContent = "Salvar";
+}
+
+function carregarParaEdicao(id) {
+  const p = cacheParticipantes.find(x => x.id === id);
+  if (!p) { showToast("Esse cadastro não está mais na lista. Atualize a página."); return; }
+  idEmEdicao = id;
+
+  $("c-nome").value = p.nome;
+  $("c-rua").value = p.rua;
+  $("c-bairro").value = p.bairro;
+
+  const setComCheckbox = (valor, idCampo, idCheckbox, valorEspecial) => {
+    const marcado = valor === valorEspecial;
+    $(idCheckbox).checked = marcado;
+    $(idCampo).disabled = marcado;
+    $(idCampo).value = marcado ? "" : valor;
+  };
+  setComCheckbox(p.telefone, "c-telefone", "c-sem-telefone", SEM_TELEFONE);
+  setComCheckbox(p.idade, "c-idade", "c-idade-nao-informada", IDADE_NAO_INFORMADA);
+  setComCheckbox(p.numero, "c-numero", "c-sem-numero", SEM_NUMERO);
+  setComCheckbox(p.pontoReferencia, "c-ponto-referencia", "c-sem-referencia", SEM_REFERENCIA);
+
+  $("badge-edicao-nome").textContent = p.nome;
+  $("badge-edicao").style.display = "inline-flex";
+  $("btn-salvar-cadastro").textContent = "Salvar edição";
+  $("tab-cadastro").scrollIntoView({ behavior: "smooth" });
+}
+
+async function deletarCadastro(id) {
+  const p = cacheParticipantes.find(x => x.id === id);
+  if (!p) { showToast("Esse cadastro não está mais na lista."); return; }
+  if (!confirm(`Excluir o cadastro de "${p.nome}"? Isso remove a linha permanentemente da planilha.`)) return;
+  try {
+    // Excluir pelo ID, e não pelo número da linha: se outra pessoa apagou algo
+    // enquanto sua lista estava aberta, você não apaga a pessoa errada.
+    await appsScriptFetch("deletarCadastro", { id });
+    showToast(`Cadastro de ${p.nome} excluído.`);
+    if (idEmEdicao === id) limparFormularioCadastro();
+    await carregarParticipantes();
+  } catch (e) {
+    showToast(e.message || "Erro ao excluir.");
+    console.error(e);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Presença
+// ---------------------------------------------------------------------------
+
+async function carregarPresencasHoje() {
+  const res = await appsScriptFetch("listarPresencasHoje");
+  presencasHojeIds = new Set((res && res.ids) || []);
+  presencasHojeNomes = new Set((res && res.nomes) || []);
+}
+
+function jaPresenteHoje(p) {
+  return presencasHojeIds.has(p.id) || presencasHojeNomes.has(p.nome) || p.dataCadastro === hojeFormatado();
+}
+
+async function montarListaPresenca() {
+  $("busca-presenca").value = "";
+  limparSelecaoPresenca();
+  try {
+    await carregarPresencasHoje();
+  } catch (e) {
+    presencasHojeIds = new Set();
+    presencasHojeNomes = new Set();
+    showToast("Não consegui carregar as presenças de hoje.");
+  }
+  filtrarListaPresenca();
+}
+
+function filtrarListaPresenca() {
+  const termo = normalizarTexto($("busca-presenca").value.trim());
+  const ordenados = [...cacheParticipantes].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  const filtrados = termo ? ordenados.filter(p => normalizarTexto(p.nome).includes(termo)) : ordenados;
+
+  const container = $("lista-presenca");
+  container.innerHTML = filtrados.map(p => `
+    <button type="button" class="item-presenca ${idSelecionadoPresenca === p.id ? "selecionado" : ""}" data-id="${esc(p.id)}">
+      ${jaPresenteHoje(p) ? "✅ " : ""}${esc(p.nome)}${p.rua ? ` <span style="color:var(--muted)">— ${esc(p.rua)}</span>` : ""}
+    </button>
+  `).join("") || `<p style="color:var(--muted); font-size:0.85rem">Nenhum participante encontrado.</p>`;
+}
+
+function selecionarParticipantePresenca(id) {
+  const p = cacheParticipantes.find(x => x.id === id);
+  if (!p) return;
+  idSelecionadoPresenca = id;
+  filtrarListaPresenca();
+  $("nome-selecionado-presenca").textContent = p.nome;
+  $("painel-confirmar-presenca").classList.add("show");
+}
+
+function limparSelecaoPresenca() {
+  idSelecionadoPresenca = null;
+  $("painel-confirmar-presenca").classList.remove("show");
+  filtrarListaPresenca();
+}
+
+async function confirmarPresenca() {
+  const p = cacheParticipantes.find(x => x.id === idSelecionadoPresenca);
+  if (!p) return;
+
+  if (p.dataCadastro === hojeFormatado()) {
+    showToast(`${p.nome} foi cadastrado(a) hoje — a presença já está contabilizada automaticamente.`);
+    return;
+  }
+  if (presencasHojeIds.has(p.id)) {
+    showToast(`A presença de ${p.nome} já foi registrada hoje.`);
+    return;
   }
 
-  async function deletarCadastro(linhaNum, nome) {
-    if (!confirm(`Excluir o cadastro de "${nome}"? Isso remove a linha permanentemente da planilha.`)) return;
-    try {
-      await appsScriptFetch("deletarCadastro", { linha: linhaNum });
-      showToast(`Cadastro de ${nome} excluído.`);
-      if (linhaEmEdicao === linhaNum) limparFormularioCadastro();
-      await carregarParticipantes();
-    } catch (e) {
-      showToast("Erro ao excluir.");
-      console.error(e);
-    }
-  }
-
-  async function montarListaPresenca() {
-    document.getElementById("busca-presenca").value = "";
+  const botao = $("btn-confirmar-presenca");
+  botao.disabled = true;
+  try {
+    // Enviamos o ID junto com o nome: dois participantes homônimos deixam de
+    // ser confundidos na aba de presença.
+    const resultado = await appsScriptFetch("registrarPresenca", { id: p.id, nome: p.nome });
+    presencasHojeIds.add(p.id);
+    presencasHojeNomes.add(p.nome);
+    showToast(resultado && resultado.duplicado
+      ? `A presença de ${p.nome} já havia sido registrada hoje.`
+      : `Presença de ${p.nome} registrada.`);
     limparSelecaoPresenca();
-    try {
-      cachePresencasHoje = await appsScriptFetch("listarPresencasHoje");
-    } catch (e) {
-      cachePresencasHoje = [];
-    }
-    filtrarListaPresenca();
+  } catch (e) {
+    showToast(e.message || "Erro ao registrar presença.");
+    console.error(e);
+  } finally {
+    botao.disabled = false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Sorteio  (agora persistido na planilha)
+// ---------------------------------------------------------------------------
+
+let sorteioNumerosSorteados = new Set();
+let sorteioElegiveisNomes = [];
+let sorteioNomesSorteadosSet = new Set();
+
+function trocarSubAbaSorteio(tipo) {
+  $("subtab-btn-numero").classList.toggle("active", tipo === "numero");
+  $("subtab-btn-nome").classList.toggle("active", tipo === "nome");
+  $("subtab-sorteio-numero").style.display = tipo === "numero" ? "block" : "none";
+  $("subtab-sorteio-nome").style.display = tipo === "nome" ? "block" : "none";
+  if (tipo === "nome") carregarElegiveisSorteioNome();
+}
+
+/** Recupera da planilha o que já foi sorteado hoje. Antes isso vivia só na
+ *  memória do navegador: um refresh no meio do evento zerava tudo e um mesmo
+ *  ganhador podia sair duas vezes. */
+async function carregarEstadoSorteio() {
+  try {
+    const estado = await appsScriptFetch("listarSorteiosHoje");
+    sorteioNumerosSorteados = new Set((estado && estado.numeros) || []);
+    sorteioNomesSorteadosSet = new Set((estado && estado.participantes) || []);
+  } catch (e) {
+    console.error(e);
+    showToast("Não consegui recuperar o histórico de sorteio de hoje.");
+  }
+  renderizarNumerosSorteados();
+  renderizarNomesSorteados();
+}
+
+async function sortearNumero() {
+  const min = parseInt($("sorteio-num-min").value, 10);
+  const max = parseInt($("sorteio-num-max").value, 10);
+  if (isNaN(min) || isNaN(max) || min > max) { showToast("Informe um intervalo válido (mínimo menor ou igual ao máximo)."); return; }
+
+  const disponiveis = [];
+  for (let n = min; n <= max; n++) if (!sorteioNumerosSorteados.has(n)) disponiveis.push(n);
+  if (!disponiveis.length) {
+    showToast("Todos os números desse intervalo já foram sorteados. Reinicie o sorteio para continuar.");
+    return;
   }
 
-  function filtrarListaPresenca() {
-    const termo = document.getElementById("busca-presenca").value.trim().toLowerCase();
-    const ordenados = [...cacheParticipantes].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
-    const filtrados = termo ? ordenados.filter(p => p.nome.toLowerCase().includes(termo)) : ordenados;
+  const botao = $("btn-sortear-numero");
+  botao.disabled = true;
+  const numeroFinal = disponiveis[randomInt(0, disponiveis.length - 1)];
 
-    const container = document.getElementById("lista-presenca");
-    container.innerHTML = filtrados.map(p => `
-      <button type="button" class="item-presenca ${participanteSelecionadoPresenca === p.linha ? 'selecionado' : ''}"
-        onclick="selecionarParticipantePresenca(${p.linha})">
-        ${cachePresencasHoje.includes(p.nome) || p.dataCadastro === hojeFormatado() ? "✅ " : ""}${p.nome}${p.rua ? ` <span style="color:var(--muted)">— ${p.rua}</span>` : ""}
-      </button>
-    `).join("") || `<p style="color:var(--muted); font-size:0.85rem">Nenhum participante encontrado.</p>`;
+  // Grava e anima ao mesmo tempo; só revela depois de confirmar a gravação.
+  const gravacao = appsScriptFetch("registrarSorteio", { tipo: "numero", nome: "Número " + numeroFinal, idParticipante: "" });
+
+  const el = $("sorteio-num-animacao");
+  await animar(el, () => String(randomInt(min, max)));
+
+  try {
+    await gravacao;
+    sorteioNumerosSorteados.add(numeroFinal);
+    el.textContent = numeroFinal;
+    renderizarNumerosSorteados();
+  } catch (e) {
+    el.textContent = "—";
+    showToast("Não consegui gravar o sorteio na planilha. Nada foi sorteado — tente de novo.");
+    console.error(e);
+  } finally {
+    botao.disabled = false;
   }
+}
 
-  function selecionarParticipantePresenca(linhaNum) {
-    participanteSelecionadoPresenca = linhaNum;
-    filtrarListaPresenca();
-    const p = cacheParticipantes.find(x => x.linha === linhaNum);
-    document.getElementById("nome-selecionado-presenca").textContent = p.nome;
-    document.getElementById("painel-confirmar-presenca").classList.add("show");
-  }
-
-  function limparSelecaoPresenca() {
-    participanteSelecionadoPresenca = null;
-    document.getElementById("painel-confirmar-presenca").classList.remove("show");
-    filtrarListaPresenca();
-  }
-
-  async function confirmarPresenca() {
-    const p = cacheParticipantes.find(x => x.linha === participanteSelecionadoPresenca);
-    if (!p) return;
-    const hoje = hojeFormatado();
-
-    if (p.dataCadastro === hoje) {
-      showToast(`${p.nome} foi cadastrado(a) hoje — a presença já está contabilizada automaticamente.`);
-      return;
-    }
-    if (cachePresencasHoje.includes(p.nome)) {
-      showToast(`A presença de ${p.nome} já foi registrada hoje.`);
-      return;
-    }
-
-    const botao = document.querySelector('#painel-confirmar-presenca .btn-primary');
-    botao.disabled = true;
-    try {
-      const resultado = await appsScriptFetch("registrarPresenca", { nome: p.nome });
-      if (resultado.duplicado) {
-        showToast(`A presença de ${p.nome} já havia sido registrada hoje.`);
-        cachePresencasHoje.push(p.nome);
-        limparSelecaoPresenca();
-        return;
-      }
-      cachePresencasHoje.push(p.nome);
-      showToast(`Presença de ${p.nome} registrada.`);
-      limparSelecaoPresenca();
-    } catch (e) {
-      showToast("Erro ao registrar presença.");
-      console.error(e);
-    } finally {
-      botao.disabled = false;
-    }
-  }
-
-  // ---- Sorteio ----
-  function randomInt(min, max) {
-    // Inteiro aleatório uniforme entre min e max (inclusive), sem viés de módulo
-    const faixa = max - min + 1;
-    const maxUint32 = 4294967295;
-    const limite = maxUint32 - (maxUint32 % faixa);
-    let x;
-    do { x = crypto.getRandomValues(new Uint32Array(1))[0]; } while (x >= limite);
-    return min + (x % faixa);
-  }
-
-  let sorteioNumerosSorteados = new Set();
-  let sorteioElegiveisNomes = [];
-  let sorteioNomesSorteadosSet = new Set();
-
-  function trocarSubAbaSorteio(tipo) {
-    document.getElementById("subtab-btn-numero").classList.toggle("active", tipo === "numero");
-    document.getElementById("subtab-btn-nome").classList.toggle("active", tipo === "nome");
-    document.getElementById("subtab-sorteio-numero").style.display = tipo === "numero" ? "block" : "none";
-    document.getElementById("subtab-sorteio-nome").style.display = tipo === "nome" ? "block" : "none";
-    if (tipo === "nome") carregarElegiveisSorteioNome();
-  }
-  function sortearNumero() {
-    const min = parseInt(document.getElementById("sorteio-num-min").value, 10);
-    const max = parseInt(document.getElementById("sorteio-num-max").value, 10);
-    if (isNaN(min) || isNaN(max) || min > max) { showToast("Informe um intervalo válido (mínimo menor ou igual ao máximo)."); return; }
-
-    const totalNumeros = max - min + 1;
-    if (sorteioNumerosSorteados.size >= totalNumeros) {
-      showToast("Todos os números desse intervalo já foram sorteados. Reinicie o sorteio pra continuar.");
-      return;
-    }
-
-    const botao = document.getElementById("btn-sortear-numero");
-    botao.disabled = true;
-    let numeroFinal;
-    do { numeroFinal = randomInt(min, max); } while (sorteioNumerosSorteados.has(numeroFinal));
-
+function animar(el, gerar) {
+  return new Promise(resolve => {
     let ticks = 0;
-    const el = document.getElementById("sorteio-num-animacao");
     const intervalo = setInterval(() => {
-      el.textContent = randomInt(min, max);
-      ticks++;
-      if (ticks >= 18) {
-        clearInterval(intervalo);
-        el.textContent = numeroFinal;
-        sorteioNumerosSorteados.add(numeroFinal);
-        renderizarNumerosSorteados();
-        botao.disabled = false;
-        appsScriptFetch("registrarSorteio", { nome: `Número ${numeroFinal}`, idParticipante: "" }).catch(() => {});
-      }
+      el.textContent = gerar();
+      if (++ticks >= 18) { clearInterval(intervalo); resolve(); }
     }, 70);
-  }
+  });
+}
 
-  function renderizarNumerosSorteados() {
-    const container = document.getElementById("lista-numeros-sorteados");
-    const nums = [...sorteioNumerosSorteados].sort((a, b) => a - b);
-    container.innerHTML = nums.length
-      ? nums.map(n => `<span class="chip">${n}</span>`).join("")
-      : `<span style="color:var(--muted); font-size:0.85rem">Nenhum número sorteado ainda.</span>`;
-  }
+function renderizarNumerosSorteados() {
+  const container = $("lista-numeros-sorteados");
+  const nums = [...sorteioNumerosSorteados].sort((a, b) => a - b);
+  container.innerHTML = nums.length
+    ? nums.map(n => `<span class="chip">${esc(n)}</span>`).join("")
+    : `<span style="color:var(--muted); font-size:0.85rem">Nenhum número sorteado ainda.</span>`;
+}
 
-  function reiniciarSorteioNumero() {
-    if (!confirm("Reiniciar o sorteio por número? Os números já sorteados voltam a valer.")) return;
+async function reiniciarSorteioNumero() {
+  if (!confirm("Reiniciar o sorteio por número? Os números já sorteados hoje voltam a valer.")) return;
+  try {
+    await appsScriptFetch("reiniciarSorteio", { tipo: "numero" });
     sorteioNumerosSorteados.clear();
     renderizarNumerosSorteados();
-    document.getElementById("sorteio-num-animacao").textContent = "—";
+    $("sorteio-num-animacao").textContent = "—";
+    showToast("Sorteio por número reiniciado.");
+  } catch (e) {
+    showToast(e.message || "Não consegui reiniciar o sorteio.");
   }
+}
 
-  async function carregarElegiveisSorteioNome() {
-    const info = document.getElementById("sorteio-nome-elegiveis-info");
-    info.textContent = "Carregando participantes com presença hoje...";
-    try {
-      const presentesHoje = await appsScriptFetch("listarPresencasHoje");
-      const hoje = hojeFormatado();
-      const mapa = new Map();
-      cacheParticipantes.forEach(p => {
-        if (p.dataCadastro === hoje || presentesHoje.includes(p.nome)) mapa.set(p.id, p);
-      });
-      sorteioElegiveisNomes = [...mapa.values()];
-      info.textContent = `Concorrem ${sorteioElegiveisNomes.length} participante(s) com presença registrada hoje.`;
-    } catch (e) {
-      sorteioElegiveisNomes = [];
-      info.textContent = "Não foi possível carregar a lista de presença de hoje.";
-    }
+async function carregarElegiveisSorteioNome() {
+  const info = $("sorteio-nome-elegiveis-info");
+  info.textContent = "Carregando participantes com presença hoje...";
+  try {
+    await carregarPresencasHoje();
+    const hoje = hojeFormatado();
+    const mapa = new Map();
+    cacheParticipantes.forEach(p => {
+      if (p.dataCadastro === hoje || presencasHojeIds.has(p.id) || presencasHojeNomes.has(p.nome)) mapa.set(p.id, p);
+    });
+    sorteioElegiveisNomes = [...mapa.values()];
+    info.textContent = `Concorrem ${sorteioElegiveisNomes.length} participante(s) com presença registrada hoje.`;
+  } catch (e) {
+    sorteioElegiveisNomes = [];
+    info.textContent = "Não foi possível carregar a lista de presença de hoje.";
+  }
+  renderizarNomesSorteados();
+}
+
+async function sortearNome() {
+  const disponiveis = sorteioElegiveisNomes.filter(p => !sorteioNomesSorteadosSet.has(p.id));
+  if (!disponiveis.length) { showToast("Não há mais participantes disponíveis. Reinicie o sorteio ou registre mais presenças."); return; }
+
+  const botao = $("btn-sortear-nome");
+  botao.disabled = true;
+  const sorteado = disponiveis[randomInt(0, disponiveis.length - 1)];
+  const poolVisual = sorteioElegiveisNomes.map(p => p.nome);
+
+  const gravacao = appsScriptFetch("registrarSorteio", { tipo: "nome", nome: sorteado.nome, idParticipante: sorteado.id });
+
+  const el = $("sorteio-nome-animacao");
+  await animar(el, () => poolVisual[randomInt(0, poolVisual.length - 1)]);
+
+  try {
+    await gravacao;
+    sorteioNomesSorteadosSet.add(sorteado.id);
+    el.textContent = "🎉 " + sorteado.nome;
     renderizarNomesSorteados();
+  } catch (e) {
+    el.textContent = "—";
+    showToast("Não consegui gravar o sorteio na planilha. Nada foi sorteado — tente de novo.");
+    console.error(e);
+  } finally {
+    botao.disabled = false;
   }
+}
 
-  function sortearNome() {
-    const disponiveis = sorteioElegiveisNomes.filter(p => !sorteioNomesSorteadosSet.has(p.id));
-    if (!disponiveis.length) { showToast("Não há mais participantes disponíveis. Reinicie o sorteio ou registre mais presenças."); return; }
+function renderizarNomesSorteados() {
+  const container = $("lista-nomes-sorteados");
+  const porId = new Map(cacheParticipantes.map(p => [p.id, p]));
+  const ganhadores = [...sorteioNomesSorteadosSet]
+    .map(id => porId.get(id))
+    .filter(Boolean);
+  container.innerHTML = ganhadores.length
+    ? ganhadores.map(p => `<span class="chip">${esc(p.nome)}</span>`).join("")
+    : `<span style="color:var(--muted); font-size:0.85rem">Nenhum ganhador ainda.</span>`;
+}
 
-    const botao = document.getElementById("btn-sortear-nome");
-    botao.disabled = true;
-    const sorteado = disponiveis[randomInt(0, disponiveis.length - 1)];
-    const poolVisual = sorteioElegiveisNomes.map(p => p.nome);
-
-    let ticks = 0;
-    const el = document.getElementById("sorteio-nome-animacao");
-    const intervalo = setInterval(() => {
-      el.textContent = poolVisual[randomInt(0, poolVisual.length - 1)];
-      ticks++;
-      if (ticks >= 18) {
-        clearInterval(intervalo);
-        el.textContent = `🎉 ${sorteado.nome}`;
-        sorteioNomesSorteadosSet.add(sorteado.id);
-        renderizarNomesSorteados();
-        botao.disabled = false;
-        appsScriptFetch("registrarSorteio", { nome: sorteado.nome, idParticipante: sorteado.id }).catch(() => {});
-      }
-    }, 70);
-  }
-
-  function renderizarNomesSorteados() {
-    const container = document.getElementById("lista-nomes-sorteados");
-    const ganhadores = sorteioElegiveisNomes.filter(p => sorteioNomesSorteadosSet.has(p.id));
-    container.innerHTML = ganhadores.length
-      ? ganhadores.map(p => `<span class="chip">${p.nome}</span>`).join("")
-      : `<span style="color:var(--muted); font-size:0.85rem">Nenhum ganhador ainda.</span>`;
-  }
-
-  function reiniciarSorteioNome() {
-    if (!confirm("Reiniciar o sorteio por nome? Os ganhadores já sorteados voltam a concorrer.")) return;
+async function reiniciarSorteioNome() {
+  if (!confirm("Reiniciar o sorteio por nome? Os ganhadores de hoje voltam a concorrer.")) return;
+  try {
+    await appsScriptFetch("reiniciarSorteio", { tipo: "nome" });
     sorteioNomesSorteadosSet.clear();
     renderizarNomesSorteados();
-    document.getElementById("sorteio-nome-animacao").textContent = "—";
+    $("sorteio-nome-animacao").textContent = "—";
+    showToast("Sorteio por nome reiniciado.");
+  } catch (e) {
+    showToast(e.message || "Não consegui reiniciar o sorteio.");
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Diretório
+// ---------------------------------------------------------------------------
+
+function montarDiretorio() {
+  const termo = normalizarTexto($("busca-diretorio").value.trim());
+  const container = $("diretorio-lista");
+  const legenda = $("legenda-novatos");
+
+  if (!cacheParticipantes.length) {
+    legenda.textContent = "";
+    container.innerHTML = `<p style="color:var(--muted)">Nenhum participante cadastrado.</p>`;
+    return;
   }
 
-  function normalizarTexto(txt) {
-    return (txt || "").toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  }
+  let maisRecente = null;
+  cacheParticipantes.forEach(p => {
+    const dt = converterDataBr(p.dataCadastro);
+    if (dt && (!maisRecente || dt > maisRecente)) maisRecente = dt;
+  });
 
-  function converterDataBr(str) {
-    // "dd/mm/aaaa" -> Date, pra poder comparar e achar a mais recente
-    if (!str) return null;
-    const [d, m, y] = str.split("/").map(Number);
-    if (!d || !m || !y) return null;
-    const dt = new Date(y, m - 1, d);
-    return isNaN(dt.getTime()) ? null : dt;
-  }
+  legenda.innerHTML = maisRecente
+    ? `<span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:var(--warn-soft);border:1px solid var(--warn);vertical-align:middle;margin-right:4px"></span>Em destaque: quem foi cadastrado em <strong>${esc(maisRecente.toLocaleDateString("pt-BR"))}</strong> (a data mais recente da lista).`
+    : "";
 
-  function montarDiretorio() {
-    const termo = normalizarTexto(document.getElementById("busca-diretorio").value.trim());
-    const container = document.getElementById("diretorio-lista");
+  const porRua = {};
+  cacheParticipantes.forEach(p => {
+    const rua = p.rua || "Sem rua informada";
+    if (!porRua[rua]) porRua[rua] = [];
+    porRua[rua].push(p);
+  });
+  const ruas = Object.keys(porRua).sort((a, b) => a.localeCompare(b, "pt-BR"));
 
-    if (!cacheParticipantes.length) {
-      container.innerHTML = `<p style="color:var(--muted)">Nenhum participante cadastrado.</p>`;
-      return;
-    }
-
-    // Descobre a data de cadastro mais recente entre todos, pra marcar quem é "novato"
-    let maisRecente = null;
-    cacheParticipantes.forEach(p => {
-      const dt = converterDataBr(p.dataCadastro);
-      if (dt && (!maisRecente || dt > maisRecente)) maisRecente = dt;
-    });
-
-    const porRua = {};
-    cacheParticipantes.forEach(p => {
-      const rua = p.rua || "Sem rua informada";
-      if (!porRua[rua]) porRua[rua] = [];
-      porRua[rua].push(p);
-    });
-    const ruas = Object.keys(porRua).sort((a, b) => a.localeCompare(b, "pt-BR"));
-
-    const blocos = ruas.map(rua => {
-      const pessoas = porRua[rua].filter(p => {
-        if (!termo) return true;
-        return normalizarTexto(p.nome).includes(termo) || normalizarTexto(p.telefone).includes(termo);
-      });
-      if (!pessoas.length) return "";
-
-      const linhas = pessoas.map(p => {
-        const dt = converterDataBr(p.dataCadastro);
-        const novato = dt && maisRecente && dt.getTime() === maisRecente.getTime();
-        return `
-          <tr class="${novato ? 'dir-novato' : ''}">
-            <td data-label="Telefone">${p.telefone}</td>
-            <td data-label="Nome">${p.nome}${novato ? '<span class="dir-badge-novo">novo</span>' : ''}</td>
-            <td data-label="Idade">${p.idade}</td>
-            <td data-label="Data">${p.dataCadastro}</td>
-            <td data-label="Número">${p.numero}</td>
-            <td data-label="Bairro">${p.bairro}</td>
-            <td data-label="Ponto de referência">${p.pontoReferencia}</td>
-          </tr>`;
-      }).join("");
-
-      return `
-        <div style="margin-bottom:20px">
-          <div class="dir-street-bar">
-            <h3>${rua}</h3>
-            <span class="dir-tally">${pessoas.length} pessoa${pessoas.length === 1 ? "" : "s"}</span>
-            <button class="dir-wa-btn" onclick="enviarRuaWhatsApp('${rua.replace(/'/g, "\\'")}')" type="button">📲 Enviar via WhatsApp</button>
-          </div>
-          <div class="dir-table-wrap">
-            <table>
-              <thead><tr><th>Telefone</th><th>Nome</th><th>Idade</th><th>Data</th><th>Número</th><th>Bairro</th><th>Ponto de referência</th></tr></thead>
-              <tbody>${linhas}</tbody>
-            </table>
-          </div>
-        </div>`;
-    }).join("");
-
-    container.innerHTML = blocos.trim() ? blocos : `<p style="color:var(--muted)">Nenhum resultado encontrado.</p>`;
-  }
-
-  function enviarRuaWhatsApp(rua) {
-    const termo = normalizarTexto(document.getElementById("busca-diretorio").value.trim());
-    const pessoas = cacheParticipantes.filter(p => {
-      if ((p.rua || "Sem rua informada") !== rua) return false;
+  const blocos = ruas.map(rua => {
+    const pessoas = porRua[rua].filter(p => {
       if (!termo) return true;
       return normalizarTexto(p.nome).includes(termo) || normalizarTexto(p.telefone).includes(termo);
     });
-    const linhas = pessoas.map((p, i) => {
-      const partes = [p.nome || "Sem nome"];
-      if (p.numero) partes.push(`nº ${p.numero}`);
-      if (p.pontoReferencia && p.pontoReferencia !== SEM_REFERENCIA) partes.push(`(${p.pontoReferencia})`);
-      return `${i + 1}. ${partes.join(" — ")} — ${p.telefone || "sem telefone"}`;
-    }).join("\n");
+    if (!pessoas.length) return "";
 
-    const texto = `*Rua: ${rua}*\n${pessoas.length} pessoa${pessoas.length === 1 ? "" : "s"} cadastrada${pessoas.length === 1 ? "" : "s"}\n\n${linhas}\n\n_Lista gerada pelo Gerenciador de Evangelismo_`;
-    window.open("https://wa.me/?text=" + encodeURIComponent(texto), "_blank");
-  }
+    const linhas = pessoas.map(p => {
+      const dt = converterDataBr(p.dataCadastro);
+      const novato = dt && maisRecente && dt.getTime() === maisRecente.getTime();
+      return `
+        <tr class="${novato ? "dir-novato" : ""}">
+          <td data-label="Telefone">${esc(p.telefone)}</td>
+          <td data-label="Nome">${esc(p.nome)}${novato ? '<span class="dir-badge-novo">novo</span>' : ""}</td>
+          <td data-label="Idade">${esc(p.idade)}</td>
+          <td data-label="Data">${esc(p.dataCadastro)}</td>
+          <td data-label="Número">${esc(p.numero)}</td>
+          <td data-label="Bairro">${esc(p.bairro)}</td>
+          <td data-label="Ponto de referência">${esc(p.pontoReferencia)}</td>
+        </tr>`;
+    }).join("");
 
-  validarAcesso();
+    return `
+      <div style="margin-bottom:20px">
+        <div class="dir-street-bar">
+          <h3>${esc(rua)}</h3>
+          <span class="dir-tally">${pessoas.length} pessoa${pessoas.length === 1 ? "" : "s"}</span>
+          <button class="dir-wa-btn" type="button" data-rua="${esc(rua)}">📲 Enviar via WhatsApp</button>
+        </div>
+        <div class="dir-table-wrap">
+          <table>
+            <thead><tr><th>Telefone</th><th>Nome</th><th>Idade</th><th>Data</th><th>Número</th><th>Bairro</th><th>Ponto de referência</th></tr></thead>
+            <tbody>${linhas}</tbody>
+          </table>
+        </div>
+      </div>`;
+  }).join("");
+
+  container.innerHTML = blocos.trim() ? blocos : `<p style="color:var(--muted)">Nenhum resultado encontrado.</p>`;
+}
+
+function enviarRuaWhatsApp(rua) {
+  const termo = normalizarTexto($("busca-diretorio").value.trim());
+  const pessoas = cacheParticipantes.filter(p => {
+    if ((p.rua || "Sem rua informada") !== rua) return false;
+    if (!termo) return true;
+    return normalizarTexto(p.nome).includes(termo) || normalizarTexto(p.telefone).includes(termo);
+  });
+  const linhas = pessoas.map((p, i) => {
+    const partes = [p.nome || "Sem nome"];
+    if (p.numero && p.numero !== SEM_NUMERO) partes.push(`nº ${p.numero}`);
+    if (p.pontoReferencia && p.pontoReferencia !== SEM_REFERENCIA) partes.push(`(${p.pontoReferencia})`);
+    return `${i + 1}. ${partes.join(" — ")} — ${p.telefone || "sem telefone"}`;
+  }).join("\n");
+
+  const texto = `*Rua: ${rua}*\n${pessoas.length} pessoa${pessoas.length === 1 ? "" : "s"} cadastrada${pessoas.length === 1 ? "" : "s"}\n\n${linhas}\n\n_Lista gerada pelo Gerenciador de Evangelismo_`;
+  window.open("https://wa.me/?text=" + encodeURIComponent(texto), "_blank");
+}
+
+// ---------------------------------------------------------------------------
+// Ligações de eventos (nada de onclick embutido com texto da planilha dentro)
+// ---------------------------------------------------------------------------
+
+document.querySelectorAll(".tab-btn").forEach(b => {
+  b.addEventListener("click", () => trocarAba(b.dataset.tab));
+});
+document.querySelectorAll(".campo-check input[type=checkbox]").forEach(chk => {
+  chk.addEventListener("change", () => alternarCampo(chk.dataset.alvo, chk.id));
+});
+["c-telefone", "c-idade", "sorteio-num-min", "sorteio-num-max"].forEach(id => somenteNumeros($(id)));
+
+$("btn-conectar").addEventListener("click", conectarPlanilha);
+$("input-sheet-url").addEventListener("keydown", e => { if (e.key === "Enter") conectarPlanilha(); });
+$("btn-tentar-de-novo").addEventListener("click", () => {
+  $("tela-erro").style.display = "none";
+  $("tela-carregando").style.display = "block";
+  abrirPainel().finally(() => { $("tela-carregando").style.display = "none"; });
+});
+
+$("btn-salvar-cadastro").addEventListener("click", salvarCadastro);
+$("btn-cancelar-edicao").addEventListener("click", limparFormularioCadastro);
+$("btn-atualizar-lista").addEventListener("click", async () => {
+  const b = $("btn-atualizar-lista");
+  b.disabled = true;
+  try { await carregarParticipantes(); showToast("Lista atualizada."); }
+  catch (e) { showToast(e.message || "Não consegui atualizar."); }
+  finally { b.disabled = false; }
+});
+
+$("tbody-cadastro").addEventListener("click", e => {
+  const btn = e.target.closest("button[data-acao]");
+  if (!btn) return;
+  if (btn.dataset.acao === "editar") carregarParaEdicao(btn.dataset.id);
+  if (btn.dataset.acao === "excluir") deletarCadastro(btn.dataset.id);
+});
+
+$("busca-presenca").addEventListener("input", filtrarListaPresenca);
+$("lista-presenca").addEventListener("click", e => {
+  const btn = e.target.closest(".item-presenca");
+  if (btn) selecionarParticipantePresenca(btn.dataset.id);
+});
+$("btn-confirmar-presenca").addEventListener("click", confirmarPresenca);
+$("btn-cancelar-presenca").addEventListener("click", limparSelecaoPresenca);
+
+$("subtab-btn-numero").addEventListener("click", () => trocarSubAbaSorteio("numero"));
+$("subtab-btn-nome").addEventListener("click", () => trocarSubAbaSorteio("nome"));
+$("btn-sortear-numero").addEventListener("click", sortearNumero);
+$("btn-reiniciar-numero").addEventListener("click", reiniciarSorteioNumero);
+$("btn-sortear-nome").addEventListener("click", sortearNome);
+$("btn-reiniciar-nome").addEventListener("click", reiniciarSorteioNome);
+
+$("busca-diretorio").addEventListener("input", montarDiretorio);
+$("diretorio-lista").addEventListener("click", e => {
+  const btn = e.target.closest(".dir-wa-btn");
+  if (btn) enviarRuaWhatsApp(btn.dataset.rua);
+});
+
+validarAcesso();
 </script>
 </body>
 </html>

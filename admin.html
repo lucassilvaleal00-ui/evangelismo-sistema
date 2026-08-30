@@ -7,81 +7,75 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
-    --ink: #1c2128;
-    --paper: #f7f5f0;
-    --card: #ffffff;
-    --line: #e2ded4;
-    --accent: #3a5a49;
-    --accent-soft: #e7efe9;
-    --warn: #a24030;
-    --warn-soft: #f6e8e5;
-    --muted: #6b6558;
+    --ink: #1c2128; --paper: #f7f5f0; --card: #ffffff; --line: #e2ded4;
+    --accent: #3a5a49; --accent-soft: #e7efe9; --warn: #a24030; --warn-soft: #f6e8e5; --muted: #6b6558;
   }
   * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
-    background: var(--paper);
-    color: var(--ink);
-    min-height: 100vh;
-  }
-  .wrap { max-width: 920px; margin: 0 auto; padding: 32px 20px 80px; }
-  header.top {
-    display: flex; justify-content: space-between; align-items: baseline;
-    margin-bottom: 28px; flex-wrap: wrap; gap: 10px;
-  }
+  body { margin: 0; font-family: "Segoe UI", system-ui, -apple-system, sans-serif; background: var(--paper); color: var(--ink); min-height: 100vh; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 32px 20px 80px; }
+  header.top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 28px; flex-wrap: wrap; gap: 10px; }
   h1 { font-size: 1.4rem; margin: 0; letter-spacing: -0.01em; }
   .eyebrow { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 4px; }
-  button {
-    font-family: inherit; cursor: pointer; border: none; border-radius: 8px;
-    padding: 10px 16px; font-size: 0.9rem; font-weight: 600;
-  }
+  button { font-family: inherit; cursor: pointer; border: none; border-radius: 8px; padding: 10px 16px; font-size: 0.9rem; font-weight: 600; }
+  button:disabled { opacity: 0.55; cursor: default; }
   .btn-primary { background: var(--accent); color: white; }
-  .btn-primary:hover { background: #2e4a3c; }
+  .btn-primary:hover:not(:disabled) { background: #2e4a3c; }
   .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
   .btn-ghost:hover { border-color: var(--muted); }
+  .btn-danger { background: transparent; color: var(--warn); border: 1px solid var(--warn-soft); }
+  .btn-danger:hover { border-color: var(--warn); }
   .btn-sm { padding: 6px 10px; font-size: 0.78rem; border-radius: 6px; }
 
-  /* Login */
-  #login-screen {
-    max-width: 360px; margin: 15vh auto; background: var(--card);
-    border: 1px solid var(--line); border-radius: 14px; padding: 32px;
-  }
+  #login-screen { max-width: 360px; margin: 15vh auto; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 32px; }
   #login-screen h1 { margin-bottom: 4px; }
   #login-screen p { color: var(--muted); font-size: 0.85rem; margin-top: 0; }
-  input {
-    width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px;
-    font-size: 0.9rem; margin-bottom: 12px; font-family: inherit; background: white;
-  }
+  input { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 0.9rem; margin-bottom: 12px; font-family: inherit; background: white; }
   input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
   #login-error { color: var(--warn); font-size: 0.82rem; min-height: 18px; }
+  label { display: block; font-size: 0.75rem; color: var(--muted); margin-bottom: 4px; }
 
-  /* App */
   #app-screen { display: none; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 22px; margin-bottom: 20px; }
   .card h2 { font-size: 1rem; margin: 0 0 16px; }
   .form-grid { display: grid; grid-template-columns: 1.6fr 1.6fr 1fr auto; gap: 10px; align-items: end; }
-  .form-grid label { display: block; font-size: 0.75rem; color: var(--muted); margin-bottom: 4px; }
   .form-grid input, .form-grid select { margin-bottom: 0; }
-  select { padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font-family: inherit; background: white; font-size: 0.9rem; width: 100%;}
+  select { padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font-family: inherit; background: white; font-size: 0.9rem; width: 100%; }
 
   table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
   th { text-align: left; color: var(--muted); font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 8px 10px; border-bottom: 1px solid var(--line); }
   td { padding: 10px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
   tr:last-child td { border-bottom: none; }
-  .badge { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 0.72rem; font-weight: 600; }
+  .badge { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 0.72rem; font-weight: 600; white-space: nowrap; }
   .badge.ativo { background: var(--accent-soft); color: var(--accent); }
   .badge.inativo { background: #eee; color: var(--muted); }
   .badge.expirado { background: var(--warn-soft); color: var(--warn); }
-  .row-actions { display: flex; gap: 6px; }
-  .link-cell { display: flex; align-items: center; gap: 6px; font-family: monospace; font-size: 0.78rem; color: var(--muted); }
+  .badge.conectada { background: var(--accent-soft); color: var(--accent); }
+  .badge.pendente { background: #f3efe4; color: #8a7a4a; }
+  .row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .token-frag { font-family: monospace; font-size: 0.78rem; color: var(--muted); }
   #empty-state { text-align: center; color: var(--muted); padding: 30px 0; font-size: 0.88rem; }
-  #toast {
-    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-    background: var(--ink); color: white; padding: 10px 18px; border-radius: 8px;
-    font-size: 0.85rem; opacity: 0; pointer-events: none; transition: opacity 0.25s;
-  }
+  #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--ink); color: white; padding: 10px 18px; border-radius: 8px; font-size: 0.85rem; opacity: 0; pointer-events: none; transition: opacity 0.25s; max-width: 90vw; text-align: center; z-index: 60; }
   #toast.show { opacity: 1; }
+  .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+  .toolbar input { margin-bottom: 0; max-width: 280px; }
+  .toolbar .conta { margin-left: auto; font-size: 0.8rem; color: var(--muted); }
+
+  .modal-fundo { position: fixed; inset: 0; background: rgba(28,33,40,0.45); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 70; }
+  .modal-fundo.show { display: flex; }
+  .modal { background: var(--card); border-radius: 14px; padding: 24px; max-width: 380px; width: 100%; }
+  .modal h3 { margin: 0 0 6px; font-size: 1.05rem; }
+  .modal p { color: var(--muted); font-size: 0.85rem; margin-top: 0; }
+  .modal-acoes { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+
+  @media (max-width: 860px) {
+    .form-grid { grid-template-columns: 1fr; }
+    table thead { display: none; }
+    table tr { display: block; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 12px; padding: 6px 0; }
+    table td { display: flex; justify-content: space-between; gap: 14px; border: none; padding: 6px 12px; text-align: right; }
+    table td[data-label]::before { content: attr(data-label); font-size: 0.68rem; text-transform: uppercase; color: var(--muted); font-weight: 700; text-align: left; flex: 0 0 auto; }
+    .row-actions { justify-content: flex-end; }
+    table td:empty { display: none; }
+  }
 </style>
 </head>
 <body>
@@ -95,7 +89,7 @@
   <label for="senha">Senha</label>
   <input id="senha" type="password" autocomplete="current-password" />
   <div id="login-error"></div>
-  <button class="btn-primary" style="width:100%" onclick="fazerLogin()">Entrar</button>
+  <button class="btn-primary" style="width:100%" id="btn-login">Entrar</button>
 </div>
 
 <div id="app-screen">
@@ -105,7 +99,7 @@
         <div class="eyebrow">Painel de administração</div>
         <h1>Controle de Usuários</h1>
       </div>
-      <button class="btn-ghost btn-sm" onclick="fazerLogout()">Sair</button>
+      <button class="btn-ghost btn-sm" id="btn-logout">Sair</button>
     </header>
 
     <div class="card">
@@ -116,7 +110,7 @@
           <input id="novo-nome" type="text" placeholder="Ex: João Silva" />
         </div>
         <div>
-          <label for="novo-email">E-mail (Gmail)</label>
+          <label for="novo-email">E-mail (opcional)</label>
           <input id="novo-email" type="email" placeholder="pessoa@gmail.com" />
         </div>
         <div>
@@ -128,12 +122,17 @@
             <option value="1 ano">1 ano</option>
           </select>
         </div>
-        <button class="btn-primary" onclick="cadastrarUsuario()">Gerar link</button>
+        <button class="btn-primary" id="btn-cadastrar">Gerar link</button>
       </div>
     </div>
 
     <div class="card">
       <h2>Usuários cadastrados</h2>
+      <div class="toolbar">
+        <input id="busca" type="text" placeholder="Buscar por nome ou e-mail..." />
+        <button class="btn-ghost btn-sm" id="btn-recarregar">↻ Atualizar</button>
+        <span class="conta" id="conta-usuarios"></span>
+      </div>
       <table id="tabela-usuarios">
         <thead>
           <tr>
@@ -142,6 +141,7 @@
             <th>Plano</th>
             <th>Expira em</th>
             <th>Status</th>
+            <th>Planilha</th>
             <th>Link</th>
             <th></th>
           </tr>
@@ -153,158 +153,355 @@
   </div>
 </div>
 
+<div class="modal-fundo" id="modal-renovar">
+  <div class="modal">
+    <h3>Renovar acesso</h3>
+    <p id="modal-renovar-texto"></p>
+    <label for="modal-renovar-plano">Novo plano</label>
+    <select id="modal-renovar-plano">
+      <option value="30 dias">30 dias</option>
+      <option value="60 dias">60 dias</option>
+      <option value="90 dias">90 dias</option>
+      <option value="1 ano">1 ano</option>
+    </select>
+    <p style="margin:10px 0 0" id="modal-renovar-previa"></p>
+    <div class="modal-acoes">
+      <button class="btn-ghost btn-sm" id="modal-renovar-cancelar">Cancelar</button>
+      <button class="btn-primary btn-sm" id="modal-renovar-confirmar">Renovar</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
-  // ==== CONFIGURAÇÃO: preencha com os dados do seu projeto Supabase ====
-  const SUPABASE_URL = "https://jmogaclwihvsouqixozo.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imptb2dhY2x3aWh2c291cWl4b3pvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyNTk5MzIsImV4cCI6MjEwMjgzNTkzMn0.kzvlfUAzRrEeb2UGlEViCOVh0vIMuHVkR_EzUSjn87U";
-  // URL onde a Página 2 (evangelismo.html) vai ficar publicada no GitHub Pages:
-  const URL_PAGINA_EVANGELISMO = "https://lucassilvaleal00-ui.github.io/evangelismo-sistema/evangelismo.html";
-  // =======================================================================
+"use strict";
 
-  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// ==== CONFIGURAÇÃO ====
+const SUPABASE_URL = "https://jmogaclwihvsouqixozo.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imptb2dhY2x3aWh2c291cWl4b3pvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyNTk5MzIsImV4cCI6MjEwMjgzNTkzMn0.kzvlfUAzRrEeb2UGlEViCOVh0vIMuHVkR_EzUSjn87U";
+const URL_PAGINA_EVANGELISMO = "https://lucassilvaleal00-ui.github.io/evangelismo-sistema/evangelismo.html";
+// =======================
 
-  function showToast(msg) {
-    const t = document.getElementById("toast");
-    t.textContent = msg;
-    t.classList.add("show");
-    setTimeout(() => t.classList.remove("show"), 2200);
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const DIAS_POR_PLANO = { "30 dias": 30, "60 dias": 60, "90 dias": 90, "1 ano": 365 };
+
+let usuarios = [];
+let renovandoId = null;
+
+function $(id) { return document.getElementById(id); }
+
+/** Nome e e-mail são digitados por você, mas ainda assim nada vai para o HTML
+ *  sem escape — um apóstrofo já bastava para quebrar a linha da tabela. */
+function esc(v) {
+  return String(v === null || v === undefined ? "" : v)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+let toastTimer = null;
+function showToast(msg) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 3200);
+}
+
+function formatarData(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? "—" : d.toLocaleDateString("pt-BR");
+}
+
+function gerarToken() {
+  return crypto.randomUUID().replace(/-/g, "");
+}
+
+/** Renovação soma o prazo a partir do vencimento, se ainda estiver em dia,
+ *  para o cliente não perder os dias que sobraram. */
+function calcularExpiracao(plano, baseIso) {
+  const dias = DIAS_POR_PLANO[plano] || 30;
+  const agora = new Date();
+  const base = baseIso ? new Date(baseIso) : agora;
+  const inicio = (base > agora) ? base : agora;
+  const data = new Date(inicio.getTime());
+  data.setDate(data.getDate() + dias);
+  return data.toISOString();
+}
+
+// ---------------------------------------------------------------------------
+// Sessão
+// ---------------------------------------------------------------------------
+
+async function checarSessao() {
+  const { data } = await sb.auth.getSession();
+  if (data.session) {
+    $("login-screen").style.display = "none";
+    $("app-screen").style.display = "block";
+    carregarUsuarios();
+  } else {
+    $("login-screen").style.display = "block";
+    $("app-screen").style.display = "none";
   }
+}
 
-  async function checarSessao() {
-    const { data } = await sb.auth.getSession();
-    if (data.session) {
-      document.getElementById("login-screen").style.display = "none";
-      document.getElementById("app-screen").style.display = "block";
-      carregarUsuarios();
-    } else {
-      document.getElementById("login-screen").style.display = "block";
-      document.getElementById("app-screen").style.display = "none";
-    }
-  }
-
-  async function fazerLogin() {
-    const email = document.getElementById("email").value.trim();
-    const senha = document.getElementById("senha").value;
-    const errBox = document.getElementById("login-error");
-    errBox.textContent = "";
+async function fazerLogin() {
+  const email = $("email").value.trim();
+  const senha = $("senha").value;
+  const errBox = $("login-error");
+  errBox.textContent = "";
+  const botao = $("btn-login");
+  botao.disabled = true;
+  try {
     const { error } = await sb.auth.signInWithPassword({ email, password: senha });
-    if (error) {
-      errBox.textContent = "E-mail ou senha inválidos.";
-      return;
-    }
-    checarSessao();
+    if (error) { errBox.textContent = "E-mail ou senha inválidos."; return; }
+    $("senha").value = "";
+    await checarSessao();
+  } finally {
+    botao.disabled = false;
   }
+}
 
-  async function fazerLogout() {
-    await sb.auth.signOut();
-    checarSessao();
-  }
+async function fazerLogout() {
+  await sb.auth.signOut();
+  usuarios = [];
+  checarSessao();
+}
 
-  function calcularExpiracao(plano) {
-    const dias = { "30 dias": 30, "60 dias": 60, "90 dias": 90, "1 ano": 365 }[plano];
-    const data = new Date();
-    data.setDate(data.getDate() + dias);
-    return data.toISOString();
-  }
+// ---------------------------------------------------------------------------
+// CRUD
+// ---------------------------------------------------------------------------
 
-  function gerarToken() {
-    return crypto.randomUUID().replace(/-/g, "");
-  }
+async function cadastrarUsuario() {
+  const nome = $("novo-nome").value.trim();
+  const email = $("novo-email").value.trim();
+  const plano = $("novo-plano").value;
+  if (!nome) { showToast("Digite o nome da pessoa."); return; }
 
-  async function cadastrarUsuario() {
-    const nome = document.getElementById("novo-nome").value.trim();
-    const email = document.getElementById("novo-email").value.trim();
-    const plano = document.getElementById("novo-plano").value;
-    if (!nome) { showToast("Digite o nome da pessoa."); return; }
-
+  const botao = $("btn-cadastrar");
+  botao.disabled = true;
+  try {
     const { error } = await sb.from("usuarios_evangelismo").insert({
       nome,
       email: email || null,
       plano,
       token: gerarToken(),
-      data_expiracao: calcularExpiracao(plano),
+      data_expiracao: calcularExpiracao(plano, null),
       status: "ativo"
     });
-
     if (error) { showToast("Erro ao cadastrar: " + error.message); return; }
-    document.getElementById("novo-nome").value = "";
-    document.getElementById("novo-email").value = "";
-    showToast("Usuário cadastrado. Não esqueça de liberar este e-mail como testador no Google Cloud.");
-    carregarUsuarios();
+    $("novo-nome").value = "";
+    $("novo-email").value = "";
+    showToast("Acesso criado. Use “Copiar link” para enviar à pessoa.");
+    await carregarUsuarios();
+  } finally {
+    botao.disabled = false;
   }
+}
 
-  async function alternarStatus(id, statusAtual) {
-    const novo = statusAtual === "ativo" ? "inativo" : "ativo";
-    const { error } = await sb.from("usuarios_evangelismo").update({ status: novo }).eq("id", id);
-    if (error) { showToast("Erro ao atualizar status."); return; }
-    carregarUsuarios();
+async function alternarStatus(id) {
+  const u = usuarios.find(x => x.id === id);
+  if (!u) return;
+  const novo = u.status === "ativo" ? "inativo" : "ativo";
+  const { error } = await sb.from("usuarios_evangelismo").update({ status: novo }).eq("id", id);
+  if (error) { showToast("Erro ao atualizar status."); return; }
+  showToast(novo === "ativo" ? "Acesso reativado." : "Acesso inativado. O link para de funcionar em até 10 minutos.");
+  carregarUsuarios();
+}
+
+function abrirModalRenovar(id) {
+  const u = usuarios.find(x => x.id === id);
+  if (!u) return;
+  renovandoId = id;
+  $("modal-renovar-texto").textContent = `${u.nome} — vencimento atual: ${formatarData(u.data_expiracao)}.`;
+  $("modal-renovar-plano").value = DIAS_POR_PLANO[u.plano] ? u.plano : "30 dias";
+  atualizarPreviaRenovacao();
+  $("modal-renovar").classList.add("show");
+}
+
+function atualizarPreviaRenovacao() {
+  const u = usuarios.find(x => x.id === renovandoId);
+  if (!u) return;
+  const nova = calcularExpiracao($("modal-renovar-plano").value, u.data_expiracao);
+  $("modal-renovar-previa").innerHTML = `Novo vencimento: <strong>${esc(formatarData(nova))}</strong>`;
+}
+
+async function confirmarRenovacao() {
+  const u = usuarios.find(x => x.id === renovandoId);
+  if (!u) return;
+  const plano = $("modal-renovar-plano").value;
+  const botao = $("modal-renovar-confirmar");
+  botao.disabled = true;
+  try {
+    // Renovar mantém o MESMO token: o link já enviado continua valendo e a
+    // planilha do cliente segue vinculada, sem precisar reconectar nada.
+    const { error } = await sb.from("usuarios_evangelismo").update({
+      plano,
+      data_expiracao: calcularExpiracao(plano, u.data_expiracao),
+      status: "ativo"
+    }).eq("id", u.id);
+    if (error) { showToast("Erro ao renovar: " + error.message); return; }
+    $("modal-renovar").classList.remove("show");
+    showToast(`Acesso de ${u.nome} renovado.`);
+    await carregarUsuarios();
+  } finally {
+    botao.disabled = false;
   }
+}
 
-  function copiarLink(token) {
-    const link = `${URL_PAGINA_EVANGELISMO}?token=${token}`;
-    navigator.clipboard.writeText(link);
+async function regenerarLink(id) {
+  const u = usuarios.find(x => x.id === id);
+  if (!u) return;
+  if (!confirm(
+    `Gerar um link NOVO para ${u.nome}?\n\n` +
+    `O link antigo para de funcionar imediatamente. A planilha dele também será desvinculada: ` +
+    `ele vai precisar colar a URL do Web App outra vez ao abrir o novo link. Os dados da planilha não se perdem.\n\n` +
+    `Use isso apenas se o link vazou ou foi compartilhado indevidamente.`
+  )) return;
+
+  const { error } = await sb.from("usuarios_evangelismo")
+    .update({ token: gerarToken(), webapp_url: null })
+    .eq("id", id);
+  if (error) { showToast("Erro ao gerar novo link: " + error.message); return; }
+  showToast("Link novo gerado. Copie e envie para a pessoa.");
+  carregarUsuarios();
+}
+
+async function desconectarPlanilha(id) {
+  const u = usuarios.find(x => x.id === id);
+  if (!u) return;
+  if (!confirm(
+    `Desconectar a planilha de ${u.nome}?\n\n` +
+    `O link continua o mesmo, mas na próxima vez que a pessoa abrir, ela terá que colar a URL do Web App de novo. ` +
+    `Nenhum dado da planilha é apagado.`
+  )) return;
+
+  const { error } = await sb.from("usuarios_evangelismo").update({ webapp_url: null }).eq("id", id);
+  if (error) { showToast("Erro ao desconectar: " + error.message); return; }
+  showToast("Planilha desconectada.");
+  carregarUsuarios();
+}
+
+async function excluirUsuario(id) {
+  const u = usuarios.find(x => x.id === id);
+  if (!u) return;
+  if (!confirm(`Excluir definitivamente o acesso de ${u.nome}?\n\nO link dele para de funcionar. Os dados na planilha dele continuam intactos.`)) return;
+  const { error } = await sb.from("usuarios_evangelismo").delete().eq("id", id);
+  if (error) { showToast("Erro ao excluir: " + error.message); return; }
+  showToast("Acesso excluído.");
+  carregarUsuarios();
+}
+
+async function copiarLink(token) {
+  const link = `${URL_PAGINA_EVANGELISMO}?token=${token}`;
+  try {
+    await navigator.clipboard.writeText(link);
     showToast("Link copiado.");
+  } catch (e) {
+    window.prompt("Copie o link abaixo:", link);
   }
+}
 
-  function formatarData(iso) {
-    const d = new Date(iso);
-    return d.toLocaleDateString("pt-BR");
-  }
+// ---------------------------------------------------------------------------
+// Renderização
+// ---------------------------------------------------------------------------
 
-  async function carregarUsuarios() {
-    const { data, error } = await sb
-      .from("usuarios_evangelismo")
-      .select("*")
-      .order("data_criacao", { ascending: false });
+async function carregarUsuarios() {
+  const { data, error } = await sb
+    .from("usuarios_evangelismo")
+    .select("*")
+    .order("data_criacao", { ascending: false });
 
-    if (error) { showToast("Erro ao carregar usuários."); return; }
+  if (error) { showToast("Erro ao carregar usuários: " + error.message); return; }
+  usuarios = data || [];
+  renderizarUsuarios();
+}
 
-    const tbody = document.getElementById("tbody-usuarios");
-    const emptyState = document.getElementById("empty-state");
+function renderizarUsuarios() {
+  const termo = $("busca").value.trim().toLowerCase();
+  const lista = termo
+    ? usuarios.filter(u => (u.nome || "").toLowerCase().includes(termo) || (u.email || "").toLowerCase().includes(termo))
+    : usuarios;
+
+  const tbody = $("tbody-usuarios");
+  const emptyState = $("empty-state");
+  $("conta-usuarios").textContent = `${lista.length} de ${usuarios.length} acesso(s)`;
+
+  if (!lista.length) {
     tbody.innerHTML = "";
-
-    if (!data.length) {
-      emptyState.style.display = "block";
-      return;
-    }
-    emptyState.style.display = "none";
-
-    const agora = new Date();
-
-    data.forEach(u => {
-      const expirado = new Date(u.data_expiracao) < agora;
-      let badgeClass = u.status === "ativo" ? "ativo" : "inativo";
-      let badgeText = u.status === "ativo" ? "Ativo" : "Inativo";
-      if (expirado && u.status === "ativo") { badgeClass = "expirado"; badgeText = "Expirado"; }
-
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${u.nome}</td>
-        <td>${u.email || "<span style='color:var(--muted)'>—</span>"}</td>
-        <td>${u.plano}</td>
-        <td>${formatarData(u.data_expiracao)}</td>
-        <td><span class="badge ${badgeClass}">${badgeText}</span></td>
-        <td>
-          <div class="link-cell">
-            <span>...${u.token.slice(-8)}</span>
-            <button class="btn-ghost btn-sm" onclick="copiarLink('${u.token}')">Copiar link</button>
-          </div>
-        </td>
-        <td>
-          <div class="row-actions">
-            <button class="btn-ghost btn-sm" onclick="alternarStatus('${u.id}', '${u.status}')">
-              ${u.status === "ativo" ? "Inativar" : "Ativar"}
-            </button>
-          </div>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
+    emptyState.style.display = "block";
+    emptyState.textContent = usuarios.length ? "Nenhum usuário encontrado com esse filtro." : "Nenhum usuário cadastrado ainda.";
+    return;
   }
+  emptyState.style.display = "none";
 
-  checarSessao();
+  const agora = new Date();
+  tbody.innerHTML = lista.map(u => {
+    const expirado = new Date(u.data_expiracao) < agora;
+    let badgeClass = u.status === "ativo" ? "ativo" : "inativo";
+    let badgeText = u.status === "ativo" ? "Ativo" : "Inativo";
+    if (expirado && u.status === "ativo") { badgeClass = "expirado"; badgeText = "Expirado"; }
+
+    const conectada = !!(u.webapp_url && String(u.webapp_url).trim());
+
+    return `
+      <tr>
+        <td data-label="Nome">${esc(u.nome)}</td>
+        <td data-label="E-mail">${u.email ? esc(u.email) : "<span style='color:var(--muted)'>—</span>"}</td>
+        <td data-label="Plano">${esc(u.plano)}</td>
+        <td data-label="Expira em">${esc(formatarData(u.data_expiracao))}</td>
+        <td data-label="Status"><span class="badge ${badgeClass}">${badgeText}</span></td>
+        <td data-label="Planilha"><span class="badge ${conectada ? "conectada" : "pendente"}">${conectada ? "Conectada" : "Pendente"}</span></td>
+        <td data-label="Link">
+          <span class="token-frag">...${esc(String(u.token || "").slice(-8))}</span>
+        </td>
+        <td data-label="Ações">
+          <div class="row-actions">
+            <button class="btn-ghost btn-sm" data-acao="copiar" data-token="${esc(u.token)}">Copiar link</button>
+            <button class="btn-ghost btn-sm" data-acao="renovar" data-id="${esc(u.id)}">Renovar</button>
+            <button class="btn-ghost btn-sm" data-acao="status" data-id="${esc(u.id)}">${u.status === "ativo" ? "Inativar" : "Ativar"}</button>
+            ${conectada ? `<button class="btn-ghost btn-sm" data-acao="desconectar" data-id="${esc(u.id)}">Desconectar planilha</button>` : ""}
+            <button class="btn-danger btn-sm" data-acao="novolink" data-id="${esc(u.id)}">Novo link</button>
+            <button class="btn-danger btn-sm" data-acao="excluir" data-id="${esc(u.id)}">Excluir</button>
+          </div>
+        </td>
+      </tr>`;
+  }).join("");
+}
+
+// ---------------------------------------------------------------------------
+// Eventos
+// ---------------------------------------------------------------------------
+
+$("btn-login").addEventListener("click", fazerLogin);
+$("senha").addEventListener("keydown", e => { if (e.key === "Enter") fazerLogin(); });
+$("email").addEventListener("keydown", e => { if (e.key === "Enter") $("senha").focus(); });
+$("btn-logout").addEventListener("click", fazerLogout);
+$("btn-cadastrar").addEventListener("click", cadastrarUsuario);
+$("btn-recarregar").addEventListener("click", carregarUsuarios);
+$("busca").addEventListener("input", renderizarUsuarios);
+
+$("tbody-usuarios").addEventListener("click", e => {
+  const btn = e.target.closest("button[data-acao]");
+  if (!btn) return;
+  const id = btn.dataset.id;
+  switch (btn.dataset.acao) {
+    case "copiar":      copiarLink(btn.dataset.token); break;
+    case "renovar":     abrirModalRenovar(id); break;
+    case "status":      alternarStatus(id); break;
+    case "desconectar": desconectarPlanilha(id); break;
+    case "novolink":    regenerarLink(id); break;
+    case "excluir":     excluirUsuario(id); break;
+  }
+});
+
+$("modal-renovar-plano").addEventListener("change", atualizarPreviaRenovacao);
+$("modal-renovar-cancelar").addEventListener("click", () => $("modal-renovar").classList.remove("show"));
+$("modal-renovar-confirmar").addEventListener("click", confirmarRenovacao);
+$("modal-renovar").addEventListener("click", e => { if (e.target.id === "modal-renovar") $("modal-renovar").classList.remove("show"); });
+
+checarSessao();
 </script>
 </body>
 </html>
