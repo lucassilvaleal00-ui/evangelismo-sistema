@@ -468,7 +468,7 @@
 // ==== CONFIGURAÇÃO ====
 const SUPABASE_URL = "https://jmogaclwihvsouqixozo.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imptb2dhY2x3aWh2c291cWl4b3pvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyNTk5MzIsImV4cCI6MjEwMjgzNTkzMn0.kzvlfUAzRrEeb2UGlEViCOVh0vIMuHVkR_EzUSjn87U";
-const VERSAO_BACKEND_ESPERADA = 4;
+const VERSAO_BACKEND_ESPERADA = 5;
 // =======================
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false } });
@@ -1099,6 +1099,7 @@ const COR_DADOS = "#1f7a4d";   // verde da marca, ajustado para leitura em gráf
 const ALTURA_GRAFICO = 250;
 
 let cacheResumoPresencas = null;
+let erroResumoPresencas = null;
 
 const FAIXAS_ETARIAS = [
   { rotulo: "Menos de 10", teste: n => n < 10 },
@@ -1304,10 +1305,12 @@ function dadosIdades() {
 function tilesResumo() {
   const dias = dadosFrequencia();
   const totalPresencas = dias.reduce((s, d) => s + d.valor, 0);
-  const media = dias.length ? Math.round(totalPresencas / dias.length) : 0;
+  // Sem o resumo do backend não dá para saber quantos dias houve: melhor mostrar
+  // um traço do que um zero, que pareceria um dado real.
+  const media = erroResumoPresencas ? "—" : (dias.length ? Math.round(totalPresencas / dias.length) : 0);
   $("tiles-graficos").innerHTML = `
     <div class="tile"><div class="rot">Participantes</div><div class="num">${cacheParticipantes.length}</div></div>
-    <div class="tile"><div class="rot">Dias de programação</div><div class="num">${dias.length}</div></div>
+    <div class="tile"><div class="rot">Dias de programação</div><div class="num">${erroResumoPresencas ? "—" : dias.length}</div></div>
     <div class="tile"><div class="rot">Média por dia</div><div class="num">${media}</div></div>`;
 }
 
@@ -1320,7 +1323,18 @@ function desenharGraficos() {
   const idades = dadosIdades();
 
   tilesResumo();
-  graficoColunas($("gr-frequencia"), freq);
+  if (erroResumoPresencas) {
+    // Aviso fixo no lugar do gráfico: um toast some em três segundos e deixa a
+    // pessoa achando que simplesmente não há dados.
+    $("gr-frequencia").innerHTML = `<div class="aviso" style="margin:0">
+        Este gráfico precisa da versão nova do código da planilha. Abra a planilha em
+        <strong>Extensões &gt; Apps Script</strong>, cole o <code>Code.gs</code> novo e depois
+        <strong>Implantar &gt; Gerenciar implantações &gt; Nova versão</strong>.
+        <div style="margin-top:6px; font-size:0.78rem; opacity:0.85">Resposta da planilha: ${esc(erroResumoPresencas)}</div>
+      </div>`;
+  } else {
+    graficoColunas($("gr-frequencia"), freq);
+  }
   graficoColunas($("gr-novatos"), nov);
   graficoBarras($("gr-ruas"), dadosRuasCache.grafico);
   graficoColunas($("gr-idades"), idades);
@@ -1335,9 +1349,10 @@ async function abrirGraficos() {
   if (!cacheResumoPresencas) {
     try {
       cacheResumoPresencas = await appsScriptFetch("resumoPresencas");
+      erroResumoPresencas = null;
     } catch (e) {
       cacheResumoPresencas = {};
-      showToast(e.message || "Não consegui carregar a frequência por dia.");
+      erroResumoPresencas = e.message || "não foi possível carregar a frequência por dia.";
     }
   }
   desenharGraficos();
