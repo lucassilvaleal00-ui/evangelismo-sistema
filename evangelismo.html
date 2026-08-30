@@ -284,6 +284,7 @@
           <button class="btn-ghost btn-sm" id="btn-lote">🗂️ Gerar cartões por lote</button>
           <button class="btn-ghost btn-sm" id="btn-atualizar-pontos">↻ Atualizar saldos</button>
         </div>
+        <p class="sub" id="aviso-limite-pontuacao" style="margin:-6px 0 12px"></p>
         <div class="tabela-rolavel">
         <table>
           <thead>
@@ -929,8 +930,16 @@ function renderizarPontuacao() {
   const termo = normalizarTexto($("busca-pontuacao").value.trim());
   // Ordem de cadastro com o mais recente no topo — a planilha devolve na ordem
   // em que as linhas foram criadas.
-  const lista = [...cacheParticipantes].reverse()
+  const todos = [...cacheParticipantes].reverse()
     .filter(p => !termo || normalizarTexto(p.nome).includes(termo));
+
+  // Com centenas de participantes, desenhar a tabela inteira trava o celular.
+  // Mostra-se um bloco por vez; a busca alcança quem estiver fora dele.
+  const LIMITE = 150;
+  const lista = todos.slice(0, LIMITE);
+  $("aviso-limite-pontuacao").innerHTML = todos.length > LIMITE
+    ? `Mostrando ${LIMITE} de ${todos.length} participantes. Use a busca para encontrar alguém específico.`
+    : "";
 
   const tbody = $("tbody-pontuacao");
   tbody.innerHTML = lista.map(p => {
@@ -1065,7 +1074,11 @@ function fonteQueCabe(g, texto, larguraMax, tamInicialPx, familia, peso) {
   return tam;
 }
 
-/** Desenha a arte do cartão (tudo menos o QR) num canvas. */
+/**
+ * Desenha a arte do cartão num canvas.
+ * O nome só é pintado aqui na pré-visualização; no PDF ele vai como texto de
+ * verdade, para a arte poder ser reaproveitada entre todos os cartões.
+ */
 function desenharCartao(nome, larguraPx) {
   const W = Math.round(larguraPx);
   const H = Math.round(larguraPx * CARTAO.alturaMm / CARTAO.larguraMm);
@@ -1158,17 +1171,43 @@ function qrPng(texto, px) {
   return q.toDataURL("image/png");
 }
 
-/** Coloca um cartão completo (arte + QR) no PDF, em milímetros. */
+// A arte é idêntica em todos os cartões — só o nome e o QR mudam. Ela é
+// desenhada uma única vez e reaproveitada pelo PDF através do mesmo apelido,
+// senão um lote de 400 pessoas geraria 400 imagens e um arquivo de 17 MB.
+let fundoCache = { larguraMm: null, dataUrl: null };
+function fundoDoCartao(larguraMm) {
+  if (fundoCache.larguraMm !== larguraMm) {
+    const arte = desenharCartao("", Math.max(700, Math.round(larguraMm * 12)));
+    fundoCache = { larguraMm, dataUrl: arte.toDataURL("image/jpeg", 0.92) };
+  }
+  return fundoCache.dataUrl;
+}
+
+/** Coloca um cartão completo (arte + nome + QR) no PDF, em milímetros. */
 function colarCartaoNoPdf(doc, p, x, y, larguraMm) {
   const alturaMm = larguraMm * CARTAO.alturaMm / CARTAO.larguraMm;
-  const arte = desenharCartao(p.nome, Math.max(700, Math.round(larguraMm * 12)));
-  doc.addImage(arte.toDataURL("image/jpeg", 0.92), "JPEG", x, y, larguraMm, alturaMm);
+  const escala = larguraMm / CARTAO.larguraMm;
+
+  doc.addImage(fundoDoCartao(larguraMm), "JPEG", x, y, larguraMm, alturaMm, "fundo-cartao", "FAST");
+
+  // Nome como texto do PDF: sai mais nítido na impressão e não pesa nada.
+  const nome = String(p.nome || "").toUpperCase();
+  const larguraMaxima = 44 * escala;
+  doc.setFont("courier", "normal");
+  doc.setTextColor(13, 15, 20);
+  let tamanho = 11 * escala;
+  doc.setFontSize(tamanho);
+  while (doc.getTextWidth(nome) > larguraMaxima && tamanho > 3.5) {
+    tamanho -= 0.25;
+    doc.setFontSize(tamanho);
+  }
+  doc.text(nome, x + 6.5 * escala, y + 44.5 * escala);
 
   const url = urlDoCartao(p.id);
   if (url) {
     const ladoCaixa = CARTAO.qr.s * larguraMm;
     const margem = ladoCaixa * 0.07;
-    doc.addImage(qrPng(url, 620), "PNG",
+    doc.addImage(qrPng(url, 280), "PNG",
       x + CARTAO.qr.x * larguraMm + margem,
       y + CARTAO.qr.y * alturaMm + margem,
       ladoCaixa - 2 * margem, ladoCaixa - 2 * margem);
@@ -1230,7 +1269,7 @@ function deIso(iso) {
 function abrirModalLote() {
   const datas = datasComCadastro();
   $("modal-lote-datas").innerHTML = datas.length
-    ? datas.slice(0, 12).map(d => `<button type="button" class="chip-data" data-data="${esc(d.data)}">${esc(d.data)} · ${d.qtd}</button>`).join("")
+    ? datas.map(d => `<button type="button" class="chip-data" data-data="${esc(d.data)}">${esc(d.data)} · ${d.qtd}</button>`).join("")
     : `<span style="color:var(--muted); font-size:0.82rem">Nenhum cadastro ainda.</span>`;
   $("modal-lote-data").value = datas.length ? paraIso(datas[0].data) : "";
   atualizarInfoLote();
@@ -1284,8 +1323,13 @@ async function gerarCartoesEmLote() {
       const col = posicao % colunas;
       const lin = Math.floor(posicao / colunas);
       colarCartaoNoPdf(doc, pessoas[i], margem + col * (largura + folga), margem + lin * (altura + folga), largura);
-      if (i % 6 === 5) await new Promise(r => setTimeout(r, 0)); // deixa a tela respirar
+      if (i % 8 === 7) {
+        botao.textContent = `Gerando ${i + 1}/${pessoas.length}...`;
+        await new Promise(r => setTimeout(r, 0)); // deixa a tela respirar
+      }
     }
+    botao.textContent = "Montando o arquivo...";
+    await new Promise(r => setTimeout(r, 0));
 
     doc.save(`cartoes_${nomeArquivo(dataBr)}.pdf`);
     $("modal-lote").classList.remove("show");
