@@ -92,6 +92,33 @@
   .btn-ret { background: var(--warn-soft); color: var(--warn); border: 1px solid transparent; }
   .btn-cartao { background: #e8eefb; color: #0b3d91; border: 1px solid transparent; }
 
+  .conta-lista { font-size: 0.8rem; color: var(--muted); margin-left: auto; }
+
+  /* ---- Gráficos ---- */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .tile { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+  .tile .rot { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+  .tile .num { font-size: 1.7rem; font-weight: 800; color: var(--ink); line-height: 1.15; margin-top: 2px; }
+  .bloco-gr { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px; margin-bottom: 18px; }
+  .bloco-gr h3 { margin: 0; font-size: 0.98rem; }
+  .bloco-gr .legenda { margin: 3px 0 14px; font-size: 0.8rem; color: var(--muted); }
+  .area-grafico { position: relative; }
+  .area-grafico svg { display: block; width: 100%; height: auto; }
+  .gr-eixo { fill: var(--muted); font-size: 11px; font-family: inherit; }
+  .gr-valor { fill: var(--ink); font-size: 11px; font-weight: 700; font-family: inherit; }
+  .gr-grade { stroke: var(--line); stroke-width: 1; }
+  .gr-barra { cursor: default; }
+  .gr-barra:hover { opacity: 0.82; }
+  .gr-dica { position: absolute; pointer-events: none; background: var(--ink); color: white; font-size: 0.78rem;
+             padding: 6px 10px; border-radius: 7px; white-space: nowrap; opacity: 0; transition: opacity 0.12s; transform: translate(-50%, -130%); z-index: 5; }
+  .gr-dica.show { opacity: 1; }
+  .gr-vazio { color: var(--muted); font-size: 0.86rem; padding: 20px 0; }
+  .tabela-numeros { display: none; }
+  .mostrar-numeros .tabela-numeros { display: block; margin-top: 4px; }
+  .mostrar-numeros .area-grafico { display: none; }
+  .tabela-numeros table { font-size: 0.85rem; }
+  .tabela-numeros td:last-child, .tabela-numeros th:last-child { text-align: right; }
+
   .modal-fundo { position: fixed; inset: 0; background: rgba(28,33,40,0.45); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 80; }
   .modal-fundo.show { display: flex; }
   .modal { background: var(--card); border-radius: 14px; padding: 24px; max-width: 400px; width: 100%; max-height: 90vh; overflow-y: auto; }
@@ -164,6 +191,7 @@
       <button class="tab-btn active" data-tab="cadastro">📋 Cadastro</button>
       <button class="tab-btn" data-tab="presenca">✅ Registro de Presença</button>
       <button class="tab-btn" data-tab="pontuacao">🪙 Pontuação</button>
+      <button class="tab-btn" data-tab="graficos">📊 Gráficos</button>
       <button class="tab-btn" data-tab="sorteio">🎲 Sorteio</button>
       <button class="tab-btn" data-tab="diretorio">🗺️ Diretório de ruas</button>
     </div>
@@ -241,6 +269,10 @@
           <h2>Participantes cadastrados</h2>
           <button class="btn-ghost btn-sm" id="btn-atualizar-lista">↻ Atualizar</button>
         </div>
+        <div class="toolbar-pontos">
+          <input id="busca-cadastro" type="text" placeholder="Pesquisar por nome, telefone ou rua..." />
+          <span class="conta-lista" id="conta-cadastro"></span>
+        </div>
         <div class="tabela-rolavel">
           <table>
             <thead>
@@ -304,6 +336,45 @@
           <tbody id="tbody-pontuacao"></tbody>
         </table>
         </div>
+      </div>
+    </div>
+
+    <!-- GRÁFICOS -->
+    <div class="tab-panel" id="tab-graficos">
+      <div class="card-head" style="margin-bottom:14px">
+        <h2 style="font-size:1rem">📊 Gráficos</h2>
+        <button class="btn-ghost btn-sm" id="btn-numeros">🔢 Ver números</button>
+        <button class="btn-ghost btn-sm" id="btn-atualizar-graficos" style="margin-left:0">↻ Atualizar</button>
+      </div>
+
+      <div class="tiles" id="tiles-graficos"></div>
+
+      <div class="bloco-gr">
+        <h3>Frequência por dia</h3>
+        <p class="legenda">Quantas pessoas estiveram presentes em cada dia de programação.</p>
+        <div class="area-grafico" id="gr-frequencia"></div>
+        <div class="tabela-numeros" id="tb-frequencia"></div>
+      </div>
+
+      <div class="bloco-gr">
+        <h3>Novatos por dia</h3>
+        <p class="legenda">Quantos cadastros novos foram feitos em cada dia.</p>
+        <div class="area-grafico" id="gr-novatos"></div>
+        <div class="tabela-numeros" id="tb-novatos"></div>
+      </div>
+
+      <div class="bloco-gr">
+        <h3>Pessoas por rua</h3>
+        <p class="legenda" id="legenda-ruas">Quantas pessoas cadastradas moram em cada rua.</p>
+        <div class="area-grafico" id="gr-ruas"></div>
+        <div class="tabela-numeros" id="tb-ruas"></div>
+      </div>
+
+      <div class="bloco-gr">
+        <h3>Faixa etária</h3>
+        <p class="legenda">Quantas pessoas cadastradas há em cada faixa de idade.</p>
+        <div class="area-grafico" id="gr-idades"></div>
+        <div class="tabela-numeros" id="tb-idades"></div>
       </div>
     </div>
 
@@ -614,6 +685,7 @@ function trocarAba(nome) {
   if (nome === "presenca") montarListaPresenca();
   if (nome === "diretorio") montarDiretorio();
   if (nome === "pontuacao") abrirPontuacao();
+  if (nome === "graficos") abrirGraficos();
   if (nome === "sorteio") {
     carregarEstadoSorteio();
     if ($("subtab-btn-nome").classList.contains("active")) carregarElegiveisSorteioNome();
@@ -645,8 +717,19 @@ function atualizarListasAutocomplete() {
 }
 
 function renderizarTabelaCadastro() {
+  const termo = normalizarTexto(($("busca-cadastro").value || "").trim());
+  const todos = [...cacheParticipantes].reverse();
+  const linhas = termo
+    ? todos.filter(p => normalizarTexto(p.nome).includes(termo)
+        || normalizarTexto(p.telefone).includes(termo)
+        || normalizarTexto(p.rua).includes(termo))
+    : todos;
+
+  $("conta-cadastro").textContent = todos.length
+    ? (termo ? `${linhas.length} de ${todos.length} participantes` : `${todos.length} participantes`)
+    : "";
+
   const tbody = $("tbody-cadastro");
-  const linhas = [...cacheParticipantes].reverse();
   tbody.innerHTML = linhas.map(p => `
     <tr>
       <td class="celula-acoes">
@@ -664,7 +747,8 @@ function renderizarTabelaCadastro() {
       <td data-label="Bairro">${esc(p.bairro)}</td>
       <td data-label="Ponto de referência">${esc(p.pontoReferencia)}</td>
     </tr>
-  `).join("") || `<tr><td colspan="9" style="color:var(--muted); text-align:center">Nenhum participante ainda.</td></tr>`;
+  `).join("") || `<tr><td colspan="9" style="color:var(--muted); text-align:center">${
+    termo ? "Nenhum participante encontrado." : "Nenhum participante ainda."}</td></tr>`;
 }
 
 function lerCampoComCheckbox(idCampo, idCheckbox, valorSeMarcado) {
@@ -1003,6 +1087,260 @@ async function confirmarLancamento() {
   } finally {
     botao.disabled = false;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Gráficos  (só exibição — nada aqui altera dado nenhum)
+// ---------------------------------------------------------------------------
+// Desenhados em SVG na mão, sem biblioteca: são quatro gráficos simples e o
+// painel precisa abrir rápido no celular, no meio do evento.
+
+const COR_DADOS = "#1f7a4d";   // verde da marca, ajustado para leitura em gráfico
+const ALTURA_GRAFICO = 250;
+
+let cacheResumoPresencas = null;
+
+const FAIXAS_ETARIAS = [
+  { rotulo: "Menos de 10", teste: n => n < 10 },
+  { rotulo: "10 a 12",     teste: n => n >= 10 && n < 13 },
+  { rotulo: "13 a 15",     teste: n => n >= 13 && n < 16 },
+  { rotulo: "16 a 19",     teste: n => n >= 16 && n < 20 },
+  { rotulo: "20 a 29",     teste: n => n >= 20 && n < 30 },
+  { rotulo: "30 a 39",     teste: n => n >= 30 && n < 40 },
+  { rotulo: "40 a 49",     teste: n => n >= 40 && n < 50 },
+  { rotulo: "50 a 59",     teste: n => n >= 50 && n < 60 },
+  { rotulo: "60 ou mais",  teste: n => n >= 60 }
+];
+
+function ordenarPorData(a, b) {
+  const [da, ma, aa] = a.split("/"), [db, mb, ab] = b.split("/");
+  return (aa + ma + da).localeCompare(ab + mb + db);
+}
+
+function escalaBonita(maximo) {
+  if (maximo <= 0) return [0, 1];
+  const alvo = maximo / 4;
+  const magnitude = Math.pow(10, Math.floor(Math.log10(alvo)));
+  const passo = [1, 2, 2.5, 5, 10].map(m => m * magnitude).find(p => p >= alvo) || 10 * magnitude;
+  const marcas = [];
+  for (let v = 0; v < maximo + passo; v += passo) marcas.push(Math.round(v * 1000) / 1000);
+  return marcas;
+}
+
+/** Barra com o topo arredondado (4px) e a base quadrada, ancorada na linha zero. */
+function caminhoColuna(x, y, largura, altura, raio) {
+  const r = Math.min(raio, largura / 2, Math.max(altura, 0));
+  if (altura <= 0.5) return `M${x} ${y + altura} h${largura}`;
+  return `M${x} ${y + altura} L${x} ${y + r} Q${x} ${y} ${x + r} ${y} `
+       + `L${x + largura - r} ${y} Q${x + largura} ${y} ${x + largura} ${y + r} `
+       + `L${x + largura} ${y + altura} Z`;
+}
+
+function caminhoBarra(x, y, largura, altura, raio) {
+  const r = Math.min(raio, altura / 2, Math.max(largura, 0));
+  if (largura <= 0.5) return `M${x} ${y} v${altura}`;
+  return `M${x} ${y} L${x + largura - r} ${y} Q${x + largura} ${y} ${x + largura} ${y + r} `
+       + `L${x + largura} ${y + altura - r} Q${x + largura} ${y + altura} ${x + largura - r} ${y + altura} `
+       + `L${x} ${y + altura} Z`;
+}
+
+function graficoColunas(area, dados) {
+  if (!dados.length) { area.innerHTML = `<p class="gr-vazio">Ainda não há dados para este gráfico.</p>`; return; }
+
+  const largura = Math.max(300, area.clientWidth || 640);
+  const margemEsq = 34, margemDir = 10, margemTopo = 22;
+  const banda = (largura - margemEsq - margemDir) / dados.length;
+  const rotacionar = banda < 44;
+  const margemBase = rotacionar ? 58 : 34;
+  const alturaPlot = ALTURA_GRAFICO - margemTopo - margemBase;
+
+  const maximo = Math.max(...dados.map(d => d.valor));
+  const marcas = escalaBonita(maximo);
+  const topo = marcas[marcas.length - 1] || 1;
+  const y = v => margemTopo + alturaPlot * (1 - v / topo);
+
+  const grade = marcas.map(m => `
+    <line class="gr-grade" x1="${margemEsq}" y1="${y(m).toFixed(1)}" x2="${largura - margemDir}" y2="${y(m).toFixed(1)}" />
+    <text class="gr-eixo" x="${margemEsq - 6}" y="${(y(m) + 3.5).toFixed(1)}" text-anchor="end">${m}</text>`).join("");
+
+  // Rótulo em cada coluna só quando cabe; senão, só na maior (regra do "rotular pouco").
+  const rotularTodas = banda >= 30;
+  const indiceMaior = dados.indexOf(dados.reduce((a, b) => (b.valor > a.valor ? b : a), dados[0]));
+
+  const barras = dados.map((d, i) => {
+    const larguraBarra = Math.min(24, Math.max(5, banda - 8));
+    const x = margemEsq + i * banda + (banda - larguraBarra) / 2;
+    const alturaBarra = alturaPlot * (d.valor / topo);
+    const topoBarra = y(d.valor);
+    const mostrarValor = d.valor > 0 && (rotularTodas || i === indiceMaior);
+    const eixoX = margemTopo + alturaPlot;
+    const rotulo = rotacionar
+      ? `<text class="gr-eixo" transform="translate(${(x + larguraBarra / 2).toFixed(1)},${eixoX + 14}) rotate(-45)" text-anchor="end">${esc(d.rotulo)}</text>`
+      : `<text class="gr-eixo" x="${(x + larguraBarra / 2).toFixed(1)}" y="${eixoX + 15}" text-anchor="middle">${esc(d.rotulo)}</text>`;
+    return `
+      <g class="gr-barra" data-rotulo="${esc(d.rotuloLongo || d.rotulo)}" data-valor="${d.valor}" data-x="${(x + larguraBarra / 2).toFixed(1)}" data-y="${topoBarra.toFixed(1)}">
+        <rect x="${(x - 3).toFixed(1)}" y="${margemTopo}" width="${(larguraBarra + 6).toFixed(1)}" height="${alturaPlot}" fill="transparent" />
+        <path d="${caminhoColuna(x, topoBarra, larguraBarra, alturaBarra, 4)}" fill="${COR_DADOS}" />
+        ${mostrarValor ? `<text class="gr-valor" x="${(x + larguraBarra / 2).toFixed(1)}" y="${(topoBarra - 6).toFixed(1)}" text-anchor="middle">${d.valor}</text>` : ""}
+        ${rotulo}
+      </g>`;
+  }).join("");
+
+  area.innerHTML = `<svg viewBox="0 0 ${largura} ${ALTURA_GRAFICO}" width="${largura}" height="${ALTURA_GRAFICO}" role="img">
+      ${grade}${barras}
+      <line class="gr-grade" x1="${margemEsq}" y1="${margemTopo + alturaPlot}" x2="${largura - margemDir}" y2="${margemTopo + alturaPlot}" />
+    </svg><div class="gr-dica"></div>`;
+  ligarDicas(area);
+}
+
+function graficoBarras(area, dados) {
+  if (!dados.length) { area.innerHTML = `<p class="gr-vazio">Ainda não há dados para este gráfico.</p>`; return; }
+
+  const largura = Math.max(300, area.clientWidth || 640);
+  const margemEsq = Math.min(160, Math.max(90, Math.round(largura * 0.38)));
+  const margemDir = 44;
+  const passo = 26, alturaBarra = 16;
+  const altura = dados.length * passo + 10;
+  const maximo = Math.max(...dados.map(d => d.valor)) || 1;
+  const larguraPlot = largura - margemEsq - margemDir;
+
+  const linhas = dados.map((d, i) => {
+    const y = i * passo + 5;
+    const comprimento = Math.max(1, larguraPlot * (d.valor / maximo));
+    return `
+      <g class="gr-barra" data-rotulo="${esc(d.rotuloLongo || d.rotulo)}" data-valor="${d.valor}" data-x="${(margemEsq + comprimento).toFixed(1)}" data-y="${y + alturaBarra / 2}">
+        <rect x="0" y="${y - 3}" width="${largura}" height="${passo}" fill="transparent" />
+        <text class="gr-eixo" x="${margemEsq - 8}" y="${y + alturaBarra - 3}" text-anchor="end">${esc(d.rotulo)}</text>
+        <path d="${caminhoBarra(margemEsq, y, comprimento, alturaBarra, 4)}" fill="${COR_DADOS}" />
+        <text class="gr-valor" x="${(margemEsq + comprimento + 6).toFixed(1)}" y="${y + alturaBarra - 3}">${d.valor}</text>
+      </g>`;
+  }).join("");
+
+  area.innerHTML = `<svg viewBox="0 0 ${largura} ${altura}" width="${largura}" height="${altura}" role="img">
+      <line class="gr-grade" x1="${margemEsq}" y1="0" x2="${margemEsq}" y2="${altura - 5}" />
+      ${linhas}
+    </svg><div class="gr-dica"></div>`;
+  ligarDicas(area);
+}
+
+function ligarDicas(area) {
+  const dica = area.querySelector(".gr-dica");
+  if (!dica) return;
+  area.querySelectorAll(".gr-barra").forEach(g => {
+    const mostrar = () => {
+      const svg = area.querySelector("svg");
+      const escala = svg.clientWidth / parseFloat(svg.getAttribute("width"));
+      dica.textContent = `${g.dataset.rotulo}: ${g.dataset.valor}`;
+      dica.style.left = (parseFloat(g.dataset.x) * escala) + "px";
+      dica.style.top = (parseFloat(g.dataset.y) * escala) + "px";
+      dica.classList.add("show");
+    };
+    g.addEventListener("pointerenter", mostrar);
+    g.addEventListener("pointermove", mostrar);
+    g.addEventListener("pointerleave", () => dica.classList.remove("show"));
+  });
+}
+
+function tabelaNumeros(id, cabecalho, dados) {
+  $(id).innerHTML = `<table>
+      <thead><tr><th>${esc(cabecalho)}</th><th>Quantidade</th></tr></thead>
+      <tbody>${dados.map(d => `<tr><td>${esc(d.rotuloLongo || d.rotulo)}</td><td>${d.valor}</td></tr>`).join("")
+        || `<tr><td colspan="2" style="color:var(--muted)">Sem dados.</td></tr>`}</tbody>
+    </table>`;
+}
+
+// --- Dados de cada gráfico ---
+
+function dadosFrequencia() {
+  const resumo = cacheResumoPresencas || {};
+  return Object.keys(resumo).sort(ordenarPorData)
+    .map(d => ({ rotulo: d.slice(0, 5), rotuloLongo: d, valor: resumo[d] }));
+}
+
+function dadosNovatos() {
+  const porDia = {};
+  cacheParticipantes.forEach(p => {
+    if (!p.dataCadastro) return;
+    porDia[p.dataCadastro] = (porDia[p.dataCadastro] || 0) + 1;
+  });
+  return Object.keys(porDia).sort(ordenarPorData)
+    .map(d => ({ rotulo: d.slice(0, 5), rotuloLongo: d, valor: porDia[d] }));
+}
+
+function dadosRuas(limite = 15) {
+  const porRua = {};
+  cacheParticipantes.forEach(p => {
+    const rua = p.rua || "Sem rua informada";
+    porRua[rua] = (porRua[rua] || 0) + 1;
+  });
+  const todas = Object.keys(porRua)
+    .map(r => ({ rotulo: r.length > 26 ? r.slice(0, 25) + "…" : r, rotuloLongo: r, valor: porRua[r] }))
+    .sort((a, b) => b.valor - a.valor || a.rotuloLongo.localeCompare(b.rotuloLongo, "pt-BR"));
+
+  const legenda = $("legenda-ruas");
+  if (todas.length > limite) {
+    const resto = todas.slice(limite);
+    const soma = resto.reduce((s, r) => s + r.valor, 0);
+    legenda.textContent = `Quantas pessoas cadastradas moram em cada rua. Mostrando as ${limite} maiores de ${todas.length}; use "Ver números" para a lista completa.`;
+    return { grafico: todas.slice(0, limite).concat([{ rotulo: `Outras ${resto.length} ruas`, valor: soma }]), completo: todas };
+  }
+  legenda.textContent = "Quantas pessoas cadastradas moram em cada rua.";
+  return { grafico: todas, completo: todas };
+}
+
+function dadosIdades() {
+  const contagem = FAIXAS_ETARIAS.map(f => ({ rotulo: f.rotulo, valor: 0 }));
+  let semInformacao = 0;
+  cacheParticipantes.forEach(p => {
+    const n = parseInt(String(p.idade).replace(/\D/g, ""), 10);
+    if (isNaN(n) || String(p.idade) === IDADE_NAO_INFORMADA) { semInformacao++; return; }
+    const i = FAIXAS_ETARIAS.findIndex(f => f.teste(n));
+    if (i >= 0) contagem[i].valor++; else semInformacao++;
+  });
+  if (semInformacao) contagem.push({ rotulo: "Não informado", valor: semInformacao });
+  return contagem;
+}
+
+function tilesResumo() {
+  const dias = dadosFrequencia();
+  const totalPresencas = dias.reduce((s, d) => s + d.valor, 0);
+  const media = dias.length ? Math.round(totalPresencas / dias.length) : 0;
+  $("tiles-graficos").innerHTML = `
+    <div class="tile"><div class="rot">Participantes</div><div class="num">${cacheParticipantes.length}</div></div>
+    <div class="tile"><div class="rot">Dias de programação</div><div class="num">${dias.length}</div></div>
+    <div class="tile"><div class="rot">Média por dia</div><div class="num">${media}</div></div>`;
+}
+
+let dadosRuasCache = { grafico: [], completo: [] };
+
+function desenharGraficos() {
+  const freq = dadosFrequencia();
+  const nov = dadosNovatos();
+  dadosRuasCache = dadosRuas();
+  const idades = dadosIdades();
+
+  tilesResumo();
+  graficoColunas($("gr-frequencia"), freq);
+  graficoColunas($("gr-novatos"), nov);
+  graficoBarras($("gr-ruas"), dadosRuasCache.grafico);
+  graficoColunas($("gr-idades"), idades);
+
+  tabelaNumeros("tb-frequencia", "Dia", freq);
+  tabelaNumeros("tb-novatos", "Dia", nov);
+  tabelaNumeros("tb-ruas", "Rua", dadosRuasCache.completo);
+  tabelaNumeros("tb-idades", "Faixa etária", idades);
+}
+
+async function abrirGraficos() {
+  if (!cacheResumoPresencas) {
+    try {
+      cacheResumoPresencas = await appsScriptFetch("resumoPresencas");
+    } catch (e) {
+      cacheResumoPresencas = {};
+      showToast(e.message || "Não consegui carregar a frequência por dia.");
+    }
+  }
+  desenharGraficos();
 }
 
 // ---------------------------------------------------------------------------
@@ -1686,6 +2024,33 @@ $("tbody-cadastro").addEventListener("click", e => {
   if (!btn) return;
   if (btn.dataset.acao === "editar") carregarParaEdicao(btn.dataset.id);
   if (btn.dataset.acao === "excluir") deletarCadastro(btn.dataset.id);
+});
+
+$("busca-cadastro").addEventListener("input", renderizarTabelaCadastro);
+
+// --- Gráficos ---
+$("btn-numeros").addEventListener("click", () => {
+  const painel = $("tab-graficos");
+  const mostrando = painel.classList.toggle("mostrar-numeros");
+  $("btn-numeros").textContent = mostrando ? "📊 Ver gráficos" : "🔢 Ver números";
+});
+$("btn-atualizar-graficos").addEventListener("click", async () => {
+  const b = $("btn-atualizar-graficos");
+  b.disabled = true;
+  try {
+    await carregarParticipantes();
+    cacheResumoPresencas = null;
+    await abrirGraficos();
+    showToast("Gráficos atualizados.");
+  } catch (e) {
+    showToast(e.message || "Não consegui atualizar.");
+  } finally { b.disabled = false; }
+});
+let redesenhoGraficos = null;
+window.addEventListener("resize", () => {
+  if (!$("tab-graficos").classList.contains("active")) return;
+  clearTimeout(redesenhoGraficos);
+  redesenhoGraficos = setTimeout(desenharGraficos, 180);
 });
 
 $("busca-presenca").addEventListener("input", filtrarListaPresenca);
