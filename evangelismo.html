@@ -4,6 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gerenciador de Evangelismo</title>
+
+<!-- App na tela de início. O manifesto NÃO tem "start_url" de propósito: sem ele,
+     o navegador usa o endereço da página aberta — que carrega o token do usuário.
+     Com um start_url fixo, o atalho abriria sem token e cairia em "link inválido". -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#3a5a49">
+<link rel="icon" href="icone-192.png">
+<link rel="apple-touch-icon" href="icone-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Evangelismo">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
@@ -106,6 +117,12 @@
   .btn-engrenagem { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
                     font-size: 1.15rem; line-height: 1; padding: 9px 12px; flex: 0 0 auto; }
   .btn-engrenagem:hover { border-color: var(--accent); }
+  .acoes-topo { display: flex; gap: 6px; flex: 0 0 auto; }
+  .passo-instalar { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px; font-size: 0.88rem; }
+  .passo-instalar .n { flex: 0 0 auto; width: 20px; height: 20px; border-radius: 50%; background: var(--accent-soft);
+                       color: var(--accent); font-size: 0.72rem; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+  .bloco-so { border: 1px solid var(--line); border-radius: 10px; padding: 14px; margin-bottom: 12px; }
+  .bloco-so h4 { margin: 0 0 10px; font-size: 0.85rem; }
   .faixa-plano { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
   .chip-plano, .chip-prazo { font-size: 0.78rem; font-weight: 600; padding: 4px 11px; border-radius: 20px; white-space: nowrap; }
   .chip-plano { background: var(--accent-soft); color: var(--accent); }
@@ -208,7 +225,10 @@
           <span class="chip-prazo" id="chip-prazo"></span>
         </div>
       </div>
-      <button class="btn-engrenagem" id="btn-config" title="Trocar a planilha conectada" aria-label="Configurações da planilha">⚙️</button>
+      <div class="acoes-topo">
+        <button class="btn-engrenagem" id="btn-instalar" title="Instalar como app no celular" aria-label="Instalar no celular">📲</button>
+        <button class="btn-engrenagem" id="btn-config" title="Trocar a planilha conectada" aria-label="Configurações da planilha">⚙️</button>
+      </div>
     </header>
 
     <div id="aviso-versao" class="aviso" style="display:none">
@@ -476,6 +496,38 @@
     <div class="modal-acoes">
       <button class="btn-ghost btn-sm" id="modal-pontos-cancelar">Cancelar</button>
       <button class="btn-primary btn-sm" id="modal-pontos-confirmar">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-fundo" id="modal-instalar">
+  <div class="modal">
+    <h3>Instalar no celular</h3>
+    <p class="sub">Vira um ícone na tela do seu celular, como um aplicativo. Você abre direto por ele, sem precisar guardar o link.</p>
+
+    <div id="instalar-automatico" style="display:none; margin-bottom:14px">
+      <button class="btn-primary" style="width:100%" id="btn-instalar-agora">📲 Instalar agora</button>
+    </div>
+
+    <div class="bloco-so">
+      <h4>📱 Android (Chrome)</h4>
+      <div class="passo-instalar"><span class="n">1</span><span>Toque nos <strong>três pontinhos ⋮</strong> no canto do navegador.</span></div>
+      <div class="passo-instalar"><span class="n">2</span><span>Escolha <strong>Instalar app</strong> ou <strong>Adicionar à tela inicial</strong>.</span></div>
+      <div class="passo-instalar" style="margin-bottom:0"><span class="n">3</span><span>Confirme. O ícone aparece junto com os seus outros apps.</span></div>
+    </div>
+
+    <div class="bloco-so">
+      <h4>🍎 iPhone (Safari)</h4>
+      <div class="passo-instalar"><span class="n">1</span><span>Toque no botão <strong>Compartilhar</strong> (o quadradinho com a seta para cima).</span></div>
+      <div class="passo-instalar"><span class="n">2</span><span>Role a lista e escolha <strong>Adicionar à Tela de Início</strong>.</span></div>
+      <div class="passo-instalar" style="margin-bottom:0"><span class="n">3</span><span>Toque em <strong>Adicionar</strong>.</span></div>
+      <p class="sub" style="margin:10px 0 0"><strong>No iPhone só funciona pelo Safari.</strong> Se você abriu no Chrome, copie o endereço e cole no Safari primeiro.</p>
+    </div>
+
+    <p class="sub" style="margin:0">Depois de instalar, abra pelo ícone uma vez para conferir que o painel carrega normalmente.</p>
+
+    <div class="modal-acoes">
+      <button class="btn-ghost btn-sm" id="instalar-fechar">Fechar</button>
     </div>
   </div>
 </div>
@@ -2325,6 +2377,31 @@ $("btn-tentar-de-novo").addEventListener("click", () => {
   $("tela-carregando").style.display = "block";
   abrirPainel().finally(() => { $("tela-carregando").style.display = "none"; });
 });
+
+// --- Instalar como app ---
+// Alguns navegadores oferecem a instalação direta; nos outros, restam as
+// instruções manuais. O evento chega antes de o usuário abrir a janela, então
+// ele é guardado para ser disparado no clique.
+let promptInstalacao = null;
+window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault();
+  promptInstalacao = e;
+});
+
+$("btn-instalar").addEventListener("click", () => {
+  $("instalar-automatico").style.display = promptInstalacao ? "block" : "none";
+  $("modal-instalar").classList.add("show");
+});
+$("btn-instalar-agora").addEventListener("click", async () => {
+  if (!promptInstalacao) return;
+  promptInstalacao.prompt();
+  const escolha = await promptInstalacao.userChoice.catch(() => null);
+  promptInstalacao = null;
+  $("modal-instalar").classList.remove("show");
+  if (escolha && escolha.outcome === "accepted") showToast("Pronto! O ícone foi criado na tela do celular.");
+});
+$("instalar-fechar").addEventListener("click", () => $("modal-instalar").classList.remove("show"));
+$("modal-instalar").addEventListener("click", e => { if (e.target.id === "modal-instalar") $("modal-instalar").classList.remove("show"); });
 
 $("btn-config").addEventListener("click", abrirConfig);
 $("config-cancelar").addEventListener("click", () => $("modal-config").classList.remove("show"));
