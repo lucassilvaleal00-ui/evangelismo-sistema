@@ -355,8 +355,10 @@ async function regenerarLink(id) {
   if (!u) return;
   if (!confirm(
     `Gerar um link NOVO para ${u.nome}?\n\n` +
-    `O link antigo para de funcionar imediatamente. A planilha dele também será desvinculada: ` +
-    `ele vai precisar colar a URL do Web App outra vez ao abrir o novo link. Os dados da planilha não se perdem.\n\n` +
+    `O link antigo para de funcionar imediatamente.\n\n` +
+    `A pessoa vai precisar, na planilha dela: abrir Extensões > Apps Script, rodar a função ` +
+    `"desvincularPlanilha" e depois colar a URL do Web App outra vez no link novo. ` +
+    `Nenhum dado da planilha se perde.\n\n` +
     `Use isso apenas se o link vazou ou foi compartilhado indevidamente.`
   )) return;
 
