@@ -375,7 +375,7 @@
 <div class="modal-fundo" id="modal-lote">
   <div class="modal">
     <h3>Gerar cartões por lote</h3>
-    <p class="sub">Escolha a data de um evento. O PDF sai com os cartões de quem foi cadastrado naquele dia, 18 por página.</p>
+    <p class="sub">Escolha a data de um evento. O PDF sai com os cartões de quem foi cadastrado naquele dia, 16 por página, em folha deitada.</p>
     <label for="modal-lote-data">Data do evento</label>
     <input id="modal-lote-data" type="date" />
     <p class="sub" style="margin:0 0 6px">Datas com cadastros:</p>
@@ -1075,15 +1075,16 @@ function desenharCartao(nome, larguraPx) {
   const u = W / CARTAO.larguraMm;   // pixels por milímetro
   const mono = '"Courier New", Courier, monospace';
 
-  // moldura escura + corpo branco
+  // borda escura fina (só um contorno para guiar o recorte) + corpo branco
+  const borda = 0.55 * u;
   g.fillStyle = "#0d0f14";
-  retanguloArredondado(g, 0, 0, W, H, 3.6 * u); g.fill();
+  retanguloArredondado(g, 0, 0, W, H, 3.2 * u); g.fill();
   g.fillStyle = "#ffffff";
-  retanguloArredondado(g, 1.7 * u, 1.7 * u, W - 3.4 * u, H - 3.4 * u, 2.4 * u); g.fill();
+  retanguloArredondado(g, borda, borda, W - 2 * borda, H - 2 * borda, 2.9 * u); g.fill();
 
   // ondas azuis do lado direito
   g.save();
-  retanguloArredondado(g, 1.7 * u, 1.7 * u, W - 3.4 * u, H - 3.4 * u, 2.4 * u); g.clip();
+  retanguloArredondado(g, borda, borda, W - 2 * borda, H - 2 * borda, 2.9 * u); g.clip();
   g.fillStyle = "#0b3d91";
   g.beginPath();
   g.moveTo(W * 0.46, 0);
@@ -1269,11 +1270,12 @@ async function gerarCartoesEmLote() {
     }
     const { jsPDF } = window.jspdf;
     // compress:true é essencial: sem ele o PDF sai com ~27 MB em vez de ~700 KB.
-    const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
+    // Folha deitada e 4 colunas x 4 linhas = 16 cartões por página. Em pé só
+    // cabem 3 colunas, o que obrigaria a encolher bastante cada cartão.
+    const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "landscape", compress: true });
 
-    // 3 colunas x 6 linhas = 18 cartões por página.
-    const margem = 10, folga = 4, colunas = 3, linhas = 6;
-    const largura = (210 - 2 * margem - (colunas - 1) * folga) / colunas;
+    const larguraFolha = 297, margem = 7, folga = 3, colunas = 4, linhas = 4;
+    const largura = (larguraFolha - 2 * margem - (colunas - 1) * folga) / colunas;
     const altura = largura * CARTAO.alturaMm / CARTAO.larguraMm;
 
     for (let i = 0; i < pessoas.length; i++) {
