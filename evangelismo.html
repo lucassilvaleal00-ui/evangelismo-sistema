@@ -91,6 +91,10 @@
   .btn-dep { background: var(--accent-soft); color: var(--accent); border: 1px solid transparent; }
   .btn-ret { background: var(--warn-soft); color: var(--warn); border: 1px solid transparent; }
   .btn-cartao { background: #e8eefb; color: #0b3d91; border: 1px solid transparent; }
+  .celula-marcar input, #marcar-todos { width: auto; margin: 0; transform: scale(1.25); cursor: pointer; }
+  tr.linha-marcada { background: var(--accent-soft); }
+  .area-rolavel { max-height: 420px; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  .busca-rua { max-width: 260px; margin: 0 0 12px; }
 
   .conta-lista { font-size: 0.8rem; color: var(--muted); margin-left: auto; }
 
@@ -314,6 +318,8 @@
         <div class="toolbar-pontos">
           <input id="busca-pontuacao" type="text" placeholder="Pesquisar por nome..." />
           <button class="btn-ghost btn-sm" id="btn-lote">🗂️ Gerar cartões por lote</button>
+          <button class="btn-primary btn-sm" id="btn-cartoes-selecionados" style="display:none">🪪 Gerar cartões selecionados</button>
+          <button class="btn-ghost btn-sm" id="btn-limpar-selecao" style="display:none">Limpar seleção</button>
           <button class="btn-ghost btn-sm" id="btn-atualizar-pontos">↻ Atualizar saldos</button>
         </div>
         <p class="sub" id="aviso-limite-pontuacao" style="margin:-6px 0 12px"></p>
@@ -321,6 +327,7 @@
         <table>
           <thead>
             <tr>
+              <th style="width:1%"><input type="checkbox" id="marcar-todos" title="Selecionar todos os que estão na tela" style="width:auto;margin:0" /></th>
               <th>Ações</th>
               <th>Data do cadastro</th>
               <th>Nome</th>
@@ -366,7 +373,8 @@
       <div class="bloco-gr">
         <h3>Pessoas por rua</h3>
         <p class="legenda" id="legenda-ruas">Quantas pessoas cadastradas moram em cada rua.</p>
-        <div class="area-grafico" id="gr-ruas"></div>
+        <input id="busca-rua" class="busca-rua" type="text" placeholder="Pesquisar rua..." />
+        <div class="area-rolavel"><div class="area-grafico" id="gr-ruas"></div></div>
         <div class="tabela-numeros" id="tb-ruas"></div>
       </div>
 
@@ -483,6 +491,7 @@ let presencasHojeNomes = new Set();
 let cacheSaldos = {};
 let codigoConsulta = null;
 let idPontuacaoAtual = null;
+let selecionadosCartao = new Set();
 let tipoOperacaoAtual = "deposito";
 
 const SEM_TELEFONE = "Não possui telefone";
@@ -1029,12 +1038,15 @@ function renderizarPontuacao() {
   tbody.innerHTML = lista.map(p => {
     const saldo = saldoDe(p.id);
     return `
-      <tr>
+      <tr class="${selecionadosCartao.has(p.id) ? "linha-marcada" : ""}">
+        <td class="celula-marcar" data-label="Selecionar">
+          <input type="checkbox" class="marcar-cartao" data-id="${esc(p.id)}" ${selecionadosCartao.has(p.id) ? "checked" : ""}
+                 aria-label="Selecionar ${esc(p.nome)} para gerar cartão" />
+        </td>
         <td class="celula-acoes">
           <div class="acoes-pontos">
             <button class="btn-sm btn-dep" data-acao="depositar" data-id="${esc(p.id)}">💰 Depositar</button>
             <button class="btn-sm btn-ret" data-acao="retirar" data-id="${esc(p.id)}">💸 Retirar</button>
-            <button class="btn-sm btn-cartao" data-acao="cartao" data-id="${esc(p.id)}">🪪 Gerar cartão</button>
           </div>
         </td>
         <td data-label="Data do cadastro">${esc(p.dataCadastro)}</td>
@@ -1047,7 +1059,23 @@ function renderizarPontuacao() {
         <td data-label="Bairro">${esc(p.bairro)}</td>
         <td data-label="Ponto de referência">${esc(p.pontoReferencia)}</td>
       </tr>`;
-  }).join("") || `<tr><td colspan="10" style="color:var(--muted); text-align:center">Nenhum participante encontrado.</td></tr>`;
+  }).join("") || `<tr><td colspan="11" style="color:var(--muted); text-align:center">Nenhum participante encontrado.</td></tr>`;
+
+  atualizarBarraSelecao();
+}
+
+/** Mostra ou esconde os botões de seleção conforme o que está marcado. */
+function atualizarBarraSelecao() {
+  const total = selecionadosCartao.size;
+  const botao = $("btn-cartoes-selecionados");
+  botao.style.display = total ? "" : "none";
+  botao.textContent = total === 1 ? "🪪 Gerar 1 cartão selecionado" : `🪪 Gerar ${total} cartões selecionados`;
+  $("btn-limpar-selecao").style.display = total ? "" : "none";
+
+  const visiveis = [...document.querySelectorAll(".marcar-cartao")];
+  const marcarTodos = $("marcar-todos");
+  marcarTodos.checked = visiveis.length > 0 && visiveis.every(c => c.checked);
+  marcarTodos.indeterminate = !marcarTodos.checked && visiveis.some(c => c.checked);
 }
 
 function abrirModalPontos(id, tipo) {
@@ -1194,8 +1222,11 @@ function graficoColunas(area, dados) {
   ligarDicas(area);
 }
 
-function graficoBarras(area, dados) {
-  if (!dados.length) { area.innerHTML = `<p class="gr-vazio">Ainda não há dados para este gráfico.</p>`; return; }
+function graficoBarras(area, dados, mensagemVazia) {
+  if (!dados.length) {
+    area.innerHTML = `<p class="gr-vazio">${esc(mensagemVazia || "Ainda não há dados para este gráfico.")}</p>`;
+    return;
+  }
 
   const largura = Math.max(300, area.clientWidth || 640);
   const margemEsq = Math.min(160, Math.max(90, Math.round(largura * 0.38)));
@@ -1268,7 +1299,7 @@ function dadosNovatos() {
     .map(d => ({ rotulo: d.slice(0, 5), rotuloLongo: d, valor: porDia[d] }));
 }
 
-function dadosRuas(limite = 15) {
+function dadosRuas() {
   const porRua = {};
   cacheParticipantes.forEach(p => {
     const rua = p.rua || "Sem rua informada";
@@ -1278,15 +1309,14 @@ function dadosRuas(limite = 15) {
     .map(r => ({ rotulo: r.length > 26 ? r.slice(0, 25) + "…" : r, rotuloLongo: r, valor: porRua[r] }))
     .sort((a, b) => b.valor - a.valor || a.rotuloLongo.localeCompare(b.rotuloLongo, "pt-BR"));
 
-  const legenda = $("legenda-ruas");
-  if (todas.length > limite) {
-    const resto = todas.slice(limite);
-    const soma = resto.reduce((s, r) => s + r.valor, 0);
-    legenda.textContent = `Quantas pessoas cadastradas moram em cada rua. Mostrando as ${limite} maiores de ${todas.length}; use "Ver números" para a lista completa.`;
-    return { grafico: todas.slice(0, limite).concat([{ rotulo: `Outras ${resto.length} ruas`, valor: soma }]), completo: todas };
-  }
-  legenda.textContent = "Quantas pessoas cadastradas moram em cada rua.";
-  return { grafico: todas, completo: todas };
+  const termo = normalizarTexto(($("busca-rua").value || "").trim());
+  const filtradas = termo ? todas.filter(r => normalizarTexto(r.rotuloLongo).includes(termo)) : todas;
+
+  $("legenda-ruas").textContent = termo
+    ? `Mostrando ${filtradas.length} de ${todas.length} ruas.`
+    : `Quantas pessoas cadastradas moram em cada rua — todas as ${todas.length}, role a lista para ver.`;
+
+  return { grafico: filtradas, completo: todas };
 }
 
 function dadosIdades() {
@@ -1336,7 +1366,7 @@ function desenharGraficos() {
     graficoColunas($("gr-frequencia"), freq);
   }
   graficoColunas($("gr-novatos"), nov);
-  graficoBarras($("gr-ruas"), dadosRuasCache.grafico);
+  graficoBarras($("gr-ruas"), dadosRuasCache.grafico, "Nenhuma rua encontrada com esse nome.");
   graficoColunas($("gr-idades"), idades);
 
   tabelaNumeros("tb-frequencia", "Dia", freq);
@@ -1571,30 +1601,6 @@ function nomeArquivo(base) {
   return base.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_|_$/g, "");
 }
 
-async function gerarCartaoIndividual(id) {
-  const p = cacheParticipantes.find(x => x.id === id);
-  if (!p) return;
-  showToast("Gerando o cartão...");
-  try {
-    await garantirLibsCartao();
-    if (!codigoConsulta) {
-      const info = await appsScriptFetch("infoPlanilha");
-      codigoConsulta = info && info.codigoConsulta;
-    }
-    const { jsPDF } = window.jspdf;
-    // compress:true é essencial: sem ele o PDF sai com ~27 MB em vez de ~700 KB.
-    const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
-    // Cartão em tamanho real, centralizado — o resto da folha fica em branco.
-    colarCartaoNoPdf(doc, p, (210 - CARTAO.larguraMm) / 2, 45, CARTAO.larguraMm);
-    doc.setFontSize(9);
-    doc.setTextColor(120);
-    doc.text("Recorte na borda do cartão. O QR Code mostra o saldo de pontos do participante.", 105, 115, { align: "center" });
-    doc.save(`cartao_${nomeArquivo(p.nome)}.pdf`);
-  } catch (e) {
-    console.error(e);
-    showToast(e.message || "Não consegui gerar o cartão.");
-  }
-}
 
 function datasComCadastro() {
   const contagem = {};
@@ -1646,6 +1652,52 @@ function atualizarInfoLote() {
   botao.disabled = false;
 }
 
+/**
+ * Monta o PDF de uma lista de pessoas. Uma pessoa só sai em tamanho real,
+ * centralizada na folha; várias saem na grade de 16 por folha deitada.
+ */
+async function gerarPdfDeCartoes(pessoas, nomeBase, botao) {
+  await garantirLibsCartao();
+  if (!codigoConsulta) {
+    const info = await appsScriptFetch("infoPlanilha");
+    codigoConsulta = info && info.codigoConsulta;
+  }
+  const { jsPDF } = window.jspdf;
+
+  if (pessoas.length === 1) {
+    const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
+    colarCartaoNoPdf(doc, pessoas[0], (210 - CARTAO.larguraMm) / 2, 45, CARTAO.larguraMm);
+    doc.setFontSize(9);
+    doc.setTextColor(120);
+    doc.text("Recorte na borda do cartão. O QR Code mostra o saldo de pontos do participante.", 105, 115, { align: "center" });
+    doc.save(`${nomeBase}.pdf`);
+    return;
+  }
+
+  // compress:true é essencial: sem ele o PDF sai com ~27 MB em vez de ~700 KB.
+  // Folha deitada e 4 colunas x 4 linhas = 16 cartões por página. Em pé só
+  // cabem 3 colunas, o que obrigaria a encolher bastante cada cartão.
+  const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "landscape", compress: true });
+  const larguraFolha = 297, margem = 7, folga = 3, colunas = 4, linhas = 4;
+  const largura = (larguraFolha - 2 * margem - (colunas - 1) * folga) / colunas;
+  const altura = largura * CARTAO.alturaMm / CARTAO.larguraMm;
+
+  for (let i = 0; i < pessoas.length; i++) {
+    const posicao = i % (colunas * linhas);
+    if (i > 0 && posicao === 0) doc.addPage();
+    const col = posicao % colunas;
+    const lin = Math.floor(posicao / colunas);
+    colarCartaoNoPdf(doc, pessoas[i], margem + col * (largura + folga), margem + lin * (altura + folga), largura);
+    if (i % 8 === 7 && botao) {
+      botao.textContent = `Gerando ${i + 1}/${pessoas.length}...`;
+      await new Promise(r => setTimeout(r, 0)); // deixa a tela respirar
+    }
+  }
+  if (botao) botao.textContent = "Montando o arquivo...";
+  await new Promise(r => setTimeout(r, 0));
+  doc.save(`${nomeBase}.pdf`);
+}
+
 async function gerarCartoesEmLote() {
   const dataBr = deIso($("modal-lote-data").value);
   const pessoas = cacheParticipantes.filter(p => p.dataCadastro === dataBr);
@@ -1655,36 +1707,7 @@ async function gerarCartoesEmLote() {
   botao.disabled = true;
   botao.textContent = "Gerando...";
   try {
-    await garantirLibsCartao();
-    if (!codigoConsulta) {
-      const info = await appsScriptFetch("infoPlanilha");
-      codigoConsulta = info && info.codigoConsulta;
-    }
-    const { jsPDF } = window.jspdf;
-    // compress:true é essencial: sem ele o PDF sai com ~27 MB em vez de ~700 KB.
-    // Folha deitada e 4 colunas x 4 linhas = 16 cartões por página. Em pé só
-    // cabem 3 colunas, o que obrigaria a encolher bastante cada cartão.
-    const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "landscape", compress: true });
-
-    const larguraFolha = 297, margem = 7, folga = 3, colunas = 4, linhas = 4;
-    const largura = (larguraFolha - 2 * margem - (colunas - 1) * folga) / colunas;
-    const altura = largura * CARTAO.alturaMm / CARTAO.larguraMm;
-
-    for (let i = 0; i < pessoas.length; i++) {
-      const posicao = i % (colunas * linhas);
-      if (i > 0 && posicao === 0) doc.addPage();
-      const col = posicao % colunas;
-      const lin = Math.floor(posicao / colunas);
-      colarCartaoNoPdf(doc, pessoas[i], margem + col * (largura + folga), margem + lin * (altura + folga), largura);
-      if (i % 8 === 7) {
-        botao.textContent = `Gerando ${i + 1}/${pessoas.length}...`;
-        await new Promise(r => setTimeout(r, 0)); // deixa a tela respirar
-      }
-    }
-    botao.textContent = "Montando o arquivo...";
-    await new Promise(r => setTimeout(r, 0));
-
-    doc.save(`cartoes_${nomeArquivo(dataBr)}.pdf`);
+    await gerarPdfDeCartoes(pessoas, `cartoes_${nomeArquivo(dataBr)}`, botao);
     $("modal-lote").classList.remove("show");
     showToast(`${pessoas.length} cartão(ões) gerados.`);
   } catch (e) {
@@ -1693,6 +1716,30 @@ async function gerarCartoesEmLote() {
   } finally {
     botao.disabled = false;
     botao.textContent = "Gerar PDF";
+  }
+}
+
+async function gerarCartoesSelecionados() {
+  // Segue a ordem da tabela (mais recentes primeiro), não a ordem dos cliques.
+  const pessoas = [...cacheParticipantes].reverse().filter(p => selecionadosCartao.has(p.id));
+  if (!pessoas.length) return;
+
+  const botao = $("btn-cartoes-selecionados");
+  const textoOriginal = botao.textContent;
+  botao.disabled = true;
+  botao.textContent = "Gerando...";
+  try {
+    const nome = pessoas.length === 1
+      ? `cartao_${nomeArquivo(pessoas[0].nome)}`
+      : `cartoes_selecionados_${pessoas.length}`;
+    await gerarPdfDeCartoes(pessoas, nome, botao);
+    showToast(`${pessoas.length} cartão(ões) gerados.`);
+  } catch (e) {
+    console.error(e);
+    showToast(e.message || "Não consegui gerar os cartões.");
+  } finally {
+    botao.disabled = false;
+    botao.textContent = textoOriginal;
   }
 }
 
@@ -1983,6 +2030,10 @@ document.querySelectorAll(".campo-check input[type=checkbox]").forEach(chk => {
 });
 
 // --- Pontuação ---
+$("busca-rua").addEventListener("input", () => {
+  dadosRuasCache = dadosRuas();
+  graficoBarras($("gr-ruas"), dadosRuasCache.grafico, "Nenhuma rua encontrada com esse nome.");
+});
 $("busca-pontuacao").addEventListener("input", renderizarPontuacao);
 $("btn-atualizar-pontos").addEventListener("click", async () => {
   const b = $("btn-atualizar-pontos");
@@ -1996,7 +2047,31 @@ $("tbody-pontuacao").addEventListener("click", e => {
   if (!btn) return;
   if (btn.dataset.acao === "depositar") abrirModalPontos(btn.dataset.id, "deposito");
   if (btn.dataset.acao === "retirar") abrirModalPontos(btn.dataset.id, "retirada");
-  if (btn.dataset.acao === "cartao") gerarCartaoIndividual(btn.dataset.id);
+});
+
+// Seleção para gerar cartões. Guardada por ID num Set, então sobrevive à busca
+// e à rolagem — marcar alguém, filtrar e marcar outro mantém os dois.
+$("tbody-pontuacao").addEventListener("change", e => {
+  const caixa = e.target.closest(".marcar-cartao");
+  if (!caixa) return;
+  if (caixa.checked) selecionadosCartao.add(caixa.dataset.id);
+  else selecionadosCartao.delete(caixa.dataset.id);
+  caixa.closest("tr").classList.toggle("linha-marcada", caixa.checked);
+  atualizarBarraSelecao();
+});
+$("marcar-todos").addEventListener("change", () => {
+  const marcar = $("marcar-todos").checked;
+  document.querySelectorAll(".marcar-cartao").forEach(c => {
+    c.checked = marcar;
+    if (marcar) selecionadosCartao.add(c.dataset.id); else selecionadosCartao.delete(c.dataset.id);
+    c.closest("tr").classList.toggle("linha-marcada", marcar);
+  });
+  atualizarBarraSelecao();
+});
+$("btn-cartoes-selecionados").addEventListener("click", gerarCartoesSelecionados);
+$("btn-limpar-selecao").addEventListener("click", () => {
+  selecionadosCartao.clear();
+  renderizarPontuacao();
 });
 $("modal-pontos-cancelar").addEventListener("click", () => $("modal-pontos").classList.remove("show"));
 $("modal-pontos-confirmar").addEventListener("click", confirmarLancamento);
