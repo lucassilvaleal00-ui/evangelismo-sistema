@@ -76,6 +76,31 @@
   tr.dir-novato td { color: var(--warn); }
   .dir-badge-novo { display: inline-block; margin-left: 6px; font-size: 0.65rem; text-transform: uppercase; background: var(--warn); color: white; border-radius: 20px; padding: 1px 8px; vertical-align: middle; }
 
+  /* ---- Pontuação ---- */
+  .toolbar-pontos { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+  .toolbar-pontos input { margin-bottom: 0; max-width: 280px; }
+  .campo-pontos { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; background: var(--accent-soft); border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; }
+  .campo-pontos > div { flex: 0 0 auto; }
+  .campo-pontos input { margin-bottom: 0; width: 130px; }
+  .campo-pontos .dica { flex: 1 1 200px; font-size: 0.78rem; color: var(--muted); }
+  .saldo-cel { font-weight: 700; color: var(--accent); white-space: nowrap; }
+  .saldo-cel.zero { color: var(--muted); font-weight: 600; }
+  .acoes-pontos { display: flex; gap: 5px; flex-wrap: nowrap; }
+  .acoes-pontos button { white-space: nowrap; padding: 6px 9px; font-size: 0.75rem; }
+  .tabela-rolavel { overflow-x: auto; margin: 0 -4px; padding: 0 4px; }
+  .btn-dep { background: var(--accent-soft); color: var(--accent); border: 1px solid transparent; }
+  .btn-ret { background: var(--warn-soft); color: var(--warn); border: 1px solid transparent; }
+  .btn-cartao { background: #e8eefb; color: #0b3d91; border: 1px solid transparent; }
+
+  .modal-fundo { position: fixed; inset: 0; background: rgba(28,33,40,0.45); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 80; }
+  .modal-fundo.show { display: flex; }
+  .modal { background: var(--card); border-radius: 14px; padding: 24px; max-width: 400px; width: 100%; max-height: 90vh; overflow-y: auto; }
+  .modal h3 { margin: 0 0 6px; font-size: 1.05rem; }
+  .modal p.sub { margin-top: 0; }
+  .modal-acoes { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+  .chip-data { background: var(--accent-soft); color: var(--accent); border: none; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+  .chip-data.ativo { background: var(--accent); color: white; }
+
   /* ---- Celular: tabelas viram cartões (usa os data-label de cada célula) ---- */
   @media (max-width: 720px) {
     .wrap { padding: 20px 14px 70px; }
@@ -87,6 +112,8 @@
     table td[data-label]::before { content: attr(data-label); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); font-weight: 700; text-align: left; flex: 0 0 auto; }
     table td.celula-acoes { justify-content: flex-end; padding-top: 8px; }
     table td:empty { display: none; }
+    .tabela-rolavel { overflow-x: visible; margin: 0; padding: 0; }
+    .acoes-pontos { flex-wrap: wrap; justify-content: flex-end; }
     .dir-wa-btn { margin-left: 0; width: 100%; justify-content: center; }
   }
 </style>
@@ -136,6 +163,7 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="cadastro">📋 Cadastro</button>
       <button class="tab-btn" data-tab="presenca">✅ Registro de Presença</button>
+      <button class="tab-btn" data-tab="pontuacao">🪙 Pontuação</button>
       <button class="tab-btn" data-tab="sorteio">🎲 Sorteio</button>
       <button class="tab-btn" data-tab="diretorio">🗺️ Diretório de ruas</button>
     </div>
@@ -198,6 +226,13 @@
             </div>
           </div>
         </div>
+        <div class="campo-pontos">
+          <div>
+            <label for="c-pontos">Pontos por presença</label>
+            <input id="c-pontos" inputmode="numeric" placeholder="Ex: 100" />
+          </div>
+          <div class="dica">Opcional. O cadastro já conta como a primeira presença, então esse valor é creditado na hora. Deixe em branco para não dar pontos.</div>
+        </div>
         <button class="btn-primary" id="btn-salvar-cadastro">Salvar</button>
       </div>
 
@@ -206,12 +241,14 @@
           <h2>Participantes cadastrados</h2>
           <button class="btn-ghost btn-sm" id="btn-atualizar-lista">↻ Atualizar</button>
         </div>
-        <table>
-          <thead>
-            <tr><th></th><th>Data</th><th>Nome</th><th>Telefone</th><th>Idade</th><th>Rua</th><th>Número</th><th>Bairro</th><th>Ponto de referência</th></tr>
-          </thead>
-          <tbody id="tbody-cadastro"></tbody>
-        </table>
+        <div class="tabela-rolavel">
+          <table>
+            <thead>
+              <tr><th></th><th>Data</th><th>Nome</th><th>Telefone</th><th>Idade</th><th>Rua</th><th>Número</th><th>Bairro</th><th>Ponto de referência</th></tr>
+            </thead>
+            <tbody id="tbody-cadastro"></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -220,13 +257,51 @@
       <div class="card">
         <h2>✅ Registro de Presença</h2>
         <p class="sub">Use isso apenas quando a pessoa já cadastrada estiver retornando. O cadastro em si já conta como a primeira presença.</p>
+        <div class="campo-pontos">
+          <div>
+            <label for="p-pontos">Pontos por presença</label>
+            <input id="p-pontos" inputmode="numeric" placeholder="Ex: 100" />
+          </div>
+          <div class="dica">Opcional. Vale para todas as presenças que <strong>você</strong> registrar neste aparelho — fica guardado para a próxima vez e não interfere no valor que outra pessoa da equipe estiver usando. Deixe em branco para não dar pontos.</div>
+        </div>
         <label for="busca-presenca">Buscar participante</label>
         <input id="busca-presenca" type="text" placeholder="Digite o nome..." />
         <div class="lista-presenca" id="lista-presenca"></div>
         <div id="painel-confirmar-presenca">
-          <p style="margin:0 0 10px">Registrar presença de <strong id="nome-selecionado-presenca"></strong>?</p>
+          <p style="margin:0 0 10px">Registrar presença de <strong id="nome-selecionado-presenca"></strong><span id="aviso-pontos-presenca"></span>?</p>
           <button class="btn-primary" id="btn-confirmar-presenca">Registrar presença</button>
           <button class="btn-ghost" id="btn-cancelar-presenca">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PONTUAÇÃO -->
+    <div class="tab-panel" id="tab-pontuacao">
+      <div class="card">
+        <h2>🪙 Pontuação</h2>
+        <div class="toolbar-pontos">
+          <input id="busca-pontuacao" type="text" placeholder="Pesquisar por nome..." />
+          <button class="btn-ghost btn-sm" id="btn-lote">🗂️ Gerar cartões por lote</button>
+          <button class="btn-ghost btn-sm" id="btn-atualizar-pontos">↻ Atualizar saldos</button>
+        </div>
+        <div class="tabela-rolavel">
+        <table>
+          <thead>
+            <tr>
+              <th>Ações</th>
+              <th>Data do cadastro</th>
+              <th>Nome</th>
+              <th>Saldo</th>
+              <th>Telefone</th>
+              <th>Idade</th>
+              <th>Rua</th>
+              <th>Número</th>
+              <th>Bairro</th>
+              <th>Ponto de referência</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-pontuacao"></tbody>
+        </table>
         </div>
       </div>
     </div>
@@ -283,6 +358,36 @@
   </div>
 </div>
 
+<div class="modal-fundo" id="modal-pontos">
+  <div class="modal">
+    <h3 id="modal-pontos-titulo">Depositar pontos</h3>
+    <p class="sub" id="modal-pontos-sub"></p>
+    <label for="modal-pontos-valor">Quantidade de pontos</label>
+    <input id="modal-pontos-valor" inputmode="numeric" placeholder="Ex: 100" />
+    <p class="sub" id="modal-pontos-erro" style="color:var(--warn); min-height:1em; margin:0"></p>
+    <div class="modal-acoes">
+      <button class="btn-ghost btn-sm" id="modal-pontos-cancelar">Cancelar</button>
+      <button class="btn-primary btn-sm" id="modal-pontos-confirmar">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-fundo" id="modal-lote">
+  <div class="modal">
+    <h3>Gerar cartões por lote</h3>
+    <p class="sub">Escolha a data de um evento. O PDF sai com os cartões de quem foi cadastrado naquele dia, 18 por página.</p>
+    <label for="modal-lote-data">Data do evento</label>
+    <input id="modal-lote-data" type="date" />
+    <p class="sub" style="margin:0 0 6px">Datas com cadastros:</p>
+    <div class="chips" id="modal-lote-datas" style="margin-bottom:10px"></div>
+    <p class="sub" id="modal-lote-info" style="min-height:1em; margin:0"></p>
+    <div class="modal-acoes">
+      <button class="btn-ghost btn-sm" id="modal-lote-cancelar">Cancelar</button>
+      <button class="btn-primary btn-sm" id="modal-lote-confirmar">Gerar PDF</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -291,7 +396,7 @@
 // ==== CONFIGURAÇÃO ====
 const SUPABASE_URL = "https://jmogaclwihvsouqixozo.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imptb2dhY2x3aWh2c291cWl4b3pvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyNTk5MzIsImV4cCI6MjEwMjgzNTkzMn0.kzvlfUAzRrEeb2UGlEViCOVh0vIMuHVkR_EzUSjn87U";
-const VERSAO_BACKEND_ESPERADA = 3;
+const VERSAO_BACKEND_ESPERADA = 4;
 // =======================
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false } });
@@ -303,6 +408,10 @@ let idEmEdicao = null;
 let idSelecionadoPresenca = null;
 let presencasHojeIds = new Set();
 let presencasHojeNomes = new Set();
+let cacheSaldos = {};
+let codigoConsulta = null;
+let idPontuacaoAtual = null;
+let tipoOperacaoAtual = "deposito";
 
 const SEM_TELEFONE = "Não possui telefone";
 const IDADE_NAO_INFORMADA = "Não quis informar";
@@ -484,6 +593,7 @@ async function abrirPainel() {
   // o usuário ficava olhando uma tela em branco, sem nenhuma explicação.
   try {
     await carregarParticipantes();
+    sincronizarCamposPontos(lerPontosSalvos());
     $("tela-erro").style.display = "none";
     $("app-screen").style.display = "block";
   } catch (e) {
@@ -502,6 +612,7 @@ function trocarAba(nome) {
   $("tab-" + nome).classList.add("active");
   if (nome === "presenca") montarListaPresenca();
   if (nome === "diretorio") montarDiretorio();
+  if (nome === "pontuacao") abrirPontuacao();
   if (nome === "sorteio") {
     carregarEstadoSorteio();
     if ($("subtab-btn-nome").classList.contains("active")) carregarElegiveisSorteioNome();
@@ -585,8 +696,11 @@ async function salvarCadastro() {
       await appsScriptFetch("editarCadastro", { id: idEmEdicao, dados: dadosLinha });
       showToast(`${nome} foi atualizado com sucesso.`);
     } else {
-      await appsScriptFetch("cadastrar", { dados: dadosLinha });
-      showToast(`${nome} foi salvo com sucesso.`);
+      const pontos = lerPontosPresenca("c-pontos");
+      const r = await appsScriptFetch("cadastrar", { dados: dadosLinha, pontos });
+      showToast(r && r.pontosLancados
+        ? `${nome} foi salvo e recebeu ${r.pontosLancados} ponto(s).`
+        : `${nome} foi salvo com sucesso.`);
     }
     limparFormularioCadastro();
     await carregarParticipantes();
@@ -696,6 +810,7 @@ function selecionarParticipantePresenca(id) {
   idSelecionadoPresenca = id;
   filtrarListaPresenca();
   $("nome-selecionado-presenca").textContent = p.nome;
+  atualizarAvisoPontosPresenca();
   $("painel-confirmar-presenca").classList.add("show");
 }
 
@@ -723,18 +838,462 @@ async function confirmarPresenca() {
   try {
     // Enviamos o ID junto com o nome: dois participantes homônimos deixam de
     // ser confundidos na aba de presença.
-    const resultado = await appsScriptFetch("registrarPresenca", { id: p.id, nome: p.nome });
+    const pontos = lerPontosPresenca("p-pontos");
+    const resultado = await appsScriptFetch("registrarPresenca", { id: p.id, nome: p.nome, pontos });
     presencasHojeIds.add(p.id);
     presencasHojeNomes.add(p.nome);
-    showToast(resultado && resultado.duplicado
-      ? `A presença de ${p.nome} já havia sido registrada hoje.`
-      : `Presença de ${p.nome} registrada.`);
+    if (resultado && resultado.duplicado) {
+      showToast(`A presença de ${p.nome} já havia sido registrada hoje.`);
+    } else if (resultado && resultado.pontosLancados) {
+      cacheSaldos[p.id] = (cacheSaldos[p.id] || 0) + resultado.pontosLancados;
+      showToast(`Presença de ${p.nome} registrada, com ${resultado.pontosLancados} ponto(s).`);
+    } else {
+      showToast(`Presença de ${p.nome} registrada.`);
+    }
     limparSelecaoPresenca();
   } catch (e) {
     showToast(e.message || "Erro ao registrar presença.");
     console.error(e);
   } finally {
     botao.disabled = false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Pontos por presença — memória por aparelho
+// ---------------------------------------------------------------------------
+// O mesmo link é usado por várias pessoas da equipe ao mesmo tempo, e cada uma
+// pode estar dando uma quantidade diferente de pontos. Por isso o último valor
+// digitado fica guardado no NAVEGADOR de quem digitou, e não na planilha: o que
+// um usuário escolhe nunca muda o que aparece para o outro.
+
+function chavePontos() {
+  return "evang_pontos_" + String(tokenAtual || "").slice(-8);
+}
+
+function lerPontosSalvos() {
+  try { return localStorage.getItem(chavePontos()) || ""; } catch (e) { return ""; }
+}
+
+function salvarPontos(valor) {
+  try {
+    if (valor) localStorage.setItem(chavePontos(), String(valor));
+    else localStorage.removeItem(chavePontos());
+  } catch (e) { /* navegador sem armazenamento: segue sem lembrar */ }
+}
+
+/** Lê o campo, guarda o valor para a próxima vez e devolve o número. */
+function lerPontosPresenca(idCampo) {
+  const bruto = ($(idCampo).value || "").trim();
+  const n = parseInt(bruto, 10);
+  const valor = (isNaN(n) || n <= 0) ? 0 : n;
+  salvarPontos(valor || "");
+  sincronizarCamposPontos(valor ? String(valor) : "");
+  return valor;
+}
+
+function sincronizarCamposPontos(valor) {
+  ["c-pontos", "p-pontos"].forEach(id => { if ($(id)) $(id).value = valor; });
+  atualizarAvisoPontosPresenca();
+}
+
+function atualizarAvisoPontosPresenca() {
+  const n = parseInt(($("p-pontos").value || "").trim(), 10);
+  $("aviso-pontos-presenca").textContent = (!isNaN(n) && n > 0) ? ` e creditar ${n} ponto(s)` : "";
+}
+
+// ---------------------------------------------------------------------------
+// Pontuação
+// ---------------------------------------------------------------------------
+
+async function abrirPontuacao() {
+  renderizarPontuacao();
+  try {
+    if (!codigoConsulta) {
+      const info = await appsScriptFetch("infoPlanilha");
+      codigoConsulta = info && info.codigoConsulta;
+    }
+    cacheSaldos = await appsScriptFetch("listarSaldos") || {};
+  } catch (e) {
+    console.error(e);
+    showToast(e.message || "Não consegui carregar os saldos.");
+  }
+  renderizarPontuacao();
+}
+
+function saldoDe(id) {
+  return Number(cacheSaldos[id] || 0);
+}
+
+function renderizarPontuacao() {
+  const termo = normalizarTexto($("busca-pontuacao").value.trim());
+  // Ordem de cadastro com o mais recente no topo — a planilha devolve na ordem
+  // em que as linhas foram criadas.
+  const lista = [...cacheParticipantes].reverse()
+    .filter(p => !termo || normalizarTexto(p.nome).includes(termo));
+
+  const tbody = $("tbody-pontuacao");
+  tbody.innerHTML = lista.map(p => {
+    const saldo = saldoDe(p.id);
+    return `
+      <tr>
+        <td class="celula-acoes">
+          <div class="acoes-pontos">
+            <button class="btn-sm btn-dep" data-acao="depositar" data-id="${esc(p.id)}">💰 Depositar</button>
+            <button class="btn-sm btn-ret" data-acao="retirar" data-id="${esc(p.id)}">💸 Retirar</button>
+            <button class="btn-sm btn-cartao" data-acao="cartao" data-id="${esc(p.id)}">🪪 Gerar cartão</button>
+          </div>
+        </td>
+        <td data-label="Data do cadastro">${esc(p.dataCadastro)}</td>
+        <td data-label="Nome"><strong>${esc(p.nome)}</strong></td>
+        <td data-label="Saldo"><span class="saldo-cel ${saldo ? "" : "zero"}">${saldo} pt</span></td>
+        <td data-label="Telefone">${esc(p.telefone)}</td>
+        <td data-label="Idade">${esc(p.idade)}</td>
+        <td data-label="Rua">${esc(p.rua)}</td>
+        <td data-label="Número">${esc(p.numero)}</td>
+        <td data-label="Bairro">${esc(p.bairro)}</td>
+        <td data-label="Ponto de referência">${esc(p.pontoReferencia)}</td>
+      </tr>`;
+  }).join("") || `<tr><td colspan="10" style="color:var(--muted); text-align:center">Nenhum participante encontrado.</td></tr>`;
+}
+
+function abrirModalPontos(id, tipo) {
+  const p = cacheParticipantes.find(x => x.id === id);
+  if (!p) return;
+  idPontuacaoAtual = id;
+  tipoOperacaoAtual = tipo;
+  $("modal-pontos-titulo").textContent = tipo === "retirada" ? "Retirar pontos" : "Depositar pontos";
+  $("modal-pontos-sub").textContent = `${p.nome} — saldo atual: ${saldoDe(id)} ponto(s).`;
+  $("modal-pontos-valor").value = "";
+  $("modal-pontos-erro").textContent = "";
+  $("modal-pontos").classList.add("show");
+  setTimeout(() => $("modal-pontos-valor").focus(), 50);
+}
+
+async function confirmarLancamento() {
+  const p = cacheParticipantes.find(x => x.id === idPontuacaoAtual);
+  if (!p) return;
+  const valor = parseInt(($("modal-pontos-valor").value || "").trim(), 10);
+  if (isNaN(valor) || valor <= 0) {
+    $("modal-pontos-erro").textContent = "Informe uma quantidade maior que zero.";
+    return;
+  }
+
+  const botao = $("modal-pontos-confirmar");
+  botao.disabled = true;
+  try {
+    const r = await appsScriptFetch("lancarPontos", { id: p.id, nome: p.nome, tipo: tipoOperacaoAtual, valor });
+    cacheSaldos[p.id] = r.saldo;
+    renderizarPontuacao();
+    $("modal-pontos").classList.remove("show");
+    showToast(tipoOperacaoAtual === "retirada"
+      ? `${valor} ponto(s) retirados de ${p.nome}. Saldo: ${r.saldo}.`
+      : `${valor} ponto(s) depositados para ${p.nome}. Saldo: ${r.saldo}.`);
+  } catch (e) {
+    $("modal-pontos-erro").textContent = e.message || "Não consegui registrar o lançamento.";
+  } finally {
+    botao.disabled = false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Cartão do participante (PDF + QR Code)
+// ---------------------------------------------------------------------------
+// O QR não leva o token do link: leva um código só de leitura, que apenas
+// consulta o saldo de um participante. Cartão perdido não vira acesso ao painel.
+
+const CARTAO = {
+  larguraMm: 85.6, alturaMm: 53.98,                 // tamanho real de cartão bancário
+  qr: { x: 53.6 / 85.6, y: 13.0 / 53.98, s: 28 / 85.6 },  // caixa branca do QR
+  numero: "1234 5678 1234 5678"
+};
+
+function carregarScript(url) {
+  return new Promise((ok, erro) => {
+    const s = document.createElement("script");
+    s.src = url;
+    s.onload = () => ok();
+    s.onerror = () => erro(new Error("Não consegui carregar um componente necessário. Verifique sua internet."));
+    document.head.appendChild(s);
+  });
+}
+
+let libsCartao = null;
+function garantirLibsCartao() {
+  if (!libsCartao) {
+    libsCartao = Promise.all([
+      window.jspdf ? Promise.resolve() : carregarScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"),
+      window.QRious ? Promise.resolve() : carregarScript("https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js")
+    ]).catch(e => { libsCartao = null; throw e; });
+  }
+  return libsCartao;
+}
+
+/** Extrai da URL do Web App o que o QR precisa para achar a planilha de volta. */
+function dadosDoWebApp() {
+  const m = String(webAppUrl || "").match(/\/macros\/(?:a\/([^/]+)\/)?s\/([^/]+)\/exec/);
+  if (!m) return null;
+  return { dominio: m[1] || null, deploy: m[2] };
+}
+
+function urlDoCartao(idParticipante) {
+  const d = dadosDoWebApp();
+  if (!d || !codigoConsulta) return null;
+  const base = new URL("saldo.html", location.href).href;
+  const q = new URLSearchParams({ u: d.deploy, c: codigoConsulta, p: String(idParticipante).slice(0, 12) });
+  if (d.dominio) q.set("a", d.dominio);
+  return base + "?" + q.toString();
+}
+
+function retanguloArredondado(g, x, y, w, h, r) {
+  g.beginPath();
+  g.moveTo(x + r, y);
+  g.arcTo(x + w, y, x + w, y + h, r);
+  g.arcTo(x + w, y + h, x, y + h, r);
+  g.arcTo(x, y + h, x, y, r);
+  g.arcTo(x, y, x + w, y, r);
+  g.closePath();
+}
+
+function fonteQueCabe(g, texto, larguraMax, tamInicialPx, familia, peso) {
+  let tam = tamInicialPx;
+  do {
+    g.font = `${peso} ${tam}px ${familia}`;
+    if (g.measureText(texto).width <= larguraMax) break;
+    tam -= 1;
+  } while (tam > 6);
+  return tam;
+}
+
+/** Desenha a arte do cartão (tudo menos o QR) num canvas. */
+function desenharCartao(nome, larguraPx) {
+  const W = Math.round(larguraPx);
+  const H = Math.round(larguraPx * CARTAO.alturaMm / CARTAO.larguraMm);
+  const c = document.createElement("canvas");
+  c.width = W; c.height = H;
+  const g = c.getContext("2d");
+  const u = W / CARTAO.larguraMm;   // pixels por milímetro
+  const mono = '"Courier New", Courier, monospace';
+
+  // moldura escura + corpo branco
+  g.fillStyle = "#0d0f14";
+  retanguloArredondado(g, 0, 0, W, H, 3.6 * u); g.fill();
+  g.fillStyle = "#ffffff";
+  retanguloArredondado(g, 1.7 * u, 1.7 * u, W - 3.4 * u, H - 3.4 * u, 2.4 * u); g.fill();
+
+  // ondas azuis do lado direito
+  g.save();
+  retanguloArredondado(g, 1.7 * u, 1.7 * u, W - 3.4 * u, H - 3.4 * u, 2.4 * u); g.clip();
+  g.fillStyle = "#0b3d91";
+  g.beginPath();
+  g.moveTo(W * 0.46, 0);
+  g.bezierCurveTo(W * 0.70, H * 0.26, W * 0.66, H * 0.66, W * 1.00, H * 1.02);
+  g.lineTo(W, 0); g.closePath(); g.fill();
+  g.fillStyle = "#1f6fd0";
+  g.beginPath();
+  g.moveTo(W * 0.58, 0);
+  g.bezierCurveTo(W * 0.82, H * 0.28, W * 0.78, H * 0.70, W * 1.06, H * 1.10);
+  g.lineTo(W, 0); g.closePath(); g.fill();
+  g.fillStyle = "#5aa0f0";
+  g.beginPath();
+  g.moveTo(W * 0.71, 0);
+  g.bezierCurveTo(W * 0.92, H * 0.30, W * 0.90, H * 0.74, W * 1.14, H * 1.16);
+  g.lineTo(W, 0); g.closePath(); g.fill();
+  g.restore();
+
+  // título
+  g.fillStyle = "#0b3d91";
+  g.textBaseline = "alphabetic";
+  const tamTitulo = fonteQueCabe(g, "CARTÃO DO PARTICIPANTE", 44 * u, Math.round(3.1 * u), mono, "bold");
+  g.font = `bold ${tamTitulo}px ${mono}`;
+  g.fillText("CARTÃO DO PARTICIPANTE", 6.5 * u, 11 * u);
+
+  // chip
+  const cx = 6.5 * u, cy = 17 * u, cw = 9.5 * u, ch = 7.2 * u;
+  const grad = g.createLinearGradient(cx, cy, cx + cw, cy + ch);
+  grad.addColorStop(0, "#e8c463"); grad.addColorStop(1, "#c99a2e");
+  g.fillStyle = grad;
+  retanguloArredondado(g, cx, cy, cw, ch, 1.2 * u); g.fill();
+  g.strokeStyle = "#a87f22"; g.lineWidth = Math.max(1, 0.22 * u);
+  g.beginPath();
+  g.moveTo(cx, cy + ch * 0.35); g.lineTo(cx + cw, cy + ch * 0.35);
+  g.moveTo(cx, cy + ch * 0.65); g.lineTo(cx + cw, cy + ch * 0.65);
+  g.moveTo(cx + cw * 0.35, cy); g.lineTo(cx + cw * 0.35, cy + ch);
+  g.moveTo(cx + cw * 0.68, cy); g.lineTo(cx + cw * 0.68, cy + ch);
+  g.stroke();
+
+  // ondinhas do "aproximação"
+  g.strokeStyle = "#c0416a"; g.lineWidth = Math.max(1, 0.32 * u);
+  const ox = cx + cw + 2.4 * u, oy = cy + ch / 2;
+  for (let i = 1; i <= 3; i++) {
+    g.beginPath();
+    g.arc(ox, oy, i * 1.5 * u, -Math.PI / 3, Math.PI / 3);
+    g.stroke();
+  }
+
+  // número (igual para todos, como um cartão de exposição)
+  g.fillStyle = "#12203a";
+  const tamNum = fonteQueCabe(g, CARTAO.numero, 44 * u, Math.round(4.4 * u), mono, "normal");
+  g.font = `${tamNum}px ${mono}`;
+  g.fillText(CARTAO.numero, 6.5 * u, 36 * u);
+
+  // nome do participante
+  const nomeMaiusculo = String(nome || "").toUpperCase();
+  g.fillStyle = "#0d0f14";
+  const tamNome = fonteQueCabe(g, nomeMaiusculo, 44 * u, Math.round(3.5 * u), mono, "normal");
+  g.font = `${tamNome}px ${mono}`;
+  g.fillText(nomeMaiusculo, 6.5 * u, 44.5 * u);
+
+  // caixa branca onde o QR será colado
+  g.fillStyle = "#ffffff";
+  retanguloArredondado(g, CARTAO.qr.x * W, CARTAO.qr.y * H, CARTAO.qr.s * W, CARTAO.qr.s * W, 1.2 * u);
+  g.fill();
+
+  return c;
+}
+
+function qrPng(texto, px) {
+  const q = new QRious({ value: texto, size: px, level: "L", padding: 0, background: "#ffffff", foreground: "#000000" });
+  return q.toDataURL("image/png");
+}
+
+/** Coloca um cartão completo (arte + QR) no PDF, em milímetros. */
+function colarCartaoNoPdf(doc, p, x, y, larguraMm) {
+  const alturaMm = larguraMm * CARTAO.alturaMm / CARTAO.larguraMm;
+  const arte = desenharCartao(p.nome, Math.max(700, Math.round(larguraMm * 12)));
+  doc.addImage(arte.toDataURL("image/jpeg", 0.92), "JPEG", x, y, larguraMm, alturaMm);
+
+  const url = urlDoCartao(p.id);
+  if (url) {
+    const ladoCaixa = CARTAO.qr.s * larguraMm;
+    const margem = ladoCaixa * 0.07;
+    doc.addImage(qrPng(url, 620), "PNG",
+      x + CARTAO.qr.x * larguraMm + margem,
+      y + CARTAO.qr.y * alturaMm + margem,
+      ladoCaixa - 2 * margem, ladoCaixa - 2 * margem);
+  }
+}
+
+function nomeArquivo(base) {
+  return base.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_|_$/g, "");
+}
+
+async function gerarCartaoIndividual(id) {
+  const p = cacheParticipantes.find(x => x.id === id);
+  if (!p) return;
+  showToast("Gerando o cartão...");
+  try {
+    await garantirLibsCartao();
+    if (!codigoConsulta) {
+      const info = await appsScriptFetch("infoPlanilha");
+      codigoConsulta = info && info.codigoConsulta;
+    }
+    const { jsPDF } = window.jspdf;
+    // compress:true é essencial: sem ele o PDF sai com ~27 MB em vez de ~700 KB.
+    const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
+    // Cartão em tamanho real, centralizado — o resto da folha fica em branco.
+    colarCartaoNoPdf(doc, p, (210 - CARTAO.larguraMm) / 2, 45, CARTAO.larguraMm);
+    doc.setFontSize(9);
+    doc.setTextColor(120);
+    doc.text("Recorte na borda do cartão. O QR Code mostra o saldo de pontos do participante.", 105, 115, { align: "center" });
+    doc.save(`cartao_${nomeArquivo(p.nome)}.pdf`);
+  } catch (e) {
+    console.error(e);
+    showToast(e.message || "Não consegui gerar o cartão.");
+  }
+}
+
+function datasComCadastro() {
+  const contagem = {};
+  cacheParticipantes.forEach(p => {
+    if (!p.dataCadastro) return;
+    contagem[p.dataCadastro] = (contagem[p.dataCadastro] || 0) + 1;
+  });
+  return Object.keys(contagem)
+    .map(d => ({ data: d, dt: converterDataBr(d), qtd: contagem[d] }))
+    .filter(x => x.dt)
+    .sort((a, b) => b.dt - a.dt);
+}
+
+function paraIso(dataBr) {
+  const dt = converterDataBr(dataBr);
+  if (!dt) return "";
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+}
+
+function deIso(iso) {
+  const m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : "";
+}
+
+function abrirModalLote() {
+  const datas = datasComCadastro();
+  $("modal-lote-datas").innerHTML = datas.length
+    ? datas.slice(0, 12).map(d => `<button type="button" class="chip-data" data-data="${esc(d.data)}">${esc(d.data)} · ${d.qtd}</button>`).join("")
+    : `<span style="color:var(--muted); font-size:0.82rem">Nenhum cadastro ainda.</span>`;
+  $("modal-lote-data").value = datas.length ? paraIso(datas[0].data) : "";
+  atualizarInfoLote();
+  $("modal-lote").classList.add("show");
+}
+
+function atualizarInfoLote() {
+  const dataBr = deIso($("modal-lote-data").value);
+  const qtd = cacheParticipantes.filter(p => p.dataCadastro === dataBr).length;
+  const info = $("modal-lote-info");
+  const botao = $("modal-lote-confirmar");
+  document.querySelectorAll("#modal-lote-datas .chip-data").forEach(b => b.classList.toggle("ativo", b.dataset.data === dataBr));
+
+  if (!dataBr) { info.textContent = "Escolha uma data."; botao.disabled = true; return; }
+  if (!qtd) {
+    info.innerHTML = `<span style="color:var(--warn)">Nenhum cadastro em ${esc(dataBr)}. Escolha uma data que teve evento.</span>`;
+    botao.disabled = true;
+    return;
+  }
+  info.textContent = `${qtd} cartão(ões) serão gerados para ${dataBr}.`;
+  botao.disabled = false;
+}
+
+async function gerarCartoesEmLote() {
+  const dataBr = deIso($("modal-lote-data").value);
+  const pessoas = cacheParticipantes.filter(p => p.dataCadastro === dataBr);
+  if (!pessoas.length) return;
+
+  const botao = $("modal-lote-confirmar");
+  botao.disabled = true;
+  botao.textContent = "Gerando...";
+  try {
+    await garantirLibsCartao();
+    if (!codigoConsulta) {
+      const info = await appsScriptFetch("infoPlanilha");
+      codigoConsulta = info && info.codigoConsulta;
+    }
+    const { jsPDF } = window.jspdf;
+    // compress:true é essencial: sem ele o PDF sai com ~27 MB em vez de ~700 KB.
+    const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
+
+    // 3 colunas x 6 linhas = 18 cartões por página.
+    const margem = 10, folga = 4, colunas = 3, linhas = 6;
+    const largura = (210 - 2 * margem - (colunas - 1) * folga) / colunas;
+    const altura = largura * CARTAO.alturaMm / CARTAO.larguraMm;
+
+    for (let i = 0; i < pessoas.length; i++) {
+      const posicao = i % (colunas * linhas);
+      if (i > 0 && posicao === 0) doc.addPage();
+      const col = posicao % colunas;
+      const lin = Math.floor(posicao / colunas);
+      colarCartaoNoPdf(doc, pessoas[i], margem + col * (largura + folga), margem + lin * (altura + folga), largura);
+      if (i % 6 === 5) await new Promise(r => setTimeout(r, 0)); // deixa a tela respirar
+    }
+
+    doc.save(`cartoes_${nomeArquivo(dataBr)}.pdf`);
+    $("modal-lote").classList.remove("show");
+    showToast(`${pessoas.length} cartão(ões) gerados.`);
+  } catch (e) {
+    console.error(e);
+    $("modal-lote-info").innerHTML = `<span style="color:var(--warn)">${esc(e.message || "Não consegui gerar os cartões.")}</span>`;
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "Gerar PDF";
   }
 }
 
@@ -1010,7 +1569,53 @@ document.querySelectorAll(".tab-btn").forEach(b => {
 document.querySelectorAll(".campo-check input[type=checkbox]").forEach(chk => {
   chk.addEventListener("change", () => alternarCampo(chk.dataset.alvo, chk.id));
 });
-["c-telefone", "c-idade", "sorteio-num-min", "sorteio-num-max"].forEach(id => somenteNumeros($(id)));
+["c-telefone", "c-idade", "sorteio-num-min", "sorteio-num-max", "c-pontos", "p-pontos", "modal-pontos-valor"]
+  .forEach(id => somenteNumeros($(id)));
+
+// --- Pontos por presença ---
+// (o valor guardado é lido dentro de abrirPainel, quando o token já é conhecido)
+["c-pontos", "p-pontos"].forEach(id => {
+  $(id).addEventListener("input", () => {
+    const v = ($(id).value || "").trim();
+    salvarPontos(v);
+    ["c-pontos", "p-pontos"].filter(o => o !== id).forEach(o => { $(o).value = v; });
+    atualizarAvisoPontosPresenca();
+  });
+});
+
+// --- Pontuação ---
+$("busca-pontuacao").addEventListener("input", renderizarPontuacao);
+$("btn-atualizar-pontos").addEventListener("click", async () => {
+  const b = $("btn-atualizar-pontos");
+  b.disabled = true;
+  try { await carregarParticipantes(); await abrirPontuacao(); showToast("Saldos atualizados."); }
+  catch (e) { showToast(e.message || "Não consegui atualizar."); }
+  finally { b.disabled = false; }
+});
+$("tbody-pontuacao").addEventListener("click", e => {
+  const btn = e.target.closest("button[data-acao]");
+  if (!btn) return;
+  if (btn.dataset.acao === "depositar") abrirModalPontos(btn.dataset.id, "deposito");
+  if (btn.dataset.acao === "retirar") abrirModalPontos(btn.dataset.id, "retirada");
+  if (btn.dataset.acao === "cartao") gerarCartaoIndividual(btn.dataset.id);
+});
+$("modal-pontos-cancelar").addEventListener("click", () => $("modal-pontos").classList.remove("show"));
+$("modal-pontos-confirmar").addEventListener("click", confirmarLancamento);
+$("modal-pontos-valor").addEventListener("keydown", e => { if (e.key === "Enter") confirmarLancamento(); });
+$("modal-pontos").addEventListener("click", e => { if (e.target.id === "modal-pontos") $("modal-pontos").classList.remove("show"); });
+
+// --- Cartões em lote ---
+$("btn-lote").addEventListener("click", abrirModalLote);
+$("modal-lote-data").addEventListener("change", atualizarInfoLote);
+$("modal-lote-datas").addEventListener("click", e => {
+  const btn = e.target.closest(".chip-data");
+  if (!btn) return;
+  $("modal-lote-data").value = paraIso(btn.dataset.data);
+  atualizarInfoLote();
+});
+$("modal-lote-cancelar").addEventListener("click", () => $("modal-lote").classList.remove("show"));
+$("modal-lote-confirmar").addEventListener("click", gerarCartoesEmLote);
+$("modal-lote").addEventListener("click", e => { if (e.target.id === "modal-lote") $("modal-lote").classList.remove("show"); });
 
 $("btn-conectar").addEventListener("click", conectarPlanilha);
 $("input-sheet-url").addEventListener("keydown", e => { if (e.key === "Enter") conectarPlanilha(); });
