@@ -102,6 +102,12 @@
   .paginacao button.atual { background: var(--accent); border-color: var(--accent); color: white; }
   .paginacao button:disabled { opacity: 0.4; }
   .paginacao .reticencias { color: var(--muted); padding: 0 2px; }
+  .topo-painel { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 24px; }
+  .btn-engrenagem { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+                    font-size: 1.15rem; line-height: 1; padding: 9px 12px; flex: 0 0 auto; }
+  .btn-engrenagem:hover { border-color: var(--accent); }
+  .url-atual { font-family: monospace; font-size: 0.74rem; color: var(--muted); background: var(--paper);
+               border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; word-break: break-all; margin: 0 0 14px; }
 
   .conta-lista { font-size: 0.8rem; color: var(--muted); margin-left: auto; }
 
@@ -187,9 +193,12 @@
 
 <div id="app-screen" style="display:none">
   <div class="wrap">
-    <header style="margin-bottom: 24px;">
-      <div class="eyebrow">Gerenciador de Evangelismo</div>
-      <h1 id="titulo-usuario">Painel</h1>
+    <header class="topo-painel">
+      <div>
+        <div class="eyebrow">Gerenciador de Evangelismo</div>
+        <h1 id="titulo-usuario">Painel</h1>
+      </div>
+      <button class="btn-engrenagem" id="btn-config" title="Trocar a planilha conectada" aria-label="Configurações da planilha">⚙️</button>
     </header>
 
     <div id="aviso-versao" class="aviso" style="display:none">
@@ -457,6 +466,26 @@
     <div class="modal-acoes">
       <button class="btn-ghost btn-sm" id="modal-pontos-cancelar">Cancelar</button>
       <button class="btn-primary btn-sm" id="modal-pontos-confirmar">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-fundo" id="modal-config">
+  <div class="modal">
+    <h3>Trocar a planilha conectada</h3>
+    <p class="sub">Aponte o sistema para outra planilha — por exemplo, para começar um evangelismo novo. <strong>A planilha atual não é apagada nem alterada:</strong> ela fica guardada com todos os dados, como backup.</p>
+
+    <label>Planilha conectada agora</label>
+    <p class="url-atual" id="config-url-atual">—</p>
+
+    <label for="config-nova-url">URL do Web App da planilha nova</label>
+    <input id="config-nova-url" type="text" placeholder="https://script.google.com/macros/s/.../exec" />
+    <p class="sub" style="margin:-4px 0 0">A planilha nova precisa ter o código do Apps Script instalado e implantado. O passo a passo está no guia que você recebeu.</p>
+    <p class="sub" id="config-erro" style="color:var(--warn); min-height:1em; margin:8px 0 0"></p>
+
+    <div class="modal-acoes">
+      <button class="btn-ghost btn-sm" id="config-cancelar">Cancelar</button>
+      <button class="btn-primary btn-sm" id="config-confirmar">Conectar a nova planilha</button>
     </div>
   </div>
 </div>
@@ -736,6 +765,74 @@ async function abrirPainel() {
   } catch (e) {
     console.error(e);
     mostrarErro(e.message || "Não consegui ler a planilha. Confira sua conexão e a implantação do Web App.");
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Trocar de planilha (botão ⚙️)
+// ---------------------------------------------------------------------------
+// Serve para começar um evangelismo novo do zero sem perder o anterior: a
+// planilha antiga continua no Google Drive, intacta, e o sistema passa a
+// gravar na nova. Dá para voltar para a antiga depois, colando a URL dela.
+
+function abrirConfig() {
+  $("config-url-atual").textContent = webAppUrl || "Nenhuma";
+  $("config-nova-url").value = "";
+  $("config-erro").textContent = "";
+  $("modal-config").classList.add("show");
+  setTimeout(() => $("config-nova-url").focus(), 50);
+}
+
+async function trocarDePlanilha() {
+  const url = $("config-nova-url").value.trim();
+  const erroBox = $("config-erro");
+  erroBox.textContent = "";
+
+  if (!/^https:\/\/script\.google\.com\/.+\/exec$/.test(url)) {
+    erroBox.textContent = "A URL precisa começar com https://script.google.com/ e terminar em /exec.";
+    return;
+  }
+  if (url === webAppUrl) {
+    erroBox.textContent = "Essa já é a planilha conectada.";
+    return;
+  }
+
+  const botao = $("config-confirmar");
+  botao.disabled = true;
+  botao.textContent = "Conectando...";
+  const anterior = webAppUrl;
+
+  try {
+    // Primeiro conversa com a planilha nova: se ela não responder, nada muda.
+    webAppUrl = url;
+    await appsScriptFetch("setup");
+
+    const { error } = await sb.rpc("trocar_planilha", { p_token: tokenAtual, p_url: url });
+    if (error) throw new Error(error.message);
+
+    // Zera tudo que era da planilha antiga
+    codigoConsulta = null;
+    cacheSaldos = {};
+    cacheResumoPresencas = null;
+    erroResumoPresencas = null;
+    selecionadosCartao.clear();
+    presencasHojeIds = new Set();
+    presencasHojeNomes = new Set();
+    paginaCadastro = 1;
+    paginaPontuacao = 1;
+    limparFormularioCadastro();
+
+    await carregarParticipantes();
+    $("modal-config").classList.remove("show");
+    trocarAba("cadastro");
+    showToast(`Planilha trocada. Agora com ${cacheParticipantes.length} participante(s).`);
+  } catch (e) {
+    webAppUrl = anterior;
+    console.error(e);
+    erroBox.textContent = e.message || "Não consegui conectar nessa planilha. Confira a URL e a implantação.";
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "Conectar a nova planilha";
   }
 }
 
@@ -2178,6 +2275,12 @@ $("btn-tentar-de-novo").addEventListener("click", () => {
   $("tela-carregando").style.display = "block";
   abrirPainel().finally(() => { $("tela-carregando").style.display = "none"; });
 });
+
+$("btn-config").addEventListener("click", abrirConfig);
+$("config-cancelar").addEventListener("click", () => $("modal-config").classList.remove("show"));
+$("config-confirmar").addEventListener("click", trocarDePlanilha);
+$("config-nova-url").addEventListener("keydown", e => { if (e.key === "Enter") trocarDePlanilha(); });
+$("modal-config").addEventListener("click", e => { if (e.target.id === "modal-config") $("modal-config").classList.remove("show"); });
 
 $("btn-salvar-cadastro").addEventListener("click", salvarCadastro);
 $("btn-cancelar-edicao").addEventListener("click", limparFormularioCadastro);
