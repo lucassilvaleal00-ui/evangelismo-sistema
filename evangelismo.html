@@ -106,6 +106,12 @@
   .btn-engrenagem { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
                     font-size: 1.15rem; line-height: 1; padding: 9px 12px; flex: 0 0 auto; }
   .btn-engrenagem:hover { border-color: var(--accent); }
+  .faixa-plano { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .chip-plano, .chip-prazo { font-size: 0.78rem; font-weight: 600; padding: 4px 11px; border-radius: 20px; white-space: nowrap; }
+  .chip-plano { background: var(--accent-soft); color: var(--accent); }
+  .chip-prazo { background: #eeece6; color: var(--muted); }
+  .chip-prazo.perto { background: #f7efdc; color: #8a6d1f; }
+  .chip-prazo.urgente { background: var(--warn-soft); color: var(--warn); }
   .url-atual { font-family: monospace; font-size: 0.74rem; color: var(--muted); background: var(--paper);
                border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; word-break: break-all; margin: 0 0 14px; }
 
@@ -197,6 +203,10 @@
       <div>
         <div class="eyebrow">Gerenciador de Evangelismo</div>
         <h1 id="titulo-usuario">Painel</h1>
+        <div class="faixa-plano" id="faixa-plano" style="display:none">
+          <span class="chip-plano" id="chip-plano"></span>
+          <span class="chip-prazo" id="chip-prazo"></span>
+        </div>
       </div>
       <button class="btn-engrenagem" id="btn-config" title="Trocar a planilha conectada" aria-label="Configurações da planilha">⚙️</button>
     </header>
@@ -514,7 +524,7 @@
 // ==== CONFIGURAÇÃO ====
 const SUPABASE_URL = "https://jmogaclwihvsouqixozo.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imptb2dhY2x3aWh2c291cWl4b3pvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyNTk5MzIsImV4cCI6MjEwMjgzNTkzMn0.kzvlfUAzRrEeb2UGlEViCOVh0vIMuHVkR_EzUSjn87U";
-const VERSAO_BACKEND_ESPERADA = 5;
+const VERSAO_BACKEND_ESPERADA = 6;
 // =======================
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false } });
@@ -673,6 +683,9 @@ async function validarAcesso() {
 
   $("tela-carregando").style.display = "none";
   if (registro.nome) $("titulo-usuario").textContent = "Painel de " + registro.nome;
+  planoAtual = registro.plano || null;
+  expiraEm = registro.data_expiracao || null;
+  mostrarPlano();
 
   if (registro.webapp_url) {
     webAppUrl = registro.webapp_url;
@@ -680,6 +693,41 @@ async function validarAcesso() {
   } else {
     $("tela-planilha").style.display = "block";
   }
+}
+
+/**
+ * Faixa com o plano contratado e quanto falta para o link vencer. Fica sempre à
+ * vista para o acesso não acabar de surpresa no meio de um evangelismo.
+ */
+function mostrarPlano() {
+  if (!planoAtual && !expiraEm) return;
+
+  $("chip-plano").textContent = planoAtual ? `Plano de ${planoAtual}` : "";
+  $("chip-plano").style.display = planoAtual ? "" : "none";
+
+  const chip = $("chip-prazo");
+  if (expiraEm) {
+    const vence = new Date(expiraEm);
+    // Conta em dias inteiros a partir de hoje, não em horas corridas: quem vê
+    // "faltam 2 dias" espera que o dia de hoje conte por inteiro.
+    const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+    const alvo = new Date(vence); alvo.setHours(0, 0, 0, 0);
+    const dias = Math.round((alvo - hoje) / 86400000);
+    const dataBr = vence.toLocaleDateString("pt-BR");
+
+    let texto;
+    if (dias <= 0) texto = `Vence hoje (${dataBr})`;
+    else if (dias === 1) texto = `Falta 1 dia — vence em ${dataBr}`;
+    else texto = `Faltam ${dias} dias — vence em ${dataBr}`;
+
+    chip.textContent = texto;
+    chip.className = "chip-prazo" + (dias <= 3 ? " urgente" : dias <= 10 ? " perto" : "");
+    chip.style.display = "";
+  } else {
+    chip.style.display = "none";
+  }
+
+  $("faixa-plano").style.display = "flex";
 }
 
 function mostrarInvalido(texto) {
@@ -1307,6 +1355,8 @@ const ALTURA_GRAFICO = 250;
 
 let cacheResumoPresencas = null;
 let erroResumoPresencas = null;
+let planoAtual = null;
+let expiraEm = null;
 
 const FAIXAS_ETARIAS = [
   { rotulo: "Menos de 10", teste: n => n < 10 },

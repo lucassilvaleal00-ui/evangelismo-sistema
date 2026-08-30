@@ -28,19 +28,10 @@
   .cartao .saldo { font-size: 3.2rem; font-weight: 800; line-height: 1; }
   .cartao .unidade { font-size: 0.85rem; opacity: 0.85; margin-top: 6px; }
 
-  .bloco { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin-top: 18px; }
-  .bloco h2 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 12px; }
-  .mov { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 0.9rem; }
-  .mov:last-child { border-bottom: none; }
-  .mov .quando { color: var(--muted); font-size: 0.8rem; }
-  .mov .origem { display: block; color: var(--muted); font-size: 0.72rem; }
-  .mov .valor { font-weight: 700; white-space: nowrap; }
-  .mov .valor.mais { color: var(--accent); }
-  .mov .valor.menos { color: var(--warn); }
 
   .aviso { text-align: center; color: var(--muted); font-size: 0.9rem; padding: 40px 10px; }
   .aviso.erro { color: var(--warn); }
-  .rodape { text-align: center; color: var(--muted); font-size: 0.72rem; margin-top: 22px; }
+  .rodape { text-align: center; color: var(--muted); font-size: 0.72rem; margin-top: 26px; }
   button { font-family: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; border: 1px solid var(--line); background: transparent; color: var(--muted); border-radius: 8px; padding: 9px 16px; }
 </style>
 </head>
@@ -62,11 +53,6 @@
       <div class="nome" id="nome"></div>
       <div class="saldo" id="saldo">—</div>
       <div class="unidade" id="unidade">pontos</div>
-    </div>
-
-    <div class="bloco">
-      <h2>Últimas movimentações</h2>
-      <div id="extrato"></div>
     </div>
 
     <div class="rodape">Gerenciador de Evangelismo</div>
@@ -140,18 +126,6 @@ function render(d) {
   $("nome").textContent = d.nome || "Participante";
   $("saldo").textContent = d.saldo;
   $("unidade").textContent = Math.abs(d.saldo) === 1 ? "ponto" : "pontos";
-
-  const extrato = d.extrato || [];
-  $("extrato").innerHTML = extrato.length
-    ? extrato.map(m => `
-        <div class="mov">
-          <span class="quando">
-            ${esc(m.data)}
-            <span class="origem">${m.origem === "presenca" ? "Presença no evento" : "Lançamento da equipe"}</span>
-          </span>
-          <span class="valor ${m.valor >= 0 ? "mais" : "menos"}">${m.valor >= 0 ? "+" : "−"}${Math.abs(m.valor)}</span>
-        </div>`).join("")
-    : `<p style="color:var(--muted); font-size:0.88rem; margin:0">Nenhuma movimentação ainda.</p>`;
 
   $("carregando").style.display = "none";
   $("conteudo").style.display = "block";
