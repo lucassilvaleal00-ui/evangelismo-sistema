@@ -1196,10 +1196,23 @@ async function deletarCadastro(id) {
 // Presença
 // ---------------------------------------------------------------------------
 
+/**
+ * As leituras do QR que ainda não subiram continuam valendo. Sem isto, quem
+ * acabou de ser lido pela câmera sumiria da lista de já-registrados enquanto a
+ * fila não escoasse, e poderia ser registrado de novo pelo nome.
+ */
+function mesclarFilaNasPresencas() {
+  filaEnvio.forEach(item => {
+    if (item.id) presencasHojeIds.add(item.id);
+    if (item.nome) presencasHojeNomes.add(item.nome);
+  });
+}
+
 async function carregarPresencasHoje() {
   const res = await appsScriptFetch("listarPresencasHoje");
   presencasHojeIds = new Set((res && res.ids) || []);
   presencasHojeNomes = new Set((res && res.nomes) || []);
+  mesclarFilaNasPresencas();
 }
 
 function jaPresenteHoje(p) {
@@ -1217,8 +1230,12 @@ async function montarListaPresenca() {
   try {
     await carregarPresencasHoje();
   } catch (e) {
+    // Sem resposta da planilha, o que sobra de confiável é o que este aparelho
+    // acabou de ler. Zerar tudo aqui reabriria a porta para registrar de novo,
+    // pelo nome, quem já passou pela câmera.
     presencasHojeIds = new Set();
     presencasHojeNomes = new Set();
+    mesclarFilaNasPresencas();
     showToast("Não consegui carregar as presenças de hoje.");
   }
   filtrarListaPresenca();
