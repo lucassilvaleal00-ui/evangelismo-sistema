@@ -123,6 +123,41 @@
                        color: var(--accent); font-size: 0.72rem; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
   .bloco-so { border: 1px solid var(--line); border-radius: 10px; padding: 14px; margin-bottom: 12px; }
   .bloco-so h4 { margin: 0 0 10px; font-size: 0.85rem; }
+
+  /* ---- Leitor de QR Code ---- */
+  #leitor { position: fixed; inset: 0; background: #0d0f14; z-index: 90; display: none; flex-direction: column; }
+  #leitor.show { display: flex; }
+  .leitor-topo { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: rgba(13,15,20,0.92); color: white; flex: 0 0 auto; }
+  .leitor-topo .titulo { font-weight: 700; font-size: 0.95rem; }
+  .leitor-topo button { background: rgba(255,255,255,0.14); color: white; border: none; border-radius: 8px; padding: 8px 12px; font-size: 0.85rem; }
+  .leitor-topo .fechar { margin-left: auto; }
+  .leitor-camera { position: relative; flex: 1 1 auto; overflow: hidden; background: #000; }
+  .leitor-camera video { width: 100%; height: 100%; object-fit: cover; }
+  .mira { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+  .mira div { width: min(64vw, 300px); aspect-ratio: 1; border: 3px solid rgba(255,255,255,0.85); border-radius: 22px;
+              box-shadow: 0 0 0 100vmax rgba(0,0,0,0.35); }
+  .leitor-aviso { position: absolute; left: 12px; right: 12px; top: 12px; background: rgba(13,15,20,0.8); color: white;
+                  border-radius: 10px; padding: 10px 12px; font-size: 0.82rem; text-align: center; }
+
+  .resultado { position: absolute; left: 12px; right: 12px; bottom: 12px; border-radius: 14px; padding: 16px 18px;
+               color: white; opacity: 0; transform: translateY(12px); transition: opacity 0.15s, transform 0.15s; }
+  .resultado.show { opacity: 1; transform: none; }
+  .resultado.ok { background: #1f7a4d; }
+  .resultado.repetido { background: #8a6d1f; }
+  .resultado.erro { background: #a24030; }
+  .resultado .nome { font-size: 1.25rem; font-weight: 800; line-height: 1.2; word-break: break-word; }
+  .resultado .detalhe { font-size: 0.9rem; opacity: 0.95; margin-top: 3px; }
+
+  .leitor-rodape { flex: 0 0 auto; background: rgba(13,15,20,0.92); color: white; padding: 10px 14px 14px; }
+  .leitor-numeros { display: flex; gap: 14px; font-size: 0.8rem; color: #cfcabd; margin-bottom: 8px; flex-wrap: wrap; }
+  .leitor-numeros strong { color: white; font-size: 0.95rem; }
+  .leitor-ultimas { display: flex; flex-direction: column; gap: 3px; max-height: 92px; overflow-y: auto; font-size: 0.8rem; color: #cfcabd; }
+  .leitor-ultimas span.rep { color: #e0c169; }
+  .leitor-pontos { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: #cfcabd; margin-bottom: 8px; }
+  .leitor-pontos input { width: 84px; margin: 0; padding: 6px 8px; font-size: 0.85rem; background: rgba(255,255,255,0.12);
+                         border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 7px; }
+  .fila-pendente { font-size: 0.78rem; color: #e0c169; }
+  .fila-pendente.ok { color: #7fcf9f; }
   .faixa-plano { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
   .chip-plano, .chip-prazo { font-size: 0.78rem; font-weight: 600; padding: 4px 11px; border-radius: 20px; white-space: nowrap; }
   .chip-plano { background: var(--accent-soft); color: var(--accent); }
@@ -347,7 +382,10 @@
           </div>
           <div class="dica">Opcional. Vale para todas as presenças que <strong>você</strong> registrar neste aparelho — fica guardado para a próxima vez e não interfere no valor que outra pessoa da equipe estiver usando. Deixe em branco para não dar pontos.</div>
         </div>
-        <label for="busca-presenca">Buscar participante</label>
+        <button class="btn-primary" id="btn-abrir-leitor" style="width:100%; margin-bottom:16px; padding:14px">
+          📷 Registrar presença por QR Code
+        </button>
+        <label for="busca-presenca">Ou busque pelo nome</label>
         <input id="busca-presenca" type="text" placeholder="Digite o nome..." />
         <div class="lista-presenca" id="lista-presenca"></div>
         <div id="painel-confirmar-presenca">
@@ -500,6 +538,36 @@
   </div>
 </div>
 
+<div id="leitor">
+  <div class="leitor-topo">
+    <span class="titulo">Leitura de cartões</span>
+    <button class="fechar" id="leitor-fechar">✕ Encerrar</button>
+  </div>
+
+  <div class="leitor-camera">
+    <video id="leitor-video" playsinline muted></video>
+    <div class="mira"><div></div></div>
+    <div class="leitor-aviso" id="leitor-aviso">Iniciando a câmera...</div>
+    <div class="resultado" id="leitor-resultado">
+      <div class="nome" id="leitor-nome"></div>
+      <div class="detalhe" id="leitor-detalhe"></div>
+    </div>
+  </div>
+
+  <div class="leitor-rodape">
+    <div class="leitor-pontos">
+      <label for="leitor-pontos" style="margin:0; color:#cfcabd">Pontos por presença</label>
+      <input id="leitor-pontos" inputmode="numeric" placeholder="0" />
+      <span class="fila-pendente ok" id="leitor-fila">tudo enviado</span>
+    </div>
+    <div class="leitor-numeros">
+      <span>Registrados agora: <strong id="leitor-conta">0</strong></span>
+      <span>Repetidos: <strong id="leitor-repetidos">0</strong></span>
+    </div>
+    <div class="leitor-ultimas" id="leitor-ultimas"></div>
+  </div>
+</div>
+
 <div class="modal-fundo" id="modal-instalar">
   <div class="modal">
     <h3>Instalar no celular</h3>
@@ -576,7 +644,7 @@
 // ==== CONFIGURAÇÃO ====
 const SUPABASE_URL = "https://jmogaclwihvsouqixozo.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imptb2dhY2x3aWh2c291cWl4b3pvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyNTk5MzIsImV4cCI6MjEwMjgzNTkzMn0.kzvlfUAzRrEeb2UGlEViCOVh0vIMuHVkR_EzUSjn87U";
-const VERSAO_BACKEND_ESPERADA = 6;
+const VERSAO_BACKEND_ESPERADA = 7;
 // =======================
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false } });
@@ -860,6 +928,11 @@ async function abrirPainel() {
   try {
     await carregarParticipantes();
     sincronizarCamposPontos(lerPontosSalvos());
+    carregarFilaSalva();
+    if (filaEnvio.length) {
+      showToast(`${filaEnvio.length} leitura(s) da última sessão sendo enviadas...`);
+      escoarFila();
+    }
     $("tela-erro").style.display = "none";
     $("app-screen").style.display = "block";
   } catch (e) {
@@ -1134,6 +1207,11 @@ function jaPresenteHoje(p) {
 }
 
 async function montarListaPresenca() {
+  // No iPhone não existe leitor de QR nativo, então o jsQR é baixado da
+  // internet. Adiantar isso aqui evita descobrir que falta internet justamente
+  // na hora em que a fila já está formada na porta.
+  if (!("BarcodeDetector" in window)) carregarJsQr().catch(() => {});
+
   $("busca-presenca").value = "";
   limparSelecaoPresenca();
   try {
@@ -1248,7 +1326,7 @@ function lerPontosPresenca(idCampo) {
 }
 
 function sincronizarCamposPontos(valor) {
-  ["c-pontos", "p-pontos"].forEach(id => { if ($(id)) $(id).value = valor; });
+  ["c-pontos", "p-pontos", "leitor-pontos"].forEach(id => { if ($(id)) $(id).value = valor; });
   atualizarAvisoPontosPresenca();
 }
 
@@ -2025,6 +2103,320 @@ async function gerarCartoesSelecionados() {
 }
 
 // ---------------------------------------------------------------------------
+// Leitura de cartões por QR Code
+// ---------------------------------------------------------------------------
+// O gargalo aqui não é ler o código: é a fila. Com 200 pessoas chegando juntas,
+// esperar a planilha responder a cada leitura faria a fila andar no ritmo da
+// internet. Então:
+//
+//   1. a identificação é LOCAL — a lista de participantes já está na memória,
+//      então o nome aparece na hora, sem rede;
+//   2. a checagem de repetido também é local, contra as presenças de hoje;
+//   3. a gravação vai para uma FILA que é enviada em lote, por trás, enquanto a
+//      pessoa da frente já está sendo lida;
+//   4. a fila é guardada no aparelho — se o navegador fechar no meio do evento,
+//      nada do que já foi lido se perde.
+
+let leitorAtivo = false;
+let leitorStream = null;
+let leitorDetector = null;      // BarcodeDetector nativo, quando existe
+let leitorUltimoCodigo = "";
+let leitorUltimoInstante = 0;
+let leitorConta = 0;
+let leitorRepetidos = 0;
+let leitorUltimas = [];
+let filaEnvio = [];
+let enviandoFila = false;
+let jsQrCarregando = null;
+
+const INTERVALO_MESMO_CODIGO = 2500;   // ignora releitura do mesmo cartão
+const TAMANHO_LOTE = 25;
+
+function chaveFila() {
+  return "evang_fila_" + String(tokenAtual || "").slice(-8);
+}
+
+function salvarFila() {
+  try {
+    if (filaEnvio.length) localStorage.setItem(chaveFila(), JSON.stringify(filaEnvio));
+    else localStorage.removeItem(chaveFila());
+  } catch (e) { /* navegador sem armazenamento: a fila vive só na memória */ }
+  atualizarIndicadorFila();
+}
+
+function carregarFilaSalva() {
+  try {
+    const bruto = localStorage.getItem(chaveFila());
+    if (bruto) filaEnvio = JSON.parse(bruto) || [];
+  } catch (e) { filaEnvio = []; }
+}
+
+function atualizarIndicadorFila() {
+  const el = $("leitor-fila");
+  if (!el) return;
+  if (filaEnvio.length) {
+    el.textContent = `${filaEnvio.length} aguardando envio`;
+    el.className = "fila-pendente";
+  } else {
+    el.textContent = "tudo enviado";
+    el.className = "fila-pendente ok";
+  }
+}
+
+/**
+ * Envia a fila em lotes, um de cada vez, sem travar a leitura.
+ * Espera um instante antes do primeiro envio para juntar as leituras que vierem
+ * em seguida — numa fila movimentada isso transforma dezenas de chamadas em
+ * poucas, que é o que segura o ritmo.
+ */
+let agendamentoFila = null;
+function escoarFila() {
+  if (enviandoFila || !filaEnvio.length || agendamentoFila) return;
+  agendamentoFila = setTimeout(() => { agendamentoFila = null; escoarFilaAgora(); }, 600);
+}
+
+async function escoarFilaAgora() {
+  if (enviandoFila || !filaEnvio.length) return;
+  enviandoFila = true;
+  try {
+    while (filaEnvio.length) {
+      const lote = filaEnvio.slice(0, TAMANHO_LOTE);
+      const resposta = await appsScriptFetch("registrarPresencasEmLote", { itens: lote });
+      // Só remove da fila o que a planilha confirmou ter recebido.
+      filaEnvio = filaEnvio.slice(lote.length);
+      salvarFila();
+      if (resposta && resposta.duplicados && resposta.duplicados.length) {
+        // Outro aparelho da equipe já havia registrado essas pessoas.
+        resposta.duplicados.forEach(id => presencasHojeIds.add(id));
+      }
+    }
+  } catch (e) {
+    console.error(e);
+    // Mantém a fila e tenta de novo daqui a pouco.
+    setTimeout(() => { enviandoFila = false; escoarFilaAgora(); }, 4000);
+    return;
+  }
+  enviandoFila = false;
+}
+
+// --- Retorno sonoro e tátil: em fila cheia ninguém fica olhando a tela ---
+let contextoAudio = null;
+function bip(frequencia, duracao) {
+  try {
+    contextoAudio = contextoAudio || new (window.AudioContext || window.webkitAudioContext)();
+    const osc = contextoAudio.createOscillator();
+    const ganho = contextoAudio.createGain();
+    osc.frequency.value = frequencia;
+    osc.type = "sine";
+    ganho.gain.setValueAtTime(0.12, contextoAudio.currentTime);
+    ganho.gain.exponentialRampToValueAtTime(0.001, contextoAudio.currentTime + duracao);
+    osc.connect(ganho).connect(contextoAudio.destination);
+    osc.start();
+    osc.stop(contextoAudio.currentTime + duracao);
+  } catch (e) { /* sem áudio disponível */ }
+}
+function vibrar(padrao) {
+  try { if (navigator.vibrate) navigator.vibrate(padrao); } catch (e) {}
+}
+
+function carregarJsQr() {
+  if (window.jsQR) return Promise.resolve();
+  if (!jsQrCarregando) {
+    jsQrCarregando = carregarScript("https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js")
+      .catch(e => { jsQrCarregando = null; throw e; });
+  }
+  return jsQrCarregando;
+}
+
+/** Extrai o começo do ID do participante da URL gravada no QR do cartão. */
+function lerCartao(texto) {
+  let url;
+  try { url = new URL(texto); } catch (e) { return { erro: "Isso não é um cartão do participante." }; }
+
+  const p = url.searchParams.get("p");
+  const c = url.searchParams.get("c");
+  if (!p) return { erro: "Isso não é um cartão do participante." };
+  if (codigoConsulta && c && c !== codigoConsulta) {
+    return { erro: "Este cartão é de outro evangelismo." };
+  }
+
+  const achados = cacheParticipantes.filter(x => x.id === p || x.id.indexOf(p) === 0);
+  if (!achados.length) return { erro: "Cartão não encontrado na lista. Toque em Encerrar e atualize a lista." };
+  if (achados.length > 1) return { erro: "Cartão ambíguo. Registre essa pessoa pelo nome." };
+  return { pessoa: achados[0] };
+}
+
+function mostrarResultado(classe, nome, detalhe) {
+  const caixa = $("leitor-resultado");
+  $("leitor-nome").textContent = nome;
+  $("leitor-detalhe").textContent = detalhe;
+  caixa.className = "resultado show " + classe;
+  clearTimeout(mostrarResultado.timer);
+  mostrarResultado.timer = setTimeout(() => caixa.classList.remove("show"), 2600);
+}
+
+function registrarUltima(nome, repetido) {
+  leitorUltimas.unshift({ nome, repetido });
+  leitorUltimas = leitorUltimas.slice(0, 8);
+  $("leitor-ultimas").innerHTML = leitorUltimas
+    .map(u => `<span class="${u.repetido ? "rep" : ""}">${u.repetido ? "↺" : "✓"} ${esc(u.nome)}</span>`).join("");
+}
+
+function processarLeitura(texto) {
+  const agora = Date.now();
+  if (texto === leitorUltimoCodigo && agora - leitorUltimoInstante < INTERVALO_MESMO_CODIGO) return;
+  leitorUltimoCodigo = texto;
+  leitorUltimoInstante = agora;
+
+  const resultado = lerCartao(texto);
+  if (resultado.erro) {
+    mostrarResultado("erro", "Cartão não reconhecido", resultado.erro);
+    bip(220, 0.25); vibrar([90, 60, 90]);
+    return;
+  }
+
+  const p = resultado.pessoa;
+
+  if (presencasHojeIds.has(p.id) || p.dataCadastro === hojeFormatado()) {
+    leitorRepetidos++;
+    $("leitor-repetidos").textContent = leitorRepetidos;
+    mostrarResultado("repetido", p.nome, "A presença de hoje já estava registrada.");
+    registrarUltima(p.nome, true);
+    bip(420, 0.18); vibrar(50);
+    return;
+  }
+
+  const pontos = lerPontosPresenca("leitor-pontos");
+
+  // Marca localmente na hora: a próxima leitura do mesmo cartão já cai como
+  // repetida, mesmo antes de a planilha responder.
+  presencasHojeIds.add(p.id);
+  presencasHojeNomes.add(p.nome);
+  leitorConta++;
+  $("leitor-conta").textContent = leitorConta;
+
+  filaEnvio.push({ id: p.id, nome: p.nome, pontos });
+  salvarFila();
+  escoarFila();
+
+  mostrarResultado("ok", p.nome,
+    pontos > 0 ? `Registrado com sucesso — creditados ${pontos} pontos` : "Registrado com sucesso");
+  registrarUltima(p.nome, false);
+  bip(880, 0.12); vibrar(35);
+}
+
+async function abrirLeitor() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showToast("Este navegador não consegue abrir a câmera. Use o Chrome no Android ou o Safari no iPhone.");
+    return;
+  }
+
+  $("leitor").classList.add("show");
+  $("leitor-aviso").style.display = "block";
+  $("leitor-aviso").textContent = "Atualizando a lista de participantes...";
+  leitorConta = 0; leitorRepetidos = 0; leitorUltimas = [];
+  $("leitor-conta").textContent = "0";
+  $("leitor-repetidos").textContent = "0";
+  $("leitor-ultimas").innerHTML = "";
+  $("leitor-pontos").value = lerPontosSalvos();
+
+  try {
+    // Lista fresca: alguém pode ter sido cadastrado agora, na mesa ao lado.
+    await carregarParticipantes();
+    await carregarPresencasHoje();
+    if (!codigoConsulta) {
+      const info = await appsScriptFetch("infoPlanilha").catch(() => null);
+      codigoConsulta = info && info.codigoConsulta;
+    }
+  } catch (e) {
+    console.error(e);
+  }
+
+  // Leitor nativo quando existe (bem mais rápido); jsQR como reserva.
+  leitorDetector = null;
+  try {
+    if ("BarcodeDetector" in window) {
+      const formatos = await window.BarcodeDetector.getSupportedFormats();
+      if (formatos.includes("qr_code")) leitorDetector = new window.BarcodeDetector({ formats: ["qr_code"] });
+    }
+  } catch (e) { leitorDetector = null; }
+
+  if (!leitorDetector) {
+    $("leitor-aviso").textContent = "Preparando o leitor...";
+    try { await carregarJsQr(); }
+    catch (e) {
+      $("leitor-aviso").textContent = "Não consegui carregar o leitor. Verifique a internet e tente de novo.";
+      return;
+    }
+  }
+
+  try {
+    $("leitor-aviso").textContent = "Abrindo a câmera...";
+    leitorStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: false
+    });
+    const video = $("leitor-video");
+    video.srcObject = leitorStream;
+    await video.play();
+    $("leitor-aviso").style.display = "none";
+    leitorAtivo = true;
+    lacoDeLeitura();
+  } catch (e) {
+    console.error(e);
+    $("leitor-aviso").textContent = "Não consegui abrir a câmera. Autorize o acesso à câmera nas permissões do navegador.";
+  }
+}
+
+async function lacoDeLeitura() {
+  const video = $("leitor-video");
+  const tela = document.createElement("canvas");
+  const ctx = tela.getContext("2d", { willReadFrequently: true });
+
+  while (leitorAtivo) {
+    try {
+      if (video.readyState >= 2) {
+        if (leitorDetector) {
+          const achados = await leitorDetector.detect(video);
+          if (achados.length) processarLeitura(achados[0].rawValue);
+        } else {
+          // Reduz o quadro antes de decodificar: a leitura fica bem mais leve
+          // e o QR do cartão continua grande o bastante para ser reconhecido.
+          const escala = Math.min(1, 640 / (video.videoWidth || 640));
+          tela.width = Math.round((video.videoWidth || 640) * escala);
+          tela.height = Math.round((video.videoHeight || 480) * escala);
+          ctx.drawImage(video, 0, 0, tela.width, tela.height);
+          const imagem = ctx.getImageData(0, 0, tela.width, tela.height);
+          const achado = window.jsQR(imagem.data, imagem.width, imagem.height, { inversionAttempts: "dontInvert" });
+          if (achado && achado.data) processarLeitura(achado.data);
+        }
+      }
+    } catch (e) { /* quadro ruim: segue para o próximo */ }
+    await new Promise(r => setTimeout(r, leitorDetector ? 90 : 130));
+  }
+}
+
+function fecharLeitor() {
+  leitorAtivo = false;
+  if (leitorStream) {
+    leitorStream.getTracks().forEach(t => t.stop());
+    leitorStream = null;
+  }
+  $("leitor-video").srcObject = null;
+  $("leitor").classList.remove("show");
+
+  clearTimeout(agendamentoFila); agendamentoFila = null;
+  escoarFilaAgora();
+  const resumo = [];
+  if (leitorConta) resumo.push(`${leitorConta} presença(s) registrada(s)`);
+  if (leitorRepetidos) resumo.push(`${leitorRepetidos} já estavam registradas`);
+  if (filaEnvio.length) resumo.push(`${filaEnvio.length} ainda sendo enviadas`);
+  if (resumo.length) showToast(resumo.join(" · "));
+
+  montarListaPresenca();
+}
+
+// ---------------------------------------------------------------------------
 // Sorteio  (agora persistido na planilha)
 // ---------------------------------------------------------------------------
 
@@ -2296,16 +2688,16 @@ document.querySelectorAll(".tab-btn").forEach(b => {
 document.querySelectorAll(".campo-check input[type=checkbox]").forEach(chk => {
   chk.addEventListener("change", () => alternarCampo(chk.dataset.alvo, chk.id));
 });
-["c-telefone", "c-idade", "sorteio-num-min", "sorteio-num-max", "c-pontos", "p-pontos", "modal-pontos-valor"]
+["c-telefone", "c-idade", "sorteio-num-min", "sorteio-num-max", "c-pontos", "p-pontos", "leitor-pontos", "modal-pontos-valor"]
   .forEach(id => somenteNumeros($(id)));
 
 // --- Pontos por presença ---
 // (o valor guardado é lido dentro de abrirPainel, quando o token já é conhecido)
-["c-pontos", "p-pontos"].forEach(id => {
+["c-pontos", "p-pontos", "leitor-pontos"].forEach(id => {
   $(id).addEventListener("input", () => {
     const v = ($(id).value || "").trim();
     salvarPontos(v);
-    ["c-pontos", "p-pontos"].filter(o => o !== id).forEach(o => { $(o).value = v; });
+    ["c-pontos", "p-pontos", "leitor-pontos"].filter(o => o !== id).forEach(o => { $(o).value = v; });
     atualizarAvisoPontosPresenca();
   });
 });
@@ -2458,6 +2850,13 @@ $("lista-presenca").addEventListener("click", e => {
   const btn = e.target.closest(".item-presenca");
   if (btn) selecionarParticipantePresenca(btn.dataset.id);
 });
+$("btn-abrir-leitor").addEventListener("click", abrirLeitor);
+$("leitor-fechar").addEventListener("click", fecharLeitor);
+// Se o navegador fechar com leituras pendentes, elas voltam na próxima abertura.
+window.addEventListener("beforeunload", e => {
+  if (filaEnvio.length) { e.preventDefault(); e.returnValue = ""; }
+});
+
 $("btn-confirmar-presenca").addEventListener("click", confirmarPresenca);
 $("btn-cancelar-presenca").addEventListener("click", limparSelecaoPresenca);
 
