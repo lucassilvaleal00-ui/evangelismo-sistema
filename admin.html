@@ -230,6 +230,27 @@ function gerarToken() {
  * Nunca começa com zero: número copiado para uma planilha ou digitado com
  * pressa não pode perder o primeiro dígito.
  */
+/**
+ * Traduz os erros do banco que não dizem nada a quem está usando o painel.
+ * O caso que motivou isto: a trava da coluna `plano` ficou para trás quando os
+ * planos de 7 e 15 dias entraram, e a mensagem crua ("violates check
+ * constraint...") não dá nenhuma pista do que fazer.
+ */
+function mensagemDeErro(error) {
+  const bruto = (error && error.message) || "erro desconhecido";
+  if (/usuarios_evangelismo_plano_check/.test(bruto)) {
+    return "o banco ainda não aceita esse plano. Rode o ADENDO v8.1 do arquivo " +
+           "supabase_seguranca.sql no SQL Editor do Supabase — ele amplia a lista de planos permitidos.";
+  }
+  if (/usuarios_evangelismo_token_key|duplicate key/.test(bruto)) {
+    return "esse token já existe. Tente de novo — um novo será sorteado.";
+  }
+  if (/column .*pin_admin.* does not exist/i.test(bruto)) {
+    return "falta rodar o ADENDO v8 do arquivo supabase_seguranca.sql no Supabase (coluna pin_admin).";
+  }
+  return bruto;
+}
+
 function gerarPin() {
   const n = crypto.getRandomValues(new Uint32Array(1))[0] % 90000000;
   return String(10000000 + n);
@@ -308,7 +329,7 @@ async function cadastrarUsuario() {
       data_expiracao: calcularExpiracao(plano, null),
       status: "ativo"
     });
-    if (error) { showToast("Erro ao cadastrar: " + error.message); return; }
+    if (error) { showToast("Erro ao cadastrar: " + mensagemDeErro(error)); return; }
     $("novo-nome").value = "";
     $("novo-email").value = "";
     showToast("Acesso criado. Use “Copiar acesso” para enviar o link e o PIN.");
@@ -359,7 +380,7 @@ async function confirmarRenovacao() {
       data_expiracao: calcularExpiracao(plano, u.data_expiracao),
       status: "ativo"
     }).eq("id", u.id);
-    if (error) { showToast("Erro ao renovar: " + error.message); return; }
+    if (error) { showToast("Erro ao renovar: " + mensagemDeErro(error)); return; }
     $("modal-renovar").classList.remove("show");
     showToast(`Acesso de ${u.nome} renovado.`);
     await carregarUsuarios();
@@ -385,7 +406,7 @@ async function regenerarLink(id) {
   const { error } = await sb.from("usuarios_evangelismo")
     .update({ token: gerarToken(), pin_admin: gerarPin(), webapp_url: null })
     .eq("id", id);
-  if (error) { showToast("Erro ao gerar novo link: " + error.message); return; }
+  if (error) { showToast("Erro ao gerar novo link: " + mensagemDeErro(error)); return; }
   showToast("Link e PIN novos gerados. Copie e envie para a pessoa.");
   carregarUsuarios();
 }
@@ -406,7 +427,7 @@ async function regenerarPin(id) {
   )) return;
 
   const { error } = await sb.from("usuarios_evangelismo").update({ pin_admin: gerarPin() }).eq("id", id);
-  if (error) { showToast("Erro ao gerar novo PIN: " + error.message); return; }
+  if (error) { showToast("Erro ao gerar novo PIN: " + mensagemDeErro(error)); return; }
   showToast("PIN novo gerado. Envie para o cliente.");
   carregarUsuarios();
 }
@@ -421,7 +442,7 @@ async function desconectarPlanilha(id) {
   )) return;
 
   const { error } = await sb.from("usuarios_evangelismo").update({ webapp_url: null }).eq("id", id);
-  if (error) { showToast("Erro ao desconectar: " + error.message); return; }
+  if (error) { showToast("Erro ao desconectar: " + mensagemDeErro(error)); return; }
   showToast("Planilha desconectada.");
   carregarUsuarios();
 }
@@ -431,7 +452,7 @@ async function excluirUsuario(id) {
   if (!u) return;
   if (!confirm(`Excluir definitivamente o acesso de ${u.nome}?\n\nO link dele para de funcionar. Os dados na planilha dele continuam intactos.`)) return;
   const { error } = await sb.from("usuarios_evangelismo").delete().eq("id", id);
-  if (error) { showToast("Erro ao excluir: " + error.message); return; }
+  if (error) { showToast("Erro ao excluir: " + mensagemDeErro(error)); return; }
   showToast("Acesso excluído.");
   carregarUsuarios();
 }
@@ -478,7 +499,7 @@ async function carregarUsuarios() {
     .select("*")
     .order("data_criacao", { ascending: false });
 
-  if (error) { showToast("Erro ao carregar usuários: " + error.message); return; }
+  if (error) { showToast("Erro ao carregar usuários: " + mensagemDeErro(error)); return; }
   usuarios = data || [];
   renderizarUsuarios();
 }
