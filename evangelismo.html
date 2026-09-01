@@ -46,6 +46,34 @@
   .tab-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
   .subtab-btn { background: var(--card); border: 1px solid var(--line); color: var(--muted); cursor: pointer; border-radius: 8px; padding: 10px 16px; font-size: 0.9rem; font-weight: 600; font-family: inherit; }
   .subtab-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+  .subtabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+
+  /* Função de quem está usando o painel (aparece ao lado do plano) */
+  .chip-papel { background: var(--accent-soft); color: var(--accent); border-radius: 999px;
+                padding: 3px 12px; font-size: 0.78rem; font-weight: 700; }
+
+  /* Seleção de ruas do missionário */
+  .chips-ruas { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; min-height: 4px; }
+  .chip-rua { display: inline-flex; align-items: center; gap: 6px; background: var(--accent-soft);
+              color: var(--accent); border-radius: 999px; padding: 4px 10px; font-size: 0.8rem; font-weight: 600; }
+  .chip-rua button { background: none; border: none; color: inherit; cursor: pointer; font-size: 0.95rem;
+                     line-height: 1; padding: 0; font-family: inherit; }
+  .lista-ruas-check { max-height: 230px; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px;
+                      padding: 6px 10px; background: var(--card); margin-bottom: 14px; }
+  .lista-ruas-check label { display: flex; align-items: center; gap: 8px; padding: 5px 2px; margin: 0;
+                            font-weight: 500; font-size: 0.88rem; cursor: pointer; }
+  .lista-ruas-check input { width: auto; margin: 0; }
+  .lista-ruas-check .vazio { color: var(--muted); font-size: 0.85rem; padding: 8px 2px; }
+
+  /* Marcações de visita e estudo bíblico no diretório */
+  .marca { border: 1px solid var(--line); background: var(--card); color: var(--muted); border-radius: 999px;
+           padding: 3px 12px; font-size: 0.78rem; font-weight: 700; cursor: pointer; font-family: inherit;
+           white-space: nowrap; min-width: 62px; }
+  .marca.sim { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+  .marca:disabled { cursor: default; opacity: 0.75; }
+  .marca.salvando { opacity: 0.5; }
+  .token-equipe { font-family: monospace; font-size: 0.95rem; font-weight: 700; letter-spacing: 2px;
+                  background: var(--accent-soft); color: var(--ink); border-radius: 6px; padding: 2px 8px; }
   .tab-panel { display: none; }
   .tab-panel.active { display: block; }
   table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
@@ -113,11 +141,12 @@
   .paginacao button.atual { background: var(--accent); border-color: var(--accent); color: white; }
   .paginacao button:disabled { opacity: 0.4; }
   .paginacao .reticencias { color: var(--muted); padding: 0 2px; }
-  .topo-painel { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 24px; }
+  .topo-painel { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+  .topo-painel > div:first-child { min-width: 0; flex: 1 1 200px; }
   .btn-engrenagem { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
                     font-size: 1.15rem; line-height: 1; padding: 9px 12px; flex: 0 0 auto; }
   .btn-engrenagem:hover { border-color: var(--accent); }
-  .acoes-topo { display: flex; gap: 6px; flex: 0 0 auto; }
+  .acoes-topo { display: flex; gap: 6px; flex: 0 0 auto; flex-wrap: wrap; justify-content: flex-end; }
   .passo-instalar { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px; font-size: 0.88rem; }
   .passo-instalar .n { flex: 0 0 auto; width: 20px; height: 20px; border-radius: 50%; background: var(--accent-soft);
                        color: var(--accent); font-size: 0.72rem; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
@@ -232,6 +261,21 @@
   <p class="sub">Verificando acesso...</p>
 </div>
 
+<div id="tela-pin" class="center-screen" style="display:none">
+  <div class="eyebrow">Entrar</div>
+  <h1>Digite seu token de acesso</h1>
+  <p class="sub">
+    O administrador do evento usa o número de <strong>8 dígitos</strong> que recebeu junto com o link.
+    Recepcionistas e missionários usam o número de <strong>6 dígitos</strong> criado pelo administrador.
+  </p>
+  <label for="input-pin">Token de acesso</label>
+  <input id="input-pin" type="text" inputmode="numeric" autocomplete="off" list="lista-pins"
+         placeholder="Somente números" maxlength="8" />
+  <datalist id="lista-pins"></datalist>
+  <button class="btn-primary" style="width:100%" id="btn-entrar-pin">Entrar</button>
+  <p class="sub" id="erro-pin" style="color:var(--warn); min-height:1em"></p>
+</div>
+
 <div id="tela-planilha" class="center-screen" style="display:none">
   <div class="eyebrow">Conectar</div>
   <h1>Conectar a planilha</h1>
@@ -258,11 +302,13 @@
         <div class="faixa-plano" id="faixa-plano" style="display:none">
           <span class="chip-plano" id="chip-plano"></span>
           <span class="chip-prazo" id="chip-prazo"></span>
+          <span class="chip-papel" id="chip-papel" style="display:none"></span>
         </div>
       </div>
       <div class="acoes-topo">
         <button class="btn-engrenagem" id="btn-instalar" title="Instalar como app no celular" aria-label="Instalar no celular">📲</button>
         <button class="btn-engrenagem" id="btn-config" title="Trocar a planilha conectada" aria-label="Configurações da planilha">⚙️</button>
+        <button class="btn-engrenagem" id="btn-sair" title="Sair desta conta" aria-label="Sair">🚪</button>
       </div>
     </header>
 
@@ -279,6 +325,7 @@
       <button class="tab-btn" data-tab="graficos">📊 Gráficos</button>
       <button class="tab-btn" data-tab="sorteio">🎲 Sorteio</button>
       <button class="tab-btn" data-tab="diretorio">🗺️ Diretório de ruas</button>
+      <button class="tab-btn" data-tab="equipe">👥 Equipe</button>
     </div>
 
     <!-- CADASTRO -->
@@ -440,6 +487,12 @@
         <button class="btn-ghost btn-sm" id="btn-atualizar-graficos" style="margin-left:0">↻ Atualizar</button>
       </div>
 
+      <div class="subtabs" style="margin-bottom:16px">
+        <button class="subtab-btn active" id="subtab-btn-programacao">Programação</button>
+        <button class="subtab-btn" id="subtab-btn-missionarios">Dados missionários</button>
+      </div>
+
+      <div id="sub-graficos-programacao">
       <div class="tiles" id="tiles-graficos"></div>
 
       <div class="bloco-gr">
@@ -469,6 +522,32 @@
         <p class="legenda">Quantas pessoas cadastradas há em cada faixa de idade.</p>
         <div class="area-grafico" id="gr-idades"></div>
         <div class="tabela-numeros" id="tb-idades"></div>
+      </div>
+      </div>
+
+      <div id="sub-graficos-missionarios" style="display:none">
+        <div class="tiles" id="tiles-missionarios"></div>
+
+        <div class="bloco-gr">
+          <h3>Pessoas visitadas por dia</h3>
+          <p class="legenda">Quantas visitas foram marcadas em cada dia.</p>
+          <div class="area-grafico" id="gr-visitas-dia"></div>
+          <div class="tabela-numeros" id="tb-visitas-dia"></div>
+        </div>
+
+        <div class="bloco-gr">
+          <h3>Novos estudos bíblicos por dia</h3>
+          <p class="legenda">Quantos estudos bíblicos começaram em cada dia.</p>
+          <div class="area-grafico" id="gr-estudos-dia"></div>
+          <div class="tabela-numeros" id="tb-estudos-dia"></div>
+        </div>
+
+        <div class="bloco-gr">
+          <h3>Por missionário</h3>
+          <p class="legenda">Quantas visitas cada pessoa da equipe marcou.</p>
+          <div class="area-rolavel"><div class="area-grafico" id="gr-por-missionario"></div></div>
+          <div class="tabela-numeros" id="tb-por-missionario"></div>
+        </div>
       </div>
     </div>
 
@@ -515,10 +594,87 @@
     <div class="tab-panel" id="tab-diretorio">
       <div class="card">
         <h2>🗺️ Diretório por rua</h2>
+
+        <div class="subtabs" id="subtabs-diretorio" style="display:none">
+          <button class="subtab-btn active" id="subtab-btn-minhas">Minhas ruas</button>
+          <button class="subtab-btn" id="subtab-btn-todas">Todas as ruas</button>
+        </div>
+
         <p class="sub" id="legenda-novatos"></p>
         <label for="busca-diretorio">Buscar por nome ou telefone</label>
         <input id="busca-diretorio" type="text" placeholder="Digite para filtrar..." />
+        <p class="sub" id="aviso-acompanhamento" style="margin:-4px 0 10px">
+          Toque em <strong>Visitado(a)?</strong> ou <strong>Estudo bíblico?</strong> para alternar entre
+          <em>sim</em> e <em>não</em>. A planilha é atualizada sozinha.
+        </p>
         <div id="diretorio-lista"></div>
+      </div>
+    </div>
+
+    <!-- EQUIPE -->
+    <div class="tab-panel" id="tab-equipe">
+      <div class="card">
+        <h2>👥 Cadastrar quem trabalha no evento</h2>
+        <div id="badge-edicao-equipe" class="badge-edicao" style="display:none">
+          Editando <strong id="badge-edicao-equipe-nome"></strong>
+          <button id="btn-cancelar-edicao-equipe">cancelar edição</button>
+        </div>
+
+        <div class="form-row">
+          <div>
+            <label>Nome completo *</label>
+            <input id="e-nome" />
+          </div>
+          <div>
+            <label>Telefone *</label>
+            <input id="e-telefone" inputmode="numeric" placeholder="Somente números" />
+          </div>
+        </div>
+
+        <label>Função *</label>
+        <div class="subtabs" style="margin-bottom:14px">
+          <button class="subtab-btn active" id="e-funcao-missionario">🧭 Missionário</button>
+          <button class="subtab-btn" id="e-funcao-recepcionista">🎧 Recepcionista</button>
+        </div>
+        <p class="sub" id="e-explica-funcao" style="margin:-8px 0 14px"></p>
+
+        <div id="bloco-ruas-missionario">
+          <label for="busca-ruas-equipe">Ruas deste missionário</label>
+          <input id="busca-ruas-equipe" type="text" placeholder="Pesquisar rua..." />
+          <div class="chips-ruas" id="chips-ruas-equipe"></div>
+          <div class="lista-ruas-check" id="lista-ruas-equipe"></div>
+        </div>
+
+        <div class="acoes-form">
+          <button class="btn-primary" id="btn-salvar-equipe">Cadastrar</button>
+          <button class="btn-ghost btn-sm" id="btn-limpar-equipe">Limpar</button>
+        </div>
+        <p class="sub" id="erro-equipe" style="color:var(--warn); min-height:1em"></p>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2 style="font-size:1rem">Equipe cadastrada</h2>
+          <button class="btn-ghost btn-sm" id="btn-atualizar-equipe">↻ Atualizar</button>
+        </div>
+        <label for="busca-equipe">Buscar por nome, telefone ou função</label>
+        <input id="busca-equipe" type="text" placeholder="Digite para filtrar..." />
+        <p class="sub" id="conta-equipe" style="margin:-6px 0 12px"></p>
+        <div class="tabela-rolavel">
+          <table>
+            <thead>
+              <tr>
+                <th>Ações</th>
+                <th>Nome</th>
+                <th>Telefone</th>
+                <th>Função</th>
+                <th>Ruas</th>
+                <th>Token de acesso</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-equipe"></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -644,7 +800,7 @@
 // ==== CONFIGURAÇÃO ====
 const SUPABASE_URL = "https://jmogaclwihvsouqixozo.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imptb2dhY2x3aWh2c291cWl4b3pvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyNTk5MzIsImV4cCI6MjEwMjgzNTkzMn0.kzvlfUAzRrEeb2UGlEViCOVh0vIMuHVkR_EzUSjn87U";
-const VERSAO_BACKEND_ESPERADA = 7;
+const VERSAO_BACKEND_ESPERADA = 8;
 // =======================
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false } });
@@ -660,6 +816,28 @@ let cacheSaldos = {};
 let codigoConsulta = null;
 let idPontuacaoAtual = null;
 let selecionadosCartao = new Set();
+
+// --- Quem está usando o painel ----------------------------------------------
+// "admin" (PIN de 8 dígitos, guardado no Supabase) · "recepcionista" e
+// "missionario" (token de 6 dígitos, guardado na aba `equipe` da planilha).
+let papelAtual = null;
+let membroAtual = null;     // { id, nome, funcao, ruas: [] } quando é equipe
+let tokenEquipe = null;     // o número de 6 dígitos, reenviado a cada marcação
+
+const ABAS_POR_PAPEL = {
+  admin:         ["cadastro", "presenca", "pontuacao", "graficos", "sorteio", "diretorio", "equipe"],
+  recepcionista: ["cadastro", "presenca", "pontuacao", "sorteio"],
+  missionario:   ["diretorio"]
+};
+
+const NOME_DO_PAPEL = {
+  admin: "Administrador",
+  recepcionista: "Recepcionista",
+  missionario: "Missionário"
+};
+
+let cacheEquipe = [];
+let escopoDiretorio = "todas";   // "todas" | "minhas" (só o missionário alterna)
 
 const POR_PAGINA = 50;
 let paginaCadastro = 1;
@@ -805,14 +983,153 @@ async function validarAcesso() {
   if (registro.nome) $("titulo-usuario").textContent = "Painel de " + registro.nome;
   planoAtual = registro.plano || null;
   expiraEm = registro.data_expiracao || null;
+  webAppUrl = registro.webapp_url || null;
   mostrarPlano();
 
-  if (registro.webapp_url) {
-    webAppUrl = registro.webapp_url;
-    await abrirPainel();
-  } else {
-    $("tela-planilha").style.display = "block";
+  abrirTelaPin();
+}
+
+
+// ---------------------------------------------------------------------------
+// Tela de entrada por token numérico
+// ---------------------------------------------------------------------------
+// O link é o mesmo para todo mundo do evento. O que separa as três telas é o
+// número digitado aqui: 8 dígitos entram como administrador, 6 dígitos entram
+// como recepcionista ou missionário, conforme o cadastro feito pelo próprio
+// administrador na aba Equipe.
+
+function chavePins() { return "evang_pins_" + (tokenAtual || "").slice(-8); }
+
+function pinsSalvos() {
+  try { return JSON.parse(localStorage.getItem(chavePins())) || []; }
+  catch (e) { return []; }
+}
+
+/**
+ * Guarda o número no aparelho para virar sugestão na próxima vez — do mesmo
+ * jeito que as ruas e os bairros do cadastro. Continua sendo preciso confirmar
+ * a cada entrada: o que fica salvo é a digitação, não a sessão.
+ */
+function guardarPin(pin) {
+  try {
+    const lista = pinsSalvos().filter(p => p !== pin);
+    lista.unshift(pin);
+    localStorage.setItem(chavePins(), JSON.stringify(lista.slice(0, 6)));
+  } catch (e) { /* navegador sem armazenamento: só perde a sugestão */ }
+}
+
+function abrirTelaPin() {
+  $("lista-pins").innerHTML = pinsSalvos().map(p => `<option value="${esc(p)}"></option>`).join("");
+  $("erro-pin").textContent = "";
+  $("input-pin").value = "";
+  $("tela-pin").style.display = "block";
+  setTimeout(() => $("input-pin").focus(), 60);
+}
+
+async function entrarComPin() {
+  const pin = $("input-pin").value.replace(/\D/g, "");
+  const erro = $("erro-pin");
+  erro.textContent = "";
+
+  if (pin.length !== 6 && pin.length !== 8) {
+    erro.textContent = "O token tem 6 dígitos (equipe) ou 8 dígitos (administrador).";
+    return;
   }
+
+  const botao = $("btn-entrar-pin");
+  botao.disabled = true;
+  botao.textContent = "Entrando...";
+
+  try {
+    if (pin.length === 8) {
+      // A conferência acontece dentro do Supabase e volta só verdadeiro ou
+      // falso. O PIN do administrador nunca é entregue ao navegador.
+      const { data, error } = await sb.rpc("conferir_pin", { p_token: tokenAtual, p_pin: pin });
+      if (error) throw new Error("Não consegui falar com o servidor de acesso. Verifique sua internet.");
+      if (data !== true) throw new Error("Token de administrador incorreto.");
+
+      papelAtual = "admin";
+      membroAtual = null;
+      tokenEquipe = null;
+      guardarPin(pin);
+      $("tela-pin").style.display = "none";
+
+      if (webAppUrl) await abrirPainel();
+      else $("tela-planilha").style.display = "block";
+      return;
+    }
+
+    // 6 dígitos: quem confere é a planilha do cliente, onde a equipe mora.
+    if (!webAppUrl) {
+      throw new Error("O administrador ainda não conectou a planilha deste evento. Fale com ele antes de entrar.");
+    }
+    const membro = await appsScriptFetch("validarEquipe", { equipe: pin });
+
+    papelAtual = membro.funcao === "recepcionista" ? "recepcionista" : "missionario";
+    membroAtual = membro;
+    tokenEquipe = pin;
+    guardarPin(pin);
+    $("tela-pin").style.display = "none";
+    await abrirPainel();
+
+  } catch (e) {
+    erro.textContent = e.message || "Não consegui validar esse token.";
+    console.error(e);
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "Entrar";
+  }
+}
+
+/** Volta para a tela do token, sem recarregar a página. */
+function sairDaConta() {
+  if (filaEnvio.length && !confirm(
+    `Ainda há ${filaEnvio.length} leitura(s) de presença esperando para subir para a planilha. ` +
+    `Sair agora mantém a fila guardada, mas ela só será enviada quando alguém entrar de novo neste aparelho.\n\nSair mesmo assim?`
+  )) return;
+
+  papelAtual = null;
+  membroAtual = null;
+  tokenEquipe = null;
+  cacheParticipantes = [];
+  cacheSaldos = {};
+  cacheEquipe = [];
+  presencasHojeIds = new Set();
+  presencasHojeNomes = new Set();
+  $("app-screen").style.display = "none";
+  $("tela-planilha").style.display = "none";
+  abrirTelaPin();
+}
+
+/**
+ * Mostra só as abas da função de quem entrou, e leva para a primeira delas.
+ * O ⚙️ de trocar de planilha continua exclusivo do administrador: é uma
+ * decisão do dono do evento, não de quem está na recepção.
+ */
+function aplicarPapel() {
+  const permitidas = ABAS_POR_PAPEL[papelAtual] || ABAS_POR_PAPEL.admin;
+
+  document.querySelectorAll(".tab-btn").forEach(b => {
+    b.style.display = permitidas.includes(b.dataset.tab) ? "" : "none";
+  });
+  $("btn-config").style.display = papelAtual === "admin" ? "" : "none";
+
+  const ehMissionario = papelAtual === "missionario";
+  $("subtabs-diretorio").style.display = ehMissionario ? "flex" : "none";
+  escopoDiretorio = ehMissionario ? "minhas" : "todas";
+  $("subtab-btn-minhas").classList.toggle("active", ehMissionario);
+  $("subtab-btn-todas").classList.toggle("active", !ehMissionario);
+
+  const chip = $("chip-papel");
+  if (papelAtual && papelAtual !== "admin") {
+    chip.textContent = `${NOME_DO_PAPEL[papelAtual]}: ${membroAtual ? membroAtual.nome : ""}`.trim();
+    chip.style.display = "";
+    $("faixa-plano").style.display = "flex";
+  } else {
+    chip.style.display = "none";
+  }
+
+  trocarAba(permitidas[0]);
 }
 
 /**
@@ -935,6 +1252,7 @@ async function abrirPainel() {
     }
     $("tela-erro").style.display = "none";
     $("app-screen").style.display = "block";
+    aplicarPapel();
   } catch (e) {
     console.error(e);
     mostrarErro(e.message || "Não consegui ler a planilha. Confira sua conexão e a implantação do Web App.");
@@ -1021,6 +1339,7 @@ function trocarAba(nome) {
   if (nome === "diretorio") montarDiretorio();
   if (nome === "pontuacao") abrirPontuacao();
   if (nome === "graficos") abrirGraficos();
+  if (nome === "equipe") abrirEquipe();
   if (nome === "sorteio") {
     carregarEstadoSorteio();
     if ($("subtab-btn-nome").classList.contains("active")) carregarElegiveisSorteioNome();
@@ -1751,7 +2070,74 @@ function desenharGraficos() {
   tabelaNumeros("tb-idades", "Faixa etária", idades);
 }
 
+// --- Dados missionários ------------------------------------------------------
+// Tudo aqui sai das quatro colunas de acompanhamento da aba de cadastros, que
+// já vêm em listarCadastros. Nenhuma chamada extra à planilha.
+
+function porDiaDe(campo) {
+  const porDia = {};
+  cacheParticipantes.forEach(p => {
+    const data = campo === "estudo" ? p.estudoEm : p.visitadoEm;
+    if (!data) return;
+    porDia[data] = (porDia[data] || 0) + 1;
+  });
+  return Object.keys(porDia).sort(ordenarPorData)
+    .map(d => ({ rotulo: d.slice(0, 5), rotuloLongo: d, valor: porDia[d] }));
+}
+
+function dadosPorMissionario() {
+  const porNome = {};
+  cacheParticipantes.forEach(p => {
+    if (!p.visitadoEm) return;
+    const quem = p.visitadoPor || "Não identificado";
+    porNome[quem] = (porNome[quem] || 0) + 1;
+  });
+  return Object.keys(porNome)
+    .map(n => ({ rotulo: n.length > 26 ? n.slice(0, 25) + "…" : n, rotuloLongo: n, valor: porNome[n] }))
+    .sort((a, b) => b.valor - a.valor || a.rotuloLongo.localeCompare(b.rotuloLongo, "pt-BR"));
+}
+
+function desenharGraficosMissionarios() {
+  const visitas = porDiaDe("visitado");
+  const estudos = porDiaDe("estudo");
+  const porMissionario = dadosPorMissionario();
+
+  const totalVisitas = visitas.reduce((s, d) => s + d.valor, 0);
+  const totalEstudos = estudos.reduce((s, d) => s + d.valor, 0);
+  // A média é por dia em que houve visita, não por dia corrido de calendário:
+  // dividir por dias parados só faria o número encolher sem significar nada.
+  const media = visitas.length ? (totalVisitas / visitas.length) : 0;
+  const mediaTexto = visitas.length ? media.toFixed(media >= 10 ? 0 : 1).replace(".", ",") : "0";
+
+  $("tiles-missionarios").innerHTML = `
+    <div class="tile"><div class="rot">Total de visitas</div><div class="num">${totalVisitas}</div></div>
+    <div class="tile"><div class="rot">Estudos bíblicos</div><div class="num">${totalEstudos}</div></div>
+    <div class="tile"><div class="rot">Dias com visita</div><div class="num">${visitas.length}</div></div>
+    <div class="tile"><div class="rot">Média de visitas por dia</div><div class="num">${mediaTexto}</div></div>`;
+
+  graficoColunas($("gr-visitas-dia"), visitas);
+  graficoColunas($("gr-estudos-dia"), estudos);
+  graficoBarras($("gr-por-missionario"), porMissionario, "Ninguém marcou visitas ainda.");
+
+  tabelaNumeros("tb-visitas-dia", "Dia", visitas);
+  tabelaNumeros("tb-estudos-dia", "Dia", estudos);
+  tabelaNumeros("tb-por-missionario", "Quem marcou", porMissionario);
+}
+
+let subAbaGraficos = "programacao";
+
+function trocarSubAbaGraficos(qual) {
+  subAbaGraficos = qual;
+  $("subtab-btn-programacao").classList.toggle("active", qual === "programacao");
+  $("subtab-btn-missionarios").classList.toggle("active", qual === "missionarios");
+  $("sub-graficos-programacao").style.display = qual === "programacao" ? "" : "none";
+  $("sub-graficos-missionarios").style.display = qual === "missionarios" ? "" : "none";
+  if (qual === "missionarios") desenharGraficosMissionarios();
+  else desenharGraficos();
+}
+
 async function abrirGraficos() {
+  if (subAbaGraficos === "missionarios") { desenharGraficosMissionarios(); return; }
   if (!cacheResumoPresencas) {
     try {
       cacheResumoPresencas = await appsScriptFetch("resumoPresencas");
@@ -2604,13 +2990,258 @@ async function reiniciarSorteioNome() {
 }
 
 // ---------------------------------------------------------------------------
+// Equipe do evento
+// ---------------------------------------------------------------------------
+// O administrador cadastra aqui quem vai trabalhar com ele. Cada pessoa recebe
+// um número de 6 dígitos: é com ele que entra no mesmo link, caindo numa tela
+// enxuta, com só o que a função dela precisa.
+
+let ruasSelecionadas = new Set();
+let funcaoEquipeAtual = "missionario";
+let idMembroEmEdicao = null;
+
+const EXPLICA_FUNCAO = {
+  missionario: "Vê apenas o diretório de ruas, com as ruas dele em destaque, e marca quem já foi visitado e quem começou estudo bíblico.",
+  recepcionista: "Vê cadastro, registro de presença, pontuação e sorteio — tudo que se faz na mesa de entrada. Não vê gráficos nem o diretório."
+};
+
+async function abrirEquipe() {
+  escolherFuncaoEquipe(funcaoEquipeAtual);
+  renderizarSelecaoRuas();
+  if (!cacheEquipe.length) await carregarEquipe();
+  else renderizarTabelaEquipe();
+}
+
+async function carregarEquipe(avisar) {
+  try {
+    cacheEquipe = await appsScriptFetch("listarEquipe");
+    renderizarTabelaEquipe();
+    if (avisar) showToast("Lista da equipe atualizada.");
+  } catch (e) {
+    showToast(e.message || "Não consegui carregar a equipe.");
+    console.error(e);
+  }
+}
+
+function escolherFuncaoEquipe(funcao) {
+  funcaoEquipeAtual = funcao;
+  $("e-funcao-missionario").classList.toggle("active", funcao === "missionario");
+  $("e-funcao-recepcionista").classList.toggle("active", funcao === "recepcionista");
+  $("bloco-ruas-missionario").style.display = funcao === "missionario" ? "" : "none";
+  $("e-explica-funcao").textContent = EXPLICA_FUNCAO[funcao];
+}
+
+/** Todas as ruas que já aparecem em algum cadastro, para o administrador escolher. */
+function ruasCadastradas() {
+  return [...new Set(cacheParticipantes.map(p => p.rua).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "pt-BR"));
+}
+
+function renderizarChipsRuas() {
+  const chips = [...ruasSelecionadas].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  $("chips-ruas-equipe").innerHTML = chips.length
+    ? chips.map(r => `<span class="chip-rua">${esc(r)}<button type="button" data-rua="${esc(r)}" title="Remover">×</button></span>`).join("")
+    : `<span style="color:var(--muted); font-size:0.82rem">Nenhuma rua selecionada — ele verá o diretório completo.</span>`;
+}
+
+function renderizarSelecaoRuas() {
+  const termo = normalizarTexto($("busca-ruas-equipe").value.trim());
+  const todas = ruasCadastradas();
+  const filtradas = termo ? todas.filter(r => normalizarTexto(r).includes(termo)) : todas;
+
+  $("lista-ruas-equipe").innerHTML = filtradas.length
+    ? filtradas.map(r => `
+        <label><input type="checkbox" data-rua="${esc(r)}" ${ruasSelecionadas.has(r) ? "checked" : ""} />
+        ${esc(r)}</label>`).join("")
+    : `<p class="vazio">${todas.length ? "Nenhuma rua com esse nome." : "Nenhuma rua cadastrada ainda — cadastre participantes primeiro."}</p>`;
+
+  renderizarChipsRuas();
+}
+
+function limparFormularioEquipe() {
+  idMembroEmEdicao = null;
+  $("e-nome").value = "";
+  $("e-telefone").value = "";
+  $("erro-equipe").textContent = "";
+  ruasSelecionadas = new Set();
+  escolherFuncaoEquipe("missionario");
+  renderizarSelecaoRuas();
+  $("badge-edicao-equipe").style.display = "none";
+  $("btn-salvar-equipe").textContent = "Cadastrar";
+}
+
+async function salvarMembroEquipe() {
+  const nome = $("e-nome").value.trim();
+  const telefone = $("e-telefone").value.trim();
+  const erro = $("erro-equipe");
+  erro.textContent = "";
+
+  if (!nome) { erro.textContent = "O nome é obrigatório."; return; }
+  if (!telefone) { erro.textContent = "O telefone é obrigatório."; return; }
+
+  const botao = $("btn-salvar-equipe");
+  botao.disabled = true;
+  try {
+    const resposta = await appsScriptFetch("salvarMembroEquipe", {
+      dados: {
+        id: idMembroEmEdicao || "",
+        nome, telefone,
+        funcao: funcaoEquipeAtual,
+        ruas: [...ruasSelecionadas]
+      }
+    });
+    const editando = !!idMembroEmEdicao;
+    limparFormularioEquipe();
+    await carregarEquipe();
+    showToast(editando
+      ? "Cadastro atualizado."
+      : `${nome} cadastrado(a). Token de acesso: ${resposta.token}`);
+  } catch (e) {
+    erro.textContent = e.message || "Não consegui salvar.";
+    console.error(e);
+  } finally {
+    botao.disabled = false;
+  }
+}
+
+function editarMembroEquipe(id) {
+  const m = cacheEquipe.find(x => x.id === id);
+  if (!m) return;
+  idMembroEmEdicao = id;
+  $("e-nome").value = m.nome;
+  $("e-telefone").value = m.telefone;
+  ruasSelecionadas = new Set(m.ruas || []);
+  escolherFuncaoEquipe(m.funcao);
+  renderizarSelecaoRuas();
+  $("badge-edicao-equipe-nome").textContent = m.nome;
+  $("badge-edicao-equipe").style.display = "block";
+  $("btn-salvar-equipe").textContent = "Salvar alterações";
+  $("e-nome").scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+async function excluirMembroEquipe(id) {
+  const m = cacheEquipe.find(x => x.id === id);
+  if (!m) return;
+  if (!confirm(`Excluir ${m.nome} da equipe?\n\nO token ${m.token} para de funcionar imediatamente. ` +
+               `As marcações de visita que ele já fez continuam na planilha.`)) return;
+  try {
+    await appsScriptFetch("deletarMembroEquipe", { id });
+    if (idMembroEmEdicao === id) limparFormularioEquipe();
+    await carregarEquipe();
+    showToast("Cadastro excluído.");
+  } catch (e) {
+    showToast(e.message || "Não consegui excluir.");
+  }
+}
+
+/** O link sem o token da URL não abre nada, e o token de 6 dígitos sozinho
+ *  também não. Copiar e enviar levam sempre os dois juntos. */
+function linkDoSistema() {
+  return `${location.origin}${location.pathname}?token=${tokenAtual}`;
+}
+
+function textoDoConvite(m) {
+  const funcao = m.funcao === "recepcionista" ? "recepcionista" : "missionário";
+  return `*Gerenciador de Evangelismo*\n\n` +
+         `Olá, ${m.nome}! Você foi cadastrado(a) como ${funcao}.\n\n` +
+         `Link: ${linkDoSistema()}\n\n` +
+         `Seu token de acesso: *${m.token}*\n\n` +
+         `Abra o link e digite esse número de 6 dígitos para entrar.`;
+}
+
+async function copiarTokenEquipe(id) {
+  const m = cacheEquipe.find(x => x.id === id);
+  if (!m) return;
+  try {
+    await navigator.clipboard.writeText(textoDoConvite(m));
+    showToast("Link e token copiados.");
+  } catch (e) {
+    window.prompt("Copie o texto abaixo:", textoDoConvite(m));
+  }
+}
+
+function enviarTokenWhatsApp(id) {
+  const m = cacheEquipe.find(x => x.id === id);
+  if (!m) return;
+  window.open("https://wa.me/?text=" + encodeURIComponent(textoDoConvite(m)), "_blank");
+}
+
+function renderizarTabelaEquipe() {
+  const termo = normalizarTexto($("busca-equipe").value.trim());
+  const lista = termo
+    ? cacheEquipe.filter(m => normalizarTexto(m.nome).includes(termo)
+        || normalizarTexto(m.telefone).includes(termo)
+        || normalizarTexto(NOME_DO_PAPEL[m.funcao] || m.funcao).includes(termo))
+    : cacheEquipe;
+
+  $("conta-equipe").textContent = cacheEquipe.length
+    ? `${lista.length} de ${cacheEquipe.length} pessoa(s) na equipe.`
+    : "";
+
+  if (!lista.length) {
+    $("tbody-equipe").innerHTML = `<tr><td colspan="6" style="color:var(--muted)">${
+      cacheEquipe.length ? "Ninguém encontrado com esse filtro." : "Ninguém cadastrado ainda."
+    }</td></tr>`;
+    return;
+  }
+
+  $("tbody-equipe").innerHTML = lista.map(m => {
+    const ruas = m.funcao === "recepcionista"
+      ? "<span style='color:var(--muted)'>—</span>"
+      : (m.ruas && m.ruas.length
+          ? `${m.ruas.length} rua${m.ruas.length === 1 ? "" : "s"}: ${esc(m.ruas.join(", "))}`
+          : "<span style='color:var(--muted)'>Todas (nenhuma específica)</span>");
+
+    return `
+      <tr>
+        <td class="celula-acoes">
+          <div class="icones-linha">
+            <button class="icon-btn" title="Editar" data-acao="editar" data-id="${esc(m.id)}">✏️</button>
+            <button class="icon-btn" title="Excluir" data-acao="excluir" data-id="${esc(m.id)}">🗑️</button>
+          </div>
+        </td>
+        <td data-label="Nome">${esc(m.nome)}</td>
+        <td data-label="Telefone">${esc(m.telefone)}</td>
+        <td data-label="Função">${m.funcao === "recepcionista" ? "🎧 Recepcionista" : "🧭 Missionário"}</td>
+        <td data-label="Ruas">${ruas}</td>
+        <td data-label="Token de acesso">
+          <div class="icones-linha">
+            <span class="token-equipe">${esc(m.token)}</span>
+            <button class="icon-btn" title="Copiar link e token" data-acao="copiar" data-id="${esc(m.id)}">📋</button>
+            <button class="icon-btn" title="Enviar por WhatsApp" data-acao="whats" data-id="${esc(m.id)}">📲</button>
+          </div>
+        </td>
+      </tr>`;
+  }).join("");
+}
+
+
+// ---------------------------------------------------------------------------
 // Diretório
 // ---------------------------------------------------------------------------
+
+/**
+ * Quais participantes entram no diretório. O missionário alterna entre as ruas
+ * que o administrador deu a ele e o mapa inteiro do evangelismo; para todo o
+ * resto, é sempre o mapa inteiro.
+ */
+function participantesDoDiretorio() {
+  if (papelAtual !== "missionario" || escopoDiretorio !== "minhas") return cacheParticipantes;
+  const minhas = new Set((membroAtual && membroAtual.ruas) || []);
+  return cacheParticipantes.filter(p => minhas.has(p.rua || ""));
+}
 
 function montarDiretorio() {
   const termo = normalizarTexto($("busca-diretorio").value.trim());
   const container = $("diretorio-lista");
   const legenda = $("legenda-novatos");
+  const base = participantesDoDiretorio();
+
+  if (papelAtual === "missionario" && escopoDiretorio === "minhas" && !base.length) {
+    legenda.textContent = "";
+    container.innerHTML = `<p style="color:var(--muted)">Nenhuma rua foi atribuída a você ainda, ou ninguém foi cadastrado nelas. Use <strong>Todas as ruas</strong> para ver o diretório completo.</p>`;
+    return;
+  }
 
   if (!cacheParticipantes.length) {
     legenda.textContent = "";
@@ -2629,7 +3260,7 @@ function montarDiretorio() {
     : "";
 
   const porRua = {};
-  cacheParticipantes.forEach(p => {
+  base.forEach(p => {
     const rua = p.rua || "Sem rua informada";
     if (!porRua[rua]) porRua[rua] = [];
     porRua[rua].push(p);
@@ -2650,6 +3281,8 @@ function montarDiretorio() {
         <tr class="${novato ? "dir-novato" : ""}">
           <td data-label="Telefone">${esc(p.telefone)}</td>
           <td data-label="Nome">${esc(p.nome)}${novato ? '<span class="dir-badge-novo">novo</span>' : ""}</td>
+          <td data-label="Visitado(a)?">${botaoMarca(p, "visitado")}</td>
+          <td data-label="Estudo bíblico?">${botaoMarca(p, "estudo")}</td>
           <td data-label="Idade">${esc(p.idade)}</td>
           <td data-label="Data">${esc(p.dataCadastro)}</td>
           <td data-label="Número">${esc(p.numero)}</td>
@@ -2667,7 +3300,7 @@ function montarDiretorio() {
         </div>
         <div class="dir-table-wrap">
           <table>
-            <thead><tr><th>Telefone</th><th>Nome</th><th>Idade</th><th>Data</th><th>Número</th><th>Bairro</th><th>Ponto de referência</th></tr></thead>
+            <thead><tr><th>Telefone</th><th>Nome</th><th>Visitado(a)?</th><th>Estudo bíblico?</th><th>Idade</th><th>Data</th><th>Número</th><th>Bairro</th><th>Ponto de referência</th></tr></thead>
             <tbody>${linhas}</tbody>
           </table>
         </div>
@@ -2677,9 +3310,130 @@ function montarDiretorio() {
   container.innerHTML = blocos.trim() ? blocos : `<p style="color:var(--muted)">Nenhum resultado encontrado.</p>`;
 }
 
+// ---------------------------------------------------------------------------
+// Visita e estudo bíblico
+// ---------------------------------------------------------------------------
+// A marcação aparece na tela na hora e sobe para a planilha por trás, em lote.
+// Um missionário descendo uma rua marca dez pessoas em dez toques sem esperar
+// dez respostas da internet — o mesmo princípio do leitor de QR Code.
+
+function estaMarcado(p, campo) {
+  return !!(campo === "estudo" ? p.estudoEm : p.visitadoEm);
+}
+
+function tituloMarca(p, campo) {
+  const ligado = estaMarcado(p, campo);
+  const quem = campo === "estudo" ? p.estudoPor : p.visitadoPor;
+  const quando = campo === "estudo" ? p.estudoEm : p.visitadoEm;
+  return ligado && quando ? `Marcado em ${quando}${quem ? " por " + quem : ""}` : "Toque para marcar";
+}
+
+function botaoMarca(p, campo) {
+  const ligado = estaMarcado(p, campo);
+  return `<button type="button" class="marca ${ligado ? "sim" : ""}" data-marca="${campo}"
+            data-id="${esc(p.id)}" title="${esc(tituloMarca(p, campo))}">${ligado ? "Sim" : "Não"}</button>`;
+}
+
+/**
+ * Atualiza só o botão tocado. Redesenhar o diretório inteiro a cada toque
+ * custava quase um segundo na base de 872 pessoas — o missionário descendo uma
+ * rua ficaria brigando com a tela em vez de marcando visitas.
+ */
+function atualizarBotaoMarca(id, campo) {
+  const p = cacheParticipantes.find(x => x.id === id);
+  const botao = document.querySelector(`#diretorio-lista button[data-marca="${campo}"][data-id="${cssEscape(id)}"]`);
+  if (!p || !botao) return;
+  const ligado = estaMarcado(p, campo);
+  botao.textContent = ligado ? "Sim" : "Não";
+  botao.classList.toggle("sim", ligado);
+  botao.title = tituloMarca(p, campo);
+}
+
+/** IDs vindos da planilha são UUIDs, mas uma base migrada pode trazer coisa
+ *  estranha: escapamos antes de usar o valor num seletor CSS. */
+function cssEscape(valor) {
+  return window.CSS && CSS.escape ? CSS.escape(valor) : String(valor).replace(/["\\]/g, "\\$&");
+}
+
+let filaAcompanhamento = [];
+let enviandoAcompanhamento = false;
+let agendamentoAcompanhamento = null;
+
+function alternarMarca(id, campo) {
+  const p = cacheParticipantes.find(x => x.id === id);
+  if (!p) return;
+
+  const novo = !estaMarcado(p, campo);
+  const hoje = hojeFormatado();
+  const autor = membroAtual ? membroAtual.nome : "Administrador";
+
+  // Atualiza o cache local antes de falar com a planilha. Se a gravação
+  // falhar, o valor volta ao que era e a pessoa é avisada.
+  const anterior = {
+    visitadoEm: p.visitadoEm, visitadoPor: p.visitadoPor,
+    estudoEm: p.estudoEm, estudoPor: p.estudoPor
+  };
+  if (campo === "estudo") {
+    p.estudoEm = novo ? (p.estudoEm || hoje) : "";
+    p.estudoPor = novo ? (p.estudoPor || autor) : "";
+  } else {
+    p.visitadoEm = novo ? (p.visitadoEm || hoje) : "";
+    p.visitadoPor = novo ? (p.visitadoPor || autor) : "";
+  }
+
+  // Se a mesma pessoa/campo já estava na fila, a última decisão vale.
+  filaAcompanhamento = filaAcompanhamento.filter(it => !(it.id === id && it.campo === campo));
+  filaAcompanhamento.push({ id, campo, valor: novo, anterior, nome: p.nome });
+
+  atualizarBotaoMarca(id, campo);
+  agendarEnvioAcompanhamento();
+}
+
+function agendarEnvioAcompanhamento() {
+  if (agendamentoAcompanhamento || enviandoAcompanhamento || !filaAcompanhamento.length) return;
+  agendamentoAcompanhamento = setTimeout(() => {
+    agendamentoAcompanhamento = null;
+    enviarAcompanhamento();
+  }, 700);
+}
+
+async function enviarAcompanhamento() {
+  if (enviandoAcompanhamento || !filaAcompanhamento.length) return;
+  enviandoAcompanhamento = true;
+  const lote = filaAcompanhamento;
+  filaAcompanhamento = [];
+
+  try {
+    await appsScriptFetch("marcarAcompanhamento", {
+      itens: lote.map(it => ({ id: it.id, campo: it.campo, valor: it.valor })),
+      equipe: tokenEquipe || ""
+    });
+  } catch (e) {
+    // Desfaz na tela o que não entrou na planilha: uma marcação verde que não
+    // existe no arquivo é pior do que nenhuma marcação.
+    lote.forEach(it => {
+      const p = cacheParticipantes.find(x => x.id === it.id);
+      if (p) Object.assign(p, it.anterior);
+      atualizarBotaoMarca(it.id, it.campo);
+    });
+    showToast(e.message || "Não consegui salvar a marcação. Confira a internet e tente de novo.");
+    console.error(e);
+  } finally {
+    enviandoAcompanhamento = false;
+    if (filaAcompanhamento.length) agendarEnvioAcompanhamento();
+  }
+}
+
+function trocarEscopoDiretorio(escopo) {
+  escopoDiretorio = escopo;
+  $("subtab-btn-minhas").classList.toggle("active", escopo === "minhas");
+  $("subtab-btn-todas").classList.toggle("active", escopo === "todas");
+  montarDiretorio();
+}
+
 function enviarRuaWhatsApp(rua) {
   const termo = normalizarTexto($("busca-diretorio").value.trim());
-  const pessoas = cacheParticipantes.filter(p => {
+  const pessoas = participantesDoDiretorio().filter(p => {
     if ((p.rua || "Sem rua informada") !== rua) return false;
     if (!termo) return true;
     return normalizarTexto(p.nome).includes(termo) || normalizarTexto(p.telefone).includes(termo);
@@ -2688,10 +3442,18 @@ function enviarRuaWhatsApp(rua) {
     const partes = [p.nome || "Sem nome"];
     if (p.numero && p.numero !== SEM_NUMERO) partes.push(`nº ${p.numero}`);
     if (p.pontoReferencia && p.pontoReferencia !== SEM_REFERENCIA) partes.push(`(${p.pontoReferencia})`);
-    return `${i + 1}. ${partes.join(" — ")} — ${p.telefone || "sem telefone"}`;
+    // Quem recebe a lista precisa saber onde já passaram, senão bate duas vezes
+    // na mesma porta e deixa a casa do lado sem visita.
+    const marcas = `visita: ${p.visitadoEm ? "sim" : "não"} | estudo: ${p.estudoEm ? "sim" : "não"}`;
+    return `${i + 1}. ${partes.join(" — ")} — ${p.telefone || "sem telefone"}\n    _${marcas}_`;
   }).join("\n");
 
-  const texto = `*Rua: ${rua}*\n${pessoas.length} pessoa${pessoas.length === 1 ? "" : "s"} cadastrada${pessoas.length === 1 ? "" : "s"}\n\n${linhas}\n\n_Lista gerada pelo Gerenciador de Evangelismo_`;
+  const visitados = pessoas.filter(p => p.visitadoEm).length;
+  const estudos = pessoas.filter(p => p.estudoEm).length;
+  const resumo = `${pessoas.length} pessoa${pessoas.length === 1 ? "" : "s"} cadastrada${pessoas.length === 1 ? "" : "s"} · ` +
+                 `${visitados} já visitada${visitados === 1 ? "" : "s"} · ${estudos} com estudo bíblico`;
+
+  const texto = `*Rua: ${rua}*\n${resumo}\n\n${linhas}\n\n_Lista gerada pelo Gerenciador de Evangelismo_`;
   window.open("https://wa.me/?text=" + encodeURIComponent(texto), "_blank");
 }
 
@@ -2859,7 +3621,8 @@ let redesenhoGraficos = null;
 window.addEventListener("resize", () => {
   if (!$("tab-graficos").classList.contains("active")) return;
   clearTimeout(redesenhoGraficos);
-  redesenhoGraficos = setTimeout(desenharGraficos, 180);
+  redesenhoGraficos = setTimeout(
+    () => (subAbaGraficos === "missionarios" ? desenharGraficosMissionarios() : desenharGraficos()), 180);
 });
 
 $("busca-presenca").addEventListener("input", filtrarListaPresenca);
@@ -2887,7 +3650,54 @@ $("btn-reiniciar-nome").addEventListener("click", reiniciarSorteioNome);
 $("busca-diretorio").addEventListener("input", montarDiretorio);
 $("diretorio-lista").addEventListener("click", e => {
   const btn = e.target.closest(".dir-wa-btn");
-  if (btn) enviarRuaWhatsApp(btn.dataset.rua);
+  if (btn) { enviarRuaWhatsApp(btn.dataset.rua); return; }
+
+  const marca = e.target.closest("button[data-marca]");
+  if (marca) alternarMarca(marca.dataset.id, marca.dataset.marca);
+});
+
+$("subtab-btn-minhas").addEventListener("click", () => trocarEscopoDiretorio("minhas"));
+$("subtab-btn-todas").addEventListener("click", () => trocarEscopoDiretorio("todas"));
+
+$("btn-entrar-pin").addEventListener("click", entrarComPin);
+$("input-pin").addEventListener("keydown", e => { if (e.key === "Enter") entrarComPin(); });
+somenteNumeros($("input-pin"));
+$("btn-sair").addEventListener("click", sairDaConta);
+
+$("subtab-btn-programacao").addEventListener("click", () => trocarSubAbaGraficos("programacao"));
+$("subtab-btn-missionarios").addEventListener("click", () => trocarSubAbaGraficos("missionarios"));
+
+$("e-funcao-missionario").addEventListener("click", () => escolherFuncaoEquipe("missionario"));
+$("e-funcao-recepcionista").addEventListener("click", () => escolherFuncaoEquipe("recepcionista"));
+$("btn-salvar-equipe").addEventListener("click", salvarMembroEquipe);
+$("btn-limpar-equipe").addEventListener("click", limparFormularioEquipe);
+$("btn-cancelar-edicao-equipe").addEventListener("click", limparFormularioEquipe);
+$("btn-atualizar-equipe").addEventListener("click", () => carregarEquipe(true));
+$("busca-equipe").addEventListener("input", renderizarTabelaEquipe);
+$("busca-ruas-equipe").addEventListener("input", renderizarSelecaoRuas);
+somenteNumeros($("e-telefone"));
+
+$("chips-ruas-equipe").addEventListener("click", e => {
+  const btn = e.target.closest("button[data-rua]");
+  if (btn) { ruasSelecionadas.delete(btn.dataset.rua); renderizarSelecaoRuas(); }
+});
+
+$("lista-ruas-equipe").addEventListener("change", e => {
+  const cx = e.target.closest("input[type=checkbox][data-rua]");
+  if (!cx) return;
+  if (cx.checked) ruasSelecionadas.add(cx.dataset.rua);
+  else ruasSelecionadas.delete(cx.dataset.rua);
+  renderizarChipsRuas();
+});
+
+$("tbody-equipe").addEventListener("click", e => {
+  const btn = e.target.closest("button[data-acao]");
+  if (!btn) return;
+  const id = btn.dataset.id;
+  if (btn.dataset.acao === "editar") editarMembroEquipe(id);
+  if (btn.dataset.acao === "excluir") excluirMembroEquipe(id);
+  if (btn.dataset.acao === "copiar") copiarTokenEquipe(id);
+  if (btn.dataset.acao === "whats") enviarTokenWhatsApp(id);
 });
 
 validarAcesso();

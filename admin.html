@@ -53,6 +53,8 @@
   .badge.pendente { background: #f3efe4; color: #8a7a4a; }
   .row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
   .token-frag { font-family: monospace; font-size: 0.78rem; color: var(--muted); }
+  .pin-adm { display: inline-block; font-family: monospace; font-size: 0.95rem; font-weight: 700; letter-spacing: 2px;
+             color: var(--ink); background: var(--accent-soft); border-radius: 6px; padding: 2px 8px; margin-top: 4px; }
   #empty-state { text-align: center; color: var(--muted); padding: 30px 0; font-size: 0.88rem; }
   #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--ink); color: white; padding: 10px 18px; border-radius: 8px; font-size: 0.85rem; opacity: 0; pointer-events: none; transition: opacity 0.25s; max-width: 90vw; text-align: center; z-index: 60; }
   #toast.show { opacity: 1; }
@@ -144,7 +146,7 @@
             <th>Expira em</th>
             <th>Status</th>
             <th>Planilha</th>
-            <th>Link</th>
+            <th>Link e PIN</th>
             <th></th>
           </tr>
         </thead>
@@ -222,6 +224,17 @@ function gerarToken() {
   return crypto.randomUUID().replace(/-/g, "");
 }
 
+/**
+ * PIN de 8 dígitos do administrador do evento. É ele que, na tela de entrada,
+ * separa o painel do cliente do painel da equipe dele (que usa 6 dígitos).
+ * Nunca começa com zero: número copiado para uma planilha ou digitado com
+ * pressa não pode perder o primeiro dígito.
+ */
+function gerarPin() {
+  const n = crypto.getRandomValues(new Uint32Array(1))[0] % 90000000;
+  return String(10000000 + n);
+}
+
 /** Renovação soma o prazo a partir do vencimento, se ainda estiver em dia,
  *  para o cliente não perder os dias que sobraram. */
 function calcularExpiracao(plano, baseIso) {
@@ -291,13 +304,14 @@ async function cadastrarUsuario() {
       email: email || null,
       plano,
       token: gerarToken(),
+      pin_admin: gerarPin(),
       data_expiracao: calcularExpiracao(plano, null),
       status: "ativo"
     });
     if (error) { showToast("Erro ao cadastrar: " + error.message); return; }
     $("novo-nome").value = "";
     $("novo-email").value = "";
-    showToast("Acesso criado. Use “Copiar link” para enviar à pessoa.");
+    showToast("Acesso criado. Use “Copiar acesso” para enviar o link e o PIN.");
     await carregarUsuarios();
   } finally {
     botao.disabled = false;
@@ -366,11 +380,34 @@ async function regenerarLink(id) {
     `Use isso apenas se o link vazou ou foi compartilhado indevidamente.`
   )) return;
 
+  // Link novo troca também o PIN: se o link vazou, o PIN que ia junto com ele
+  // vazou do mesmo jeito.
   const { error } = await sb.from("usuarios_evangelismo")
-    .update({ token: gerarToken(), webapp_url: null })
+    .update({ token: gerarToken(), pin_admin: gerarPin(), webapp_url: null })
     .eq("id", id);
   if (error) { showToast("Erro ao gerar novo link: " + error.message); return; }
-  showToast("Link novo gerado. Copie e envie para a pessoa.");
+  showToast("Link e PIN novos gerados. Copie e envie para a pessoa.");
+  carregarUsuarios();
+}
+
+/**
+ * Troca só o PIN, mantendo o link. Serve para quando o número de 8 dígitos
+ * chegou a quem não devia — um recepcionista, por exemplo — sem obrigar o
+ * cliente a reconectar a planilha, o que aconteceria com "Novo link".
+ */
+async function regenerarPin(id) {
+  const u = usuarios.find(x => x.id === id);
+  if (!u) return;
+  if (!confirm(
+    `Gerar um PIN novo para ${u.nome}?\n\n` +
+    `O link continua o mesmo e a planilha não é tocada. Só o número de 8 dígitos muda — ` +
+    `o antigo para de funcionar na hora.\n\n` +
+    `Os tokens de 6 dígitos da equipe dele não são afetados.`
+  )) return;
+
+  const { error } = await sb.from("usuarios_evangelismo").update({ pin_admin: gerarPin() }).eq("id", id);
+  if (error) { showToast("Erro ao gerar novo PIN: " + error.message); return; }
+  showToast("PIN novo gerado. Envie para o cliente.");
   carregarUsuarios();
 }
 
@@ -399,14 +436,36 @@ async function excluirUsuario(id) {
   carregarUsuarios();
 }
 
-async function copiarLink(token) {
-  const link = `${URL_PAGINA_EVANGELISMO}?token=${token}`;
+/**
+ * O acesso do cliente virou duas informações: o link e o PIN de 8 dígitos.
+ * Mandar só uma das duas não abre nada, então as duas andam sempre juntas —
+ * tanto no botão de copiar quanto no de WhatsApp.
+ */
+function textoDeAcesso(u) {
+  const link = `${URL_PAGINA_EVANGELISMO}?token=${u.token}`;
+  return `*Gerenciador de Evangelismo*\n\n` +
+         `Link de acesso:\n${link}\n\n` +
+         `Seu PIN de administrador (8 dígitos): *${u.pin_admin || "—"}*\n\n` +
+         `Abra o link, digite o PIN e você entra no painel completo. ` +
+         `Guarde esse número: é ele que separa o seu painel do painel da sua equipe.`;
+}
+
+async function copiarAcesso(id) {
+  const u = usuarios.find(x => x.id === id);
+  if (!u) return;
+  const texto = textoDeAcesso(u);
   try {
-    await navigator.clipboard.writeText(link);
-    showToast("Link copiado.");
+    await navigator.clipboard.writeText(texto);
+    showToast("Link e PIN copiados.");
   } catch (e) {
-    window.prompt("Copie o link abaixo:", link);
+    window.prompt("Copie o texto abaixo:", texto);
   }
+}
+
+function enviarAcessoWhatsApp(id) {
+  const u = usuarios.find(x => x.id === id);
+  if (!u) return;
+  window.open("https://wa.me/?text=" + encodeURIComponent(textoDeAcesso(u)), "_blank");
 }
 
 // ---------------------------------------------------------------------------
@@ -459,13 +518,16 @@ function renderizarUsuarios() {
         <td data-label="Expira em">${esc(formatarData(u.data_expiracao))}</td>
         <td data-label="Status"><span class="badge ${badgeClass}">${badgeText}</span></td>
         <td data-label="Planilha"><span class="badge ${conectada ? "conectada" : "pendente"}">${conectada ? "Conectada" : "Pendente"}</span></td>
-        <td data-label="Link">
-          <span class="token-frag">...${esc(String(u.token || "").slice(-8))}</span>
+        <td data-label="Link e PIN">
+          <span class="token-frag">...${esc(String(u.token || "").slice(-8))}</span><br />
+          <span class="pin-adm" title="PIN de administrador">${esc(u.pin_admin || "—")}</span>
         </td>
         <td data-label="Ações">
           <div class="row-actions">
-            <button class="btn-ghost btn-sm" data-acao="copiar" data-token="${esc(u.token)}">Copiar link</button>
+            <button class="btn-ghost btn-sm" data-acao="copiar" data-id="${esc(u.id)}">Copiar acesso</button>
+            <button class="btn-ghost btn-sm" data-acao="whats" data-id="${esc(u.id)}">📲 WhatsApp</button>
             <button class="btn-ghost btn-sm" data-acao="renovar" data-id="${esc(u.id)}">Renovar</button>
+            <button class="btn-ghost btn-sm" data-acao="novopin" data-id="${esc(u.id)}">Novo PIN</button>
             <button class="btn-ghost btn-sm" data-acao="status" data-id="${esc(u.id)}">${u.status === "ativo" ? "Inativar" : "Ativar"}</button>
             ${conectada ? `<button class="btn-ghost btn-sm" data-acao="desconectar" data-id="${esc(u.id)}">Desconectar planilha</button>` : ""}
             <button class="btn-danger btn-sm" data-acao="novolink" data-id="${esc(u.id)}">Novo link</button>
@@ -493,7 +555,9 @@ $("tbody-usuarios").addEventListener("click", e => {
   if (!btn) return;
   const id = btn.dataset.id;
   switch (btn.dataset.acao) {
-    case "copiar":      copiarLink(btn.dataset.token); break;
+    case "copiar":      copiarAcesso(id); break;
+    case "whats":       enviarAcessoWhatsApp(id); break;
+    case "novopin":     regenerarPin(id); break;
     case "renovar":     abrirModalRenovar(id); break;
     case "status":      alternarStatus(id); break;
     case "desconectar": desconectarPlanilha(id); break;
