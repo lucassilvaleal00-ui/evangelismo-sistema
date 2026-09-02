@@ -97,13 +97,39 @@
   .item-presenca { text-align: left; background: white; border: 1px solid var(--line); padding: 10px 12px; border-radius: 8px; font-size: 0.88rem; width: 100%; font-weight: 500; }
   .item-presenca:hover { border-color: var(--accent); }
   .item-presenca.selecionado { border-color: var(--accent); background: var(--accent-soft); }
-  #painel-confirmar-presenca { margin-top: 16px; padding: 16px; border: 1px dashed var(--line); border-radius: 10px; display: none; }
-  #painel-confirmar-presenca.show { display: block; }
+  /* Nasce colado no nome tocado, dentro da própria lista: o dedo não precisa
+     descer até o fim da tela para confirmar. */
+  #painel-confirmar-presenca { margin: 2px 0 6px; padding: 12px 14px; border: 1px solid var(--accent);
+                               border-top: none; border-radius: 0 0 10px 10px; background: var(--accent-soft); }
+  #painel-confirmar-presenca p { margin: 0 0 10px; font-size: 0.88rem; }
+  #painel-confirmar-presenca button { padding: 8px 14px; font-size: 0.85rem; }
+  .item-presenca.selecionado { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
   .chips { display: flex; flex-wrap: wrap; gap: 8px; }
   .chip { background: var(--accent-soft); color: var(--accent); padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
-  .painel-sorteio { background: var(--accent-soft); border: 2px solid var(--accent); border-radius: 14px; text-align: center; padding: 28px 16px; margin: 16px 0; }
-  #sorteio-num-animacao { font-size: 3.2rem; font-weight: 800; color: var(--accent); min-height: 64px; }
-  #sorteio-nome-animacao { font-size: 1.9rem; font-weight: 800; color: var(--accent); min-height: 48px; word-break: break-word; }
+  .painel-sorteio { background: var(--accent-soft); border: 2px solid var(--accent); border-radius: 14px; text-align: center; padding: 14px 10px; margin: 16px 0; }
+
+  /* Roleta vertical. A fita corre sem parar enquanto a planilha grava e só
+     desacelera quando a resposta chega — assim nunca congela num nome errado. */
+  /* Faixa clara atrás da linha do meio: é onde o resultado para. */
+  .roleta { position: relative; overflow: hidden;
+            background: linear-gradient(to bottom, transparent 33.34%, rgba(255,255,255,0.6) 33.34%,
+                        rgba(255,255,255,0.6) 66.66%, transparent 66.66%); }
+  .roleta::before, .roleta::after { content: ""; position: absolute; left: 0; right: 0; height: 34%; z-index: 2; pointer-events: none; }
+  .roleta::before { top: 0; background: linear-gradient(to bottom, var(--accent-soft) 12%, rgba(231,239,233,0)); }
+  .roleta::after { bottom: 0; background: linear-gradient(to top, var(--accent-soft) 12%, rgba(231,239,233,0)); }
+  .roleta-fita { will-change: transform; }
+  .roleta-item { display: flex; align-items: center; justify-content: center; font-weight: 800; color: var(--accent);
+                 padding: 0 6px; line-height: 1.1; text-align: center; }
+  /* Parada, só o ganhador fica legível — ninguém precisa adivinhar qual dos
+     três nomes é o resultado. */
+  .roleta-item { transition: opacity 0.3s; }
+  .roleta.parada .roleta-item { opacity: 0.1; }
+  .roleta.parada .roleta-item:nth-child(2) { opacity: 1; }
+
+  #roleta-numero { height: 168px; }
+  #roleta-numero .roleta-item { height: 56px; font-size: 2.7rem; }
+  #roleta-nome { height: 168px; }
+  #roleta-nome .roleta-item { height: 56px; font-size: 1.5rem; }
 
   .dir-street-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 16px; background: var(--accent-soft); border-radius: 10px 10px 0 0; }
   .dir-street-bar h3 { font-family: inherit; font-size: 1rem; margin: 0; color: var(--accent); }
@@ -180,8 +206,6 @@
   .leitor-rodape { flex: 0 0 auto; background: rgba(13,15,20,0.92); color: white; padding: 10px 14px 14px; }
   .leitor-numeros { display: flex; gap: 14px; font-size: 0.8rem; color: #cfcabd; margin-bottom: 8px; flex-wrap: wrap; }
   .leitor-numeros strong { color: white; font-size: 0.95rem; }
-  .leitor-ultimas { display: flex; flex-direction: column; gap: 3px; max-height: 92px; overflow-y: auto; font-size: 0.8rem; color: #cfcabd; }
-  .leitor-ultimas span.rep { color: #e0c169; }
   .leitor-pontos { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: #cfcabd; margin-bottom: 8px; }
   .leitor-pontos input { width: 84px; margin: 0; padding: 6px 8px; font-size: 0.85rem; background: rgba(255,255,255,0.12);
                          border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 7px; }
@@ -434,12 +458,9 @@
         </button>
         <label for="busca-presenca">Ou busque pelo nome</label>
         <input id="busca-presenca" type="text" placeholder="Digite o nome..." />
+        <!-- O painel de confirmação é desenhado dentro da lista, logo abaixo do
+             nome tocado — ver filtrarListaPresenca(). -->
         <div class="lista-presenca" id="lista-presenca"></div>
-        <div id="painel-confirmar-presenca">
-          <p style="margin:0 0 10px">Registrar presença de <strong id="nome-selecionado-presenca"></strong><span id="aviso-pontos-presenca"></span>?</p>
-          <button class="btn-primary" id="btn-confirmar-presenca">Registrar presença</button>
-          <button class="btn-ghost" id="btn-cancelar-presenca">Cancelar</button>
-        </div>
       </div>
     </div>
 
@@ -565,7 +586,15 @@
             <div><label>Número mínimo</label><input id="sorteio-num-min" inputmode="numeric" placeholder="Ex: 1" /></div>
             <div><label>Número máximo</label><input id="sorteio-num-max" inputmode="numeric" placeholder="Ex: 100" /></div>
           </div>
-          <div id="sorteio-num-animacao" class="painel-sorteio">—</div>
+          <div class="painel-sorteio">
+            <div class="roleta" id="roleta-numero">
+              <div class="roleta-fita">
+                <!-- Quatro linhas para três visíveis: a quarta cobre o vão que
+                     aparece embaixo enquanto a fita corre. -->
+                <div class="roleta-item"></div><div class="roleta-item"></div><div class="roleta-item"></div><div class="roleta-item"></div>
+              </div>
+            </div>
+          </div>
           <div style="display:flex; gap:10px; flex-wrap:wrap">
             <button class="btn-primary" id="btn-sortear-numero">Sortear número</button>
             <button class="btn-ghost" id="btn-reiniciar-numero">Reiniciar sorteio</button>
@@ -579,7 +608,15 @@
         <div class="card">
           <h2>🎲 Sorteio por nome</h2>
           <p class="sub" id="sorteio-nome-elegiveis-info">Concorrem apenas os participantes com presença registrada hoje.</p>
-          <div id="sorteio-nome-animacao" class="painel-sorteio">—</div>
+          <div class="painel-sorteio">
+            <div class="roleta" id="roleta-nome">
+              <div class="roleta-fita">
+                <!-- Quatro linhas para três visíveis: a quarta cobre o vão que
+                     aparece embaixo enquanto a fita corre. -->
+                <div class="roleta-item"></div><div class="roleta-item"></div><div class="roleta-item"></div><div class="roleta-item"></div>
+              </div>
+            </div>
+          </div>
           <div style="display:flex; gap:10px; flex-wrap:wrap">
             <button class="btn-primary" id="btn-sortear-nome">Sortear nome</button>
             <button class="btn-ghost" id="btn-reiniciar-nome">Reiniciar sorteio</button>
@@ -720,7 +757,6 @@
       <span>Registrados agora: <strong id="leitor-conta">0</strong></span>
       <span>Repetidos: <strong id="leitor-repetidos">0</strong></span>
     </div>
-    <div class="leitor-ultimas" id="leitor-ultimas"></div>
   </div>
 </div>
 
@@ -1566,11 +1602,25 @@ function filtrarListaPresenca() {
   const filtrados = termo ? ordenados.filter(p => normalizarTexto(p.nome).includes(termo)) : ordenados;
 
   const container = $("lista-presenca");
-  container.innerHTML = filtrados.map(p => `
-    <button type="button" class="item-presenca ${idSelecionadoPresenca === p.id ? "selecionado" : ""}" data-id="${esc(p.id)}">
+  container.innerHTML = filtrados.map(p => {
+    const selecionado = idSelecionadoPresenca === p.id;
+    return `
+    <button type="button" class="item-presenca ${selecionado ? "selecionado" : ""}" data-id="${esc(p.id)}">
       ${jaPresenteHoje(p) ? "✅ " : ""}${esc(p.nome)}${p.rua ? ` <span style="color:var(--muted)">— ${esc(p.rua)}</span>` : ""}
-    </button>
-  `).join("") || `<p style="color:var(--muted); font-size:0.85rem">Nenhum participante encontrado.</p>`;
+    </button>${selecionado ? painelConfirmacao(p) : ""}`;
+  }).join("") || `<p style="color:var(--muted); font-size:0.85rem">Nenhum participante encontrado.</p>`;
+}
+
+/** Bloco de confirmação que aparece encostado no nome escolhido. */
+function painelConfirmacao(p) {
+  const n = parseInt(($("p-pontos").value || "").trim(), 10);
+  const aviso = (!isNaN(n) && n > 0) ? ` e creditar ${n} ponto(s)` : "";
+  return `
+    <div id="painel-confirmar-presenca">
+      <p>Registrar presença de <strong>${esc(p.nome)}</strong>${aviso}?</p>
+      <button class="btn-primary" id="btn-confirmar-presenca">Registrar presença</button>
+      <button class="btn-ghost" id="btn-cancelar-presenca">Cancelar</button>
+    </div>`;
 }
 
 function selecionarParticipantePresenca(id) {
@@ -1578,14 +1628,15 @@ function selecionarParticipantePresenca(id) {
   if (!p) return;
   idSelecionadoPresenca = id;
   filtrarListaPresenca();
-  $("nome-selecionado-presenca").textContent = p.nome;
-  atualizarAvisoPontosPresenca();
-  $("painel-confirmar-presenca").classList.add("show");
+
+  // A lista rola dentro de uma caixa: se o painel nasceu fora da área visível,
+  // trazemos ele para dentro sem sacudir a página inteira.
+  const painel = $("painel-confirmar-presenca");
+  if (painel) painel.scrollIntoView({ block: "nearest", behavior: "smooth" });
 }
 
 function limparSelecaoPresenca() {
   idSelecionadoPresenca = null;
-  $("painel-confirmar-presenca").classList.remove("show");
   filtrarListaPresenca();
 }
 
@@ -1666,9 +1717,10 @@ function sincronizarCamposPontos(valor) {
   atualizarAvisoPontosPresenca();
 }
 
+/** O aviso de pontos vive dentro do painel, que só existe quando há alguém
+ *  escolhido — então basta redesenhar a lista para ele se atualizar. */
 function atualizarAvisoPontosPresenca() {
-  const n = parseInt(($("p-pontos").value || "").trim(), 10);
-  $("aviso-pontos-presenca").textContent = (!isNaN(n) && n > 0) ? ` e creditar ${n} ponto(s)` : "";
+  if (idSelecionadoPresenca) filtrarListaPresenca();
 }
 
 // ---------------------------------------------------------------------------
@@ -2527,7 +2579,6 @@ let leitorUltimoCodigo = "";
 let leitorUltimoInstante = 0;
 let leitorConta = 0;
 let leitorRepetidos = 0;
-let leitorUltimas = [];
 let filaEnvio = [];
 let enviandoFila = false;
 let jsQrCarregando = null;
@@ -2658,13 +2709,6 @@ function mostrarResultado(classe, nome, detalhe) {
   mostrarResultado.timer = setTimeout(() => caixa.classList.remove("show"), 2600);
 }
 
-function registrarUltima(nome, repetido) {
-  leitorUltimas.unshift({ nome, repetido });
-  leitorUltimas = leitorUltimas.slice(0, 8);
-  $("leitor-ultimas").innerHTML = leitorUltimas
-    .map(u => `<span class="${u.repetido ? "rep" : ""}">${u.repetido ? "↺" : "✓"} ${esc(u.nome)}</span>`).join("");
-}
-
 function processarLeitura(texto) {
   const agora = Date.now();
   if (texto === leitorUltimoCodigo && agora - leitorUltimoInstante < INTERVALO_MESMO_CODIGO) return;
@@ -2684,7 +2728,6 @@ function processarLeitura(texto) {
     leitorRepetidos++;
     $("leitor-repetidos").textContent = leitorRepetidos;
     mostrarResultado("repetido", p.nome, "A presença de hoje já estava registrada.");
-    registrarUltima(p.nome, true);
     bip(420, 0.18); vibrar(50);
     return;
   }
@@ -2704,7 +2747,6 @@ function processarLeitura(texto) {
 
   mostrarResultado("ok", p.nome,
     pontos > 0 ? `Registrado com sucesso — creditados ${pontos} pontos` : "Registrado com sucesso");
-  registrarUltima(p.nome, false);
   bip(880, 0.12); vibrar(35);
 }
 
@@ -2717,10 +2759,9 @@ async function abrirLeitor() {
   $("leitor").classList.add("show");
   $("leitor-aviso").style.display = "block";
   $("leitor-aviso").textContent = "Atualizando a lista de participantes...";
-  leitorConta = 0; leitorRepetidos = 0; leitorUltimas = [];
+  leitorConta = 0; leitorRepetidos = 0;
   $("leitor-conta").textContent = "0";
   $("leitor-repetidos").textContent = "0";
-  $("leitor-ultimas").innerHTML = "";
   $("leitor-pontos").value = lerPontosSalvos();
 
   try {
@@ -2867,19 +2908,18 @@ async function sortearNumero() {
   botao.disabled = true;
   const numeroFinal = disponiveis[randomInt(0, disponiveis.length - 1)];
 
-  // Grava e anima ao mesmo tempo; só revela depois de confirmar a gravação.
+  // Grava e gira ao mesmo tempo. A roleta só freia quando a planilha confirma,
+  // então o número que ela mostra ao parar é sempre o que ficou gravado.
   const gravacao = appsScriptFetch("registrarSorteio", { tipo: "numero", nome: "Número " + numeroFinal, idParticipante: "" });
-
-  const el = $("sorteio-num-animacao");
-  await animar(el, () => String(randomInt(min, max)));
+  const roleta = $("roleta-numero");
 
   try {
-    await gravacao;
+    await girarRoleta(roleta, () => String(randomInt(min, max)), gravacao, String(numeroFinal), 2.7);
     sorteioNumerosSorteados.add(numeroFinal);
-    el.textContent = numeroFinal;
     renderizarNumerosSorteados();
+    bip(880, 0.16); vibrar([40, 60, 40]);
   } catch (e) {
-    el.textContent = "—";
+    repousarRoleta(roleta, "—", 2.7);
     showToast("Não consegui gravar o sorteio na planilha. Nada foi sorteado — tente de novo.");
     console.error(e);
   } finally {
@@ -2887,13 +2927,129 @@ async function sortearNumero() {
   }
 }
 
-function animar(el, gerar) {
-  return new Promise(resolve => {
-    let ticks = 0;
-    const intervalo = setInterval(() => {
-      el.textContent = gerar();
-      if (++ticks >= 18) { clearInterval(intervalo); resolve(); }
-    }, 70);
+// ---------------------------------------------------------------------------
+// Roleta do sorteio
+// ---------------------------------------------------------------------------
+// Antes: a animação trocava o texto 18 vezes e parava. Como a gravação na
+// planilha demora de meio a dois segundos, a tela ficava travada num nome
+// qualquer até a resposta chegar — e só então pulava para o ganhador. Quem
+// estava assistindo via dois "resultados", e isso dá confusão numa premiação.
+//
+// Agora a fita corre de verdade, sem parar, ENQUANTO a planilha grava. Quando a
+// gravação confirma, ela desacelera e encosta exatamente no ganhador. Nenhum
+// valor intermediário fica parado na tela em momento nenhum.
+
+const ROLETA_VELOCIDADE = 19;    // itens por segundo enquanto está rodando solto
+const ROLETA_GIRO_MINIMO = 1100; // ms de giro, mesmo que a planilha responda na hora
+const ROLETA_FREIO = 1500;       // ms de desaceleração até parar no ganhador
+const ROLETA_ITENS_FREIO = 13;   // quantos itens ainda passam durante a freada
+
+function alturaItemRoleta(roleta) {
+  const item = roleta.querySelector(".roleta-item");
+  return item ? item.getBoundingClientRect().height || 56 : 56;
+}
+
+/** Encolhe a fonte quando o nome é comprido, para não sair cortado da faixa. */
+function ajustarFonteRoleta(el, texto, base) {
+  const n = (texto || "").length;
+  el.style.fontSize = n > 26 ? `${base * 0.55}rem` : n > 18 ? `${base * 0.72}rem` : `${base}rem`;
+}
+
+function pararRoleta(roleta) {
+  if (roleta.__anim) { cancelAnimationFrame(roleta.__anim); roleta.__anim = null; }
+}
+
+/** Deixa a roleta em repouso mostrando um texto só (usado no "—" do reinício). */
+function repousarRoleta(roleta, texto, baseFonte) {
+  pararRoleta(roleta);
+  const fita = roleta.querySelector(".roleta-fita");
+  fita.style.transform = "translateY(0)";
+  const itens = [...roleta.querySelectorAll(".roleta-item")];
+  itens.forEach((el, i) => {
+    el.textContent = i === 1 ? texto : "";
+    ajustarFonteRoleta(el, texto, baseFonte);
+  });
+  roleta.classList.add("parada");
+}
+
+/**
+ * Gira a roleta e resolve com o ganhador.
+ *
+ * @param roleta   elemento .roleta
+ * @param sorteia  função que devolve um valor aleatório para preencher a fita
+ * @param promessa a gravação na planilha; o freio só começa quando ela resolve
+ * @param vencedor o que deve ficar na faixa central no fim
+ * @param baseFonte tamanho de fonte em rem quando o texto é curto
+ */
+function girarRoleta(roleta, sorteia, promessa, vencedor, baseFonte) {
+  pararRoleta(roleta);
+  roleta.classList.remove("parada");
+
+  const fita = roleta.querySelector(".roleta-fita");
+  const slots = [...roleta.querySelectorAll(".roleta-item")];
+  const altura = alturaItemRoleta(roleta);
+
+  // Cada índice guarda o valor que lhe coube: sem isto, um mesmo item mudaria
+  // de texto a cada quadro e a fita viraria um borrão tremido.
+  const valores = new Map();
+  let indiceVencedor = null;
+  const valorEm = i => {
+    if (i === indiceVencedor) return vencedor;
+    if (!valores.has(i)) valores.set(i, sorteia());
+    return valores.get(i);
+  };
+
+  let pronto = false, erro = null;
+  const espera = Promise.resolve(promessa).then(() => { pronto = true; }, e => { erro = e; pronto = true; });
+
+  return new Promise((resolve, reject) => {
+    const inicio = performance.now();
+    let anterior = inicio, pos = 0;
+    let freando = false, posFreio = 0, alvo = 0, inicioFreio = 0;
+
+    function quadro(agora) {
+      const dt = Math.min((agora - anterior) / 1000, 0.05);   // aba em segundo plano não dá salto
+      anterior = agora;
+
+      if (!freando) {
+        pos += ROLETA_VELOCIDADE * dt;
+        if (pronto && agora - inicio >= ROLETA_GIRO_MINIMO) {
+          freando = true;
+          posFreio = pos;
+          alvo = Math.ceil(pos) + ROLETA_ITENS_FREIO;
+          indiceVencedor = alvo + 1;      // a faixa central mostra pos+1
+          inicioFreio = agora;
+        }
+      } else {
+        const t = Math.min((agora - inicioFreio) / ROLETA_FREIO, 1);
+        const suave = 1 - Math.pow(1 - t, 3);                 // desacelera até encostar
+        pos = posFreio + (alvo - posFreio) * suave;
+        if (t >= 1) {
+          pos = alvo;
+          desenhar();
+          roleta.classList.add("parada");
+          roleta.__anim = null;
+          if (erro) reject(erro); else resolve();
+          return;
+        }
+      }
+
+      desenhar();
+      roleta.__anim = requestAnimationFrame(quadro);
+    }
+
+    function desenhar() {
+      const base = Math.floor(pos);
+      const frac = pos - base;
+      fita.style.transform = `translateY(${-frac * altura}px)`;
+      slots.forEach((el, i) => {
+        const texto = valorEm(base + i);
+        if (el.textContent !== texto) { el.textContent = texto; ajustarFonteRoleta(el, texto, baseFonte); }
+      });
+    }
+
+    espera.catch(() => {});
+    roleta.__anim = requestAnimationFrame(quadro);
   });
 }
 
@@ -2911,7 +3067,7 @@ async function reiniciarSorteioNumero() {
     await appsScriptFetch("reiniciarSorteio", { tipo: "numero" });
     sorteioNumerosSorteados.clear();
     renderizarNumerosSorteados();
-    $("sorteio-num-animacao").textContent = "—";
+    repousarRoleta($("roleta-numero"), "—", 2.7);
     showToast("Sorteio por número reiniciado.");
   } catch (e) {
     showToast(e.message || "Não consegui reiniciar o sorteio.");
@@ -2947,17 +3103,17 @@ async function sortearNome() {
   const poolVisual = sorteioElegiveisNomes.map(p => p.nome);
 
   const gravacao = appsScriptFetch("registrarSorteio", { tipo: "nome", nome: sorteado.nome, idParticipante: sorteado.id });
-
-  const el = $("sorteio-nome-animacao");
-  await animar(el, () => poolVisual[randomInt(0, poolVisual.length - 1)]);
+  const roleta = $("roleta-nome");
 
   try {
-    await gravacao;
+    await girarRoleta(roleta,
+      () => poolVisual[randomInt(0, poolVisual.length - 1)],
+      gravacao, "🎉 " + sorteado.nome, 1.5);
     sorteioNomesSorteadosSet.add(sorteado.id);
-    el.textContent = "🎉 " + sorteado.nome;
     renderizarNomesSorteados();
+    bip(880, 0.16); vibrar([40, 60, 40]);
   } catch (e) {
-    el.textContent = "—";
+    repousarRoleta(roleta, "—", 1.5);
     showToast("Não consegui gravar o sorteio na planilha. Nada foi sorteado — tente de novo.");
     console.error(e);
   } finally {
@@ -2982,7 +3138,7 @@ async function reiniciarSorteioNome() {
     await appsScriptFetch("reiniciarSorteio", { tipo: "nome" });
     sorteioNomesSorteadosSet.clear();
     renderizarNomesSorteados();
-    $("sorteio-nome-animacao").textContent = "—";
+    repousarRoleta($("roleta-nome"), "—", 1.5);
     showToast("Sorteio por nome reiniciado.");
   } catch (e) {
     showToast(e.message || "Não consegui reiniciar o sorteio.");
@@ -3626,7 +3782,11 @@ window.addEventListener("resize", () => {
 });
 
 $("busca-presenca").addEventListener("input", filtrarListaPresenca);
+// Delegação: o painel de confirmação é recriado a cada redesenho da lista, então
+// não dá para pendurar o evento no botão uma vez só.
 $("lista-presenca").addEventListener("click", e => {
+  if (e.target.closest("#btn-confirmar-presenca")) { confirmarPresenca(); return; }
+  if (e.target.closest("#btn-cancelar-presenca")) { limparSelecaoPresenca(); return; }
   const btn = e.target.closest(".item-presenca");
   if (btn) selecionarParticipantePresenca(btn.dataset.id);
 });
@@ -3637,8 +3797,6 @@ window.addEventListener("beforeunload", e => {
   if (filaEnvio.length) { e.preventDefault(); e.returnValue = ""; }
 });
 
-$("btn-confirmar-presenca").addEventListener("click", confirmarPresenca);
-$("btn-cancelar-presenca").addEventListener("click", limparSelecaoPresenca);
 
 $("subtab-btn-numero").addEventListener("click", () => trocarSubAbaSorteio("numero"));
 $("subtab-btn-nome").addEventListener("click", () => trocarSubAbaSorteio("nome"));
@@ -3699,6 +3857,10 @@ $("tbody-equipe").addEventListener("click", e => {
   if (btn.dataset.acao === "copiar") copiarTokenEquipe(id);
   if (btn.dataset.acao === "whats") enviarTokenWhatsApp(id);
 });
+
+// As duas roletas começam em repouso, mostrando um traço.
+repousarRoleta($("roleta-numero"), "—", 2.7);
+repousarRoleta($("roleta-nome"), "—", 1.5);
 
 validarAcesso();
 </script>
