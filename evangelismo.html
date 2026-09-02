@@ -66,10 +66,15 @@
   .lista-ruas-check .vazio { color: var(--muted); font-size: 0.85rem; padding: 8px 2px; }
 
   /* Marcações de visita e estudo bíblico no diretório */
-  .marca { border: 1px solid var(--line); background: var(--card); color: var(--muted); border-radius: 999px;
+  /* Azul para "sim", vermelho para "não" — dá para varrer a coluna inteira de
+     longe e ver onde ainda não passaram. As duas cores passaram no validador
+     (separação 22,1 em protanopia, contraste 5,7 e 6,3 com a letra branca), e
+     a palavra escrita dentro do botão mantém a informação legível para quem
+     não distingue as duas. */
+  .marca { border: 1px solid #a24030; background: #a24030; color: #ffffff; border-radius: 999px;
            padding: 3px 12px; font-size: 0.78rem; font-weight: 700; cursor: pointer; font-family: inherit;
            white-space: nowrap; min-width: 62px; }
-  .marca.sim { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+  .marca.sim { background: #2166bd; border-color: #2166bd; color: #ffffff; }
   .marca:disabled { cursor: default; opacity: 0.75; }
   .marca.salvando { opacity: 0.5; }
 
@@ -572,13 +577,6 @@
       </div>
 
       <div class="bloco-gr">
-        <h3>Classificação</h3>
-        <p class="legenda">Quantas pessoas há em cada classe. A cor é a mesma do diretório de ruas.</p>
-        <div class="area-grafico" id="gr-classes"></div>
-        <div class="tabela-numeros" id="tb-classes"></div>
-      </div>
-
-      <div class="bloco-gr">
         <h3>Faixa etária</h3>
         <p class="legenda">Quantas pessoas cadastradas há em cada faixa de idade.</p>
         <div class="area-grafico" id="gr-idades"></div>
@@ -601,6 +599,13 @@
           <p class="legenda">Quantos estudos bíblicos começaram em cada dia.</p>
           <div class="area-grafico" id="gr-estudos-dia"></div>
           <div class="tabela-numeros" id="tb-estudos-dia"></div>
+        </div>
+
+        <div class="bloco-gr">
+          <h3>Classificação</h3>
+          <p class="legenda">Quantas pessoas há em cada classe. A cor é a mesma do diretório de ruas.</p>
+          <div class="area-grafico" id="gr-classes"></div>
+          <div class="tabela-numeros" id="tb-classes"></div>
         </div>
 
         <div class="bloco-gr">
@@ -2207,7 +2212,6 @@ function desenharGraficos() {
   const nov = dadosNovatos();
   dadosRuasCache = dadosRuas();
   const idades = dadosIdades();
-  const classes = dadosClasses();
 
   tilesResumo();
   if (erroResumoPresencas) {
@@ -2224,10 +2228,8 @@ function desenharGraficos() {
   }
   graficoColunas($("gr-novatos"), nov);
   graficoBarras($("gr-ruas"), dadosRuasCache.grafico, "Nenhuma rua encontrada com esse nome.");
-  graficoColunas($("gr-classes"), classes);
   graficoColunas($("gr-idades"), idades);
 
-  tabelaNumeros("tb-classes", "Classe", classes);
   tabelaNumeros("tb-frequencia", "Dia", freq);
   tabelaNumeros("tb-novatos", "Dia", nov);
   tabelaNumeros("tb-ruas", "Rua", dadosRuasCache.completo);
@@ -2265,6 +2267,7 @@ function desenharGraficosMissionarios() {
   const visitas = porDiaDe("visitado");
   const estudos = porDiaDe("estudo");
   const porMissionario = dadosPorMissionario();
+  const classes = dadosClasses();
 
   const totalVisitas = visitas.reduce((s, d) => s + d.valor, 0);
   const totalEstudos = estudos.reduce((s, d) => s + d.valor, 0);
@@ -2281,10 +2284,12 @@ function desenharGraficosMissionarios() {
 
   graficoColunas($("gr-visitas-dia"), visitas);
   graficoColunas($("gr-estudos-dia"), estudos);
+  graficoColunas($("gr-classes"), classes);
   graficoBarras($("gr-por-missionario"), porMissionario, "Ninguém marcou visitas ainda.");
 
   tabelaNumeros("tb-visitas-dia", "Dia", visitas);
   tabelaNumeros("tb-estudos-dia", "Dia", estudos);
+  tabelaNumeros("tb-classes", "Classe", classes);
   tabelaNumeros("tb-por-missionario", "Quem marcou", porMissionario);
 }
 
