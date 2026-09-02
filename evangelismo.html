@@ -25,6 +25,15 @@
   body { margin: 0; font-family: "Segoe UI", system-ui, -apple-system, sans-serif; background: var(--paper); color: var(--ink); min-height: 100vh; }
   .wrap { max-width: 960px; margin: 0 auto; padding: 32px 20px 80px; }
   .center-screen { max-width: 440px; margin: 12vh auto; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 32px; text-align: center; }
+
+  /* Passo zero da conexão: gerar a planilha a partir do modelo. */
+  .passo-zero { background: var(--accent-soft); border-radius: 12px; padding: 16px; margin: 4px 0 22px; text-align: left; }
+  /* Só o título do bloco vira linha própria — um <strong> no meio de um
+     parágrafo tem de continuar em linha. */
+  .passo-zero > strong { display: block; margin-bottom: 4px; font-size: 0.95rem; }
+  .passo-zero p { font-size: 0.85rem; color: var(--muted); margin: 0 0 12px; }
+  .passo-zero a.btn-primary { display: block; text-align: center; text-decoration: none; padding: 12px; }
+  .passo-zero .mini { font-size: 0.78rem; margin: 8px 0 0; }
   .eyebrow { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 4px; }
   h1 { font-size: 1.4rem; margin: 0 0 6px; }
   p.sub { color: var(--muted); font-size: 0.88rem; }
@@ -340,7 +349,15 @@
 <div id="tela-planilha" class="center-screen" style="display:none">
   <div class="eyebrow">Conectar</div>
   <h1>Conectar a planilha</h1>
-  <p class="sub">Cole aqui a URL do Web App do Apps Script gerada na planilha (termina em <code>/exec</code>). Se ainda não configurou, siga o passo a passo que você recebeu.</p>
+
+  <div class="passo-zero">
+    <strong>Ainda não tem a planilha?</strong>
+    <p>Gere a sua a partir do nosso modelo — ele já vem com o programa dentro, você não precisa colar código nenhum.</p>
+    <a class="btn-primary" id="btn-gerar-planilha" href="#" target="_blank" rel="noopener">📄 Gerar a minha planilha</a>
+    <p class="mini">Abre no Google e pede para confirmar a cópia. A planilha fica na <strong>sua</strong> conta.</p>
+  </div>
+
+  <p class="sub">Já tem a planilha e implantou o Web App? Cole abaixo a URL gerada pelo Apps Script (termina em <code>/exec</code>).</p>
   <label for="input-sheet-url">URL do Web App</label>
   <input id="input-sheet-url" type="text" placeholder="https://script.google.com/macros/s/.../exec" />
   <button class="btn-primary" style="width:100%" id="btn-conectar">Conectar</button>
@@ -929,6 +946,16 @@
 "use strict";
 
 // ==== CONFIGURAÇÃO ====
+// Planilha-modelo, com o Code.gs já dentro. O cliente clica, o Google faz uma
+// cópia na conta DELE — e o script vinculado vai junto. Some a parte de abrir o
+// editor e colar código, que é onde quase todo mundo tropeçava.
+//
+// Para trocar de modelo, basta mudar o ID abaixo. O modelo precisa estar
+// compartilhado como "Qualquer pessoa com o link — Leitor", com a opção de
+// impedir cópia DESLIGADA, e nunca pode ter sido conectado a um link de acesso
+// (senão cada cópia nasce achando que pertence a outro token).
+const PLANILHA_MODELO = "11u6Cjlcmsw889Y3IRZ6NweYXLW4jBrZ1mjzF_MPi4fg";
+
 const SUPABASE_URL = "https://jmogaclwihvsouqixozo.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imptb2dhY2x3aWh2c291cWl4b3pvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyNTk5MzIsImV4cCI6MjEwMjgzNTkzMn0.kzvlfUAzRrEeb2UGlEViCOVh0vIMuHVkR_EzUSjn87U";
 const VERSAO_BACKEND_ESPERADA = 9;
@@ -4118,6 +4145,15 @@ $("modal-lote-datas").addEventListener("click", e => {
 $("modal-lote-cancelar").addEventListener("click", () => $("modal-lote").classList.remove("show"));
 $("modal-lote-confirmar").addEventListener("click", gerarCartoesEmLote);
 $("modal-lote").addEventListener("click", e => { if (e.target.id === "modal-lote") $("modal-lote").classList.remove("show"); });
+
+// O "/copy" no fim do endereço faz o Google abrir direto a janela de cópia, em
+// vez de abrir a planilha do modelo para leitura.
+if (PLANILHA_MODELO) {
+  $("btn-gerar-planilha").href =
+    `https://docs.google.com/spreadsheets/d/${PLANILHA_MODELO}/copy`;
+} else {
+  $("btn-gerar-planilha").closest(".passo-zero").style.display = "none";
+}
 
 $("btn-conectar").addEventListener("click", conectarPlanilha);
 $("input-sheet-url").addEventListener("keydown", e => { if (e.key === "Enter") conectarPlanilha(); });
