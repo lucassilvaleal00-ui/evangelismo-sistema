@@ -72,6 +72,38 @@
   .marca.sim { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
   .marca:disabled { cursor: default; opacity: 0.75; }
   .marca.salvando { opacity: 0.5; }
+
+  /* Classificação A / B / C.
+     As três cores passaram no validador de paleta (banda de luminosidade,
+     saturação mínima, separação para daltonismo e contraste do texto sobre o
+     preenchimento). A letra impressa dentro do botão é o que garante que a
+     informação nunca dependa só da cor. */
+  .classes { display: flex; gap: 3px; }
+  .cl { width: 26px; height: 26px; border-radius: 7px; border: 1px solid var(--line); background: var(--card);
+        color: var(--muted); font-weight: 800; font-size: 0.78rem; cursor: pointer; font-family: inherit; padding: 0; }
+  .cl:hover { border-color: var(--muted); }
+  .cl.on.a { background: #1f7a4d; border-color: #1f7a4d; color: #ffffff; }
+  .cl.on.b { background: #2166bd; border-color: #2166bd; color: #ffffff; }
+  .cl.on.c { background: #eda100; border-color: #eda100; color: #1c2128; }
+
+  /* Cartões da aba de relatórios */
+  .grade-relatorios { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
+  .cartao-rel { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left;
+                background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px;
+                cursor: pointer; font-family: inherit; }
+  .cartao-rel:hover { border-color: var(--accent); }
+  .cartao-rel:disabled { opacity: 0.55; cursor: default; }
+  .cartao-rel .ic { font-size: 1.3rem; line-height: 1; }
+  .cartao-rel .ic .selo-classe { font-size: 0.95rem; padding: 2px 10px; }
+  .cartao-rel strong { font-size: 0.92rem; color: var(--ink); }
+  .cartao-rel span:last-child { font-size: 0.78rem; color: var(--muted); font-weight: 400; }
+
+  /* A mesma cor em etiqueta, para as listas e o topo dos relatórios. */
+  .selo-classe { display: inline-block; min-width: 20px; text-align: center; border-radius: 6px;
+                 padding: 1px 6px; font-weight: 800; font-size: 0.75rem; }
+  .selo-classe.a { background: #1f7a4d; color: #fff; }
+  .selo-classe.b { background: #2166bd; color: #fff; }
+  .selo-classe.c { background: #eda100; color: #1c2128; }
   .token-equipe { font-family: monospace; font-size: 0.95rem; font-weight: 700; letter-spacing: 2px;
                   background: var(--accent-soft); color: var(--ink); border-radius: 6px; padding: 2px 8px; }
   .tab-panel { display: none; }
@@ -349,6 +381,7 @@
       <button class="tab-btn" data-tab="graficos">📊 Gráficos</button>
       <button class="tab-btn" data-tab="sorteio">🎲 Sorteio</button>
       <button class="tab-btn" data-tab="diretorio">🗺️ Diretório de ruas</button>
+      <button class="tab-btn" data-tab="relatorios">📄 Relatórios</button>
       <button class="tab-btn" data-tab="equipe">👥 Equipe</button>
     </div>
 
@@ -539,6 +572,13 @@
       </div>
 
       <div class="bloco-gr">
+        <h3>Classificação</h3>
+        <p class="legenda">Quantas pessoas há em cada classe. A cor é a mesma do diretório de ruas.</p>
+        <div class="area-grafico" id="gr-classes"></div>
+        <div class="tabela-numeros" id="tb-classes"></div>
+      </div>
+
+      <div class="bloco-gr">
         <h3>Faixa etária</h3>
         <p class="legenda">Quantas pessoas cadastradas há em cada faixa de idade.</p>
         <div class="area-grafico" id="gr-idades"></div>
@@ -642,9 +682,59 @@
         <input id="busca-diretorio" type="text" placeholder="Digite para filtrar..." />
         <p class="sub" id="aviso-acompanhamento" style="margin:-4px 0 10px">
           Toque em <strong>Visitado(a)?</strong> ou <strong>Estudo bíblico?</strong> para alternar entre
-          <em>sim</em> e <em>não</em>. A planilha é atualizada sozinha.
+          <em>sim</em> e <em>não</em>, e em <strong>A</strong>, <strong>B</strong> ou <strong>C</strong> para classificar
+          (tocar de novo na mesma letra tira a classificação). A planilha é atualizada sozinha.
         </p>
         <div id="diretorio-lista"></div>
+      </div>
+    </div>
+
+    <!-- RELATÓRIOS -->
+    <div class="tab-panel" id="tab-relatorios">
+      <div class="card">
+        <h2>📄 Relatórios em PDF</h2>
+        <p class="sub">Cada botão gera um arquivo pronto para imprimir ou mandar pelo WhatsApp, com os dados completos de cada pessoa.</p>
+
+        <div class="subtabs" id="subtabs-relatorios" style="display:none">
+          <button class="subtab-btn active" id="rel-btn-minhas">Minhas ruas</button>
+          <button class="subtab-btn" id="rel-btn-todas">Todas as ruas</button>
+        </div>
+
+        <p class="sub" id="rel-resumo" style="margin-bottom:16px"></p>
+
+        <div class="grade-relatorios">
+          <button class="cartao-rel" data-rel="ruas">
+            <span class="ic">🗺️</span>
+            <strong>Pessoas por rua</strong>
+            <span>O diretório inteiro em papel, rua por rua.</span>
+          </button>
+          <button class="cartao-rel" data-rel="estudos">
+            <span class="ic">📖</span>
+            <strong>Estudos bíblicos</strong>
+            <span>Só quem está recebendo estudo, em ordem alfabética.</span>
+          </button>
+          <button class="cartao-rel" data-rel="geral">
+            <span class="ic">🏷️</span>
+            <strong>Classificação geral</strong>
+            <span>Todos os classificados: primeiro A, depois B, depois C.</span>
+          </button>
+          <button class="cartao-rel" data-rel="A">
+            <span class="ic"><span class="selo-classe a">A</span></span>
+            <strong>Classificação A</strong>
+            <span>Somente as pessoas de classe A.</span>
+          </button>
+          <button class="cartao-rel" data-rel="B">
+            <span class="ic"><span class="selo-classe b">B</span></span>
+            <strong>Classificação B</strong>
+            <span>Somente as pessoas de classe B.</span>
+          </button>
+          <button class="cartao-rel" data-rel="C">
+            <span class="ic"><span class="selo-classe c">C</span></span>
+            <strong>Classificação C</strong>
+            <span>Somente as pessoas de classe C.</span>
+          </button>
+        </div>
+        <p class="sub" id="rel-status" style="min-height:1.2em; margin-top:14px"></p>
       </div>
     </div>
 
@@ -836,7 +926,7 @@
 // ==== CONFIGURAÇÃO ====
 const SUPABASE_URL = "https://jmogaclwihvsouqixozo.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imptb2dhY2x3aWh2c291cWl4b3pvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyNTk5MzIsImV4cCI6MjEwMjgzNTkzMn0.kzvlfUAzRrEeb2UGlEViCOVh0vIMuHVkR_EzUSjn87U";
-const VERSAO_BACKEND_ESPERADA = 8;
+const VERSAO_BACKEND_ESPERADA = 9;
 // =======================
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false } });
@@ -861,9 +951,9 @@ let membroAtual = null;     // { id, nome, funcao, ruas: [] } quando é equipe
 let tokenEquipe = null;     // o número de 6 dígitos, reenviado a cada marcação
 
 const ABAS_POR_PAPEL = {
-  admin:         ["cadastro", "presenca", "pontuacao", "graficos", "sorteio", "diretorio", "equipe"],
+  admin:         ["cadastro", "presenca", "pontuacao", "graficos", "sorteio", "diretorio", "relatorios", "equipe"],
   recepcionista: ["cadastro", "presenca", "pontuacao", "sorteio"],
-  missionario:   ["diretorio"]
+  missionario:   ["diretorio", "relatorios"]
 };
 
 const NOME_DO_PAPEL = {
@@ -1376,6 +1466,7 @@ function trocarAba(nome) {
   if (nome === "pontuacao") abrirPontuacao();
   if (nome === "graficos") abrirGraficos();
   if (nome === "equipe") abrirEquipe();
+  if (nome === "relatorios") abrirRelatorios();
   if (nome === "sorteio") {
     carregarEstadoSorteio();
     if ($("subtab-btn-nome").classList.contains("active")) carregarElegiveisSorteioNome();
@@ -1956,7 +2047,7 @@ function graficoColunas(area, dados) {
     return `
       <g class="gr-barra" data-rotulo="${esc(d.rotuloLongo || d.rotulo)}" data-valor="${d.valor}" data-x="${(x + larguraBarra / 2).toFixed(1)}" data-y="${topoBarra.toFixed(1)}">
         <rect x="${(x - 3).toFixed(1)}" y="${margemTopo}" width="${(larguraBarra + 6).toFixed(1)}" height="${alturaPlot}" fill="transparent" />
-        <path d="${caminhoColuna(x, topoBarra, larguraBarra, alturaBarra, 4)}" fill="${COR_DADOS}" />
+        <path d="${caminhoColuna(x, topoBarra, larguraBarra, alturaBarra, 4)}" fill="${d.cor || COR_DADOS}" />
         ${mostrarValor ? `<text class="gr-valor" x="${(x + larguraBarra / 2).toFixed(1)}" y="${(topoBarra - 6).toFixed(1)}" text-anchor="middle">${d.valor}</text>` : ""}
         ${rotulo}
       </g>`;
@@ -2066,6 +2157,24 @@ function dadosRuas() {
   return { grafico: filtradas, completo: todas };
 }
 
+/**
+ * Contagem por classe. As três cores foram conferidas no validador de paleta —
+ * banda de luminosidade, saturação mínima, separação para daltonismo e
+ * contraste contra o fundo. A letra no eixo e o número em cima da coluna fazem
+ * o gráfico continuar legível mesmo impresso em preto e branco.
+ */
+const COR_CLASSE_HEX = { A: "#1f7a4d", B: "#2166bd", C: "#eda100" };
+
+function dadosClasses() {
+  const contagem = CLASSES.map(l => ({
+    rotulo: l, rotuloLongo: "Classe " + l, cor: COR_CLASSE_HEX[l],
+    valor: cacheParticipantes.filter(p => p.classe === l).length
+  }));
+  const sem = cacheParticipantes.filter(p => !p.classe).length;
+  if (sem) contagem.push({ rotulo: "Sem", rotuloLongo: "Sem classificação", cor: "#b8b3a6", valor: sem });
+  return contagem;
+}
+
 function dadosIdades() {
   const contagem = FAIXAS_ETARIAS.map(f => ({ rotulo: f.rotulo, valor: 0 }));
   let semInformacao = 0;
@@ -2098,6 +2207,7 @@ function desenharGraficos() {
   const nov = dadosNovatos();
   dadosRuasCache = dadosRuas();
   const idades = dadosIdades();
+  const classes = dadosClasses();
 
   tilesResumo();
   if (erroResumoPresencas) {
@@ -2114,8 +2224,10 @@ function desenharGraficos() {
   }
   graficoColunas($("gr-novatos"), nov);
   graficoBarras($("gr-ruas"), dadosRuasCache.grafico, "Nenhuma rua encontrada com esse nome.");
+  graficoColunas($("gr-classes"), classes);
   graficoColunas($("gr-idades"), idades);
 
+  tabelaNumeros("tb-classes", "Classe", classes);
   tabelaNumeros("tb-frequencia", "Dia", freq);
   tabelaNumeros("tb-novatos", "Dia", nov);
   tabelaNumeros("tb-ruas", "Rua", dadosRuasCache.completo);
@@ -3146,6 +3258,255 @@ async function reiniciarSorteioNome() {
 }
 
 // ---------------------------------------------------------------------------
+// Relatórios em PDF
+// ---------------------------------------------------------------------------
+// Tudo é montado no próprio aparelho, a partir da lista que já está na memória.
+// Nenhuma chamada extra à planilha e nenhum dado sai para outro servidor: o
+// arquivo nasce e fica no celular de quem clicou.
+
+let escopoRelatorio = "minhas";   // só o missionário alterna; o admin vê tudo
+
+let libJsPdf = null;
+function garantirJsPdf() {
+  // Só o jsPDF: os relatórios não têm QR Code, então não vale baixar o QRious.
+  if (!libJsPdf) {
+    libJsPdf = (window.jspdf
+      ? Promise.resolve()
+      : carregarScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js")
+    ).catch(e => { libJsPdf = null; throw e; });
+  }
+  return libJsPdf;
+}
+
+/** Quem entra nos relatórios: o missionário pode se limitar às ruas dele. */
+function participantesDoRelatorio() {
+  if (papelAtual !== "missionario" || escopoRelatorio !== "minhas") return cacheParticipantes;
+  const minhas = new Set((membroAtual && membroAtual.ruas) || []);
+  return cacheParticipantes.filter(p => minhas.has(p.rua || ""));
+}
+
+function abrirRelatorios() {
+  const ehMissionario = papelAtual === "missionario";
+  $("subtabs-relatorios").style.display = ehMissionario ? "flex" : "none";
+  if (!ehMissionario) escopoRelatorio = "todas";
+  atualizarResumoRelatorios();
+}
+
+function trocarEscopoRelatorio(escopo) {
+  escopoRelatorio = escopo;
+  $("rel-btn-minhas").classList.toggle("active", escopo === "minhas");
+  $("rel-btn-todas").classList.toggle("active", escopo === "todas");
+  atualizarResumoRelatorios();
+}
+
+function atualizarResumoRelatorios() {
+  const base = participantesDoRelatorio();
+  const cont = l => base.filter(p => p.classe === l).length;
+  const estudos = base.filter(p => p.estudoEm).length;
+  const ruas = new Set(base.map(p => p.rua || "Sem rua informada")).size;
+  $("rel-resumo").innerHTML =
+    `Vão entrar <strong>${base.length}</strong> pessoa(s), de <strong>${ruas}</strong> rua(s). ` +
+    `Classe A: <strong>${cont("A")}</strong> · B: <strong>${cont("B")}</strong> · C: <strong>${cont("C")}</strong> · ` +
+    `com estudo bíblico: <strong>${estudos}</strong>.`;
+
+  // Botão de relatório sem ninguém dentro fica apagado: melhor do que gerar um
+  // PDF de uma página só dizendo "nenhum registro".
+  document.querySelectorAll(".cartao-rel").forEach(b => {
+    const tipo = b.dataset.rel;
+    const quantos = tipo === "ruas" ? base.length
+                  : tipo === "estudos" ? estudos
+                  : tipo === "geral" ? base.filter(p => p.classe).length
+                  : cont(tipo);
+    b.disabled = quantos === 0;
+  });
+}
+
+const TITULOS_RELATORIO = {
+  ruas: "Pessoas por rua",
+  estudos: "Pessoas recebendo estudo bíblico",
+  geral: "Classificação geral",
+  A: "Classificação A", B: "Classificação B", C: "Classificação C"
+};
+
+const COR_CLASSE = { A: [31, 122, 77], B: [33, 102, 189], C: [237, 161, 0] };
+
+function porNome(a, b) { return (a.nome || "").localeCompare(b.nome || "", "pt-BR"); }
+
+/** Monta as seções de cada tipo de relatório: [{ titulo, pessoas }]. */
+function secoesDoRelatorio(tipo, base) {
+  if (tipo === "ruas") {
+    const porRua = {};
+    base.forEach(p => {
+      const rua = p.rua || "Sem rua informada";
+      (porRua[rua] = porRua[rua] || []).push(p);
+    });
+    return Object.keys(porRua).sort((a, b) => a.localeCompare(b, "pt-BR"))
+      .map(rua => ({ titulo: rua, pessoas: porRua[rua].sort(porNome) }));
+  }
+  if (tipo === "estudos") {
+    return [{ titulo: null, pessoas: base.filter(p => p.estudoEm).sort(porNome) }];
+  }
+  if (tipo === "geral") {
+    return CLASSES.map(l => ({ titulo: `Classe ${l}`, pessoas: base.filter(p => p.classe === l).sort(porNome) }))
+                  .filter(s => s.pessoas.length);
+  }
+  return [{ titulo: null, pessoas: base.filter(p => p.classe === tipo).sort(porNome) }];
+}
+
+async function gerarRelatorio(tipo) {
+  const status = $("rel-status");
+  const base = participantesDoRelatorio();
+  const secoes = secoesDoRelatorio(tipo, base);
+  const total = secoes.reduce((s, sec) => s + sec.pessoas.length, 0);
+  if (!total) { status.textContent = "Não há ninguém para esse relatório ainda."; return; }
+
+  status.textContent = "Preparando o arquivo...";
+  document.querySelectorAll(".cartao-rel").forEach(b => { b.disabled = true; });
+
+  try {
+    await garantirJsPdf();
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
+    desenharRelatorio(doc, TITULOS_RELATORIO[tipo], secoes, total);
+
+    // Sem acento no nome do arquivo: o Chrome descarta o nome inteiro quando
+    // encontra um e salva tudo como "download.pdf" — o segundo relatório
+    // sobrescreveria o primeiro na pasta de downloads.
+    const hoje = hojeFormatado().replace(/\//g, "-");
+    const nome = `Evangelismo - ${TITULOS_RELATORIO[tipo]} - ${hoje}`
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    doc.save(`${nome}.pdf`);
+    status.textContent = `Pronto: ${total} pessoa(s) em ${doc.getNumberOfPages()} página(s).`;
+  } catch (e) {
+    status.textContent = e.message || "Não consegui gerar o PDF.";
+    console.error(e);
+  } finally {
+    atualizarResumoRelatorios();
+  }
+}
+
+// Medidas da página, em milímetros.
+const REL = { larg: 210, alt: 297, esq: 14, dir: 196, topo: 20, base: 282 };
+
+function desenharRelatorio(doc, titulo, secoes, total) {
+  const subtitulo = papelAtual === "missionario" && escopoRelatorio === "minhas"
+    ? `${membroAtual ? membroAtual.nome : "Missionário"} — apenas as minhas ruas`
+    : "Evangelismo — todas as ruas";
+
+  let y = cabecalhoRelatorio(doc, titulo, subtitulo, total, true);
+
+  secoes.forEach(secao => {
+    if (secao.titulo) {
+      // Um título de seção sozinho no rodapé fica órfão: se não couber ele e ao
+      // menos uma pessoa embaixo, a seção já começa na página seguinte.
+      if (y + 18 > REL.base) y = novaPaginaRelatorio(doc, titulo, subtitulo);
+      y = tituloSecao(doc, secao.titulo, secao.pessoas.length, y);
+    }
+    secao.pessoas.forEach((p, i) => {
+      const linhas = detalhesDaPessoa(doc, p);
+      const altura = 5.2 + linhas.length * 3.9 + 2.4;
+      if (y + altura > REL.base) {
+        y = novaPaginaRelatorio(doc, titulo, subtitulo);
+        if (secao.titulo) y = tituloSecao(doc, secao.titulo + " (continuação)", secao.pessoas.length, y);
+      }
+      y = desenharPessoa(doc, p, i + 1, linhas, y);
+    });
+    y += 3;
+  });
+
+  rodapesRelatorio(doc);
+}
+
+function cabecalhoRelatorio(doc, titulo, subtitulo, total, primeira) {
+  doc.setTextColor(28, 33, 40);
+  doc.setFont("helvetica", "bold").setFontSize(primeira ? 17 : 11);
+  doc.text(titulo, REL.esq, REL.topo);
+
+  doc.setFont("helvetica", "normal").setFontSize(9).setTextColor(107, 101, 88);
+  if (primeira) {
+    doc.text(subtitulo, REL.esq, REL.topo + 6.5);
+    doc.text(`${total} pessoa(s) · gerado em ${hojeFormatado()}`, REL.esq, REL.topo + 11);
+    doc.setDrawColor(226, 222, 212).setLineWidth(0.4);
+    doc.line(REL.esq, REL.topo + 14.5, REL.dir, REL.topo + 14.5);
+    return REL.topo + 21;
+  }
+  doc.text(subtitulo, REL.dir, REL.topo, { align: "right" });
+  doc.setDrawColor(226, 222, 212).setLineWidth(0.3);
+  doc.line(REL.esq, REL.topo + 3, REL.dir, REL.topo + 3);
+  return REL.topo + 9;
+}
+
+function novaPaginaRelatorio(doc, titulo, subtitulo) {
+  doc.addPage();
+  return cabecalhoRelatorio(doc, titulo, subtitulo, 0, false);
+}
+
+function tituloSecao(doc, texto, quantos, y) {
+  doc.setFillColor(231, 239, 233);
+  doc.rect(REL.esq, y - 4.6, REL.dir - REL.esq, 7.2, "F");
+  doc.setFont("helvetica", "bold").setFontSize(10.5).setTextColor(58, 90, 73);
+  doc.text(texto, REL.esq + 2.5, y);
+  doc.setFont("helvetica", "normal").setFontSize(8.5).setTextColor(107, 101, 88);
+  doc.text(`${quantos} pessoa(s)`, REL.dir - 2.5, y, { align: "right" });
+  return y + 8.5;
+}
+
+/** As duas ou três linhas de detalhe, já quebradas na largura da página. */
+function detalhesDaPessoa(doc, p) {
+  const endereco = [p.rua, p.numero && p.numero !== SEM_NUMERO ? "nº " + p.numero : "", p.bairro]
+    .filter(Boolean).join(", ");
+  const linha1 = [
+    p.telefone || "sem telefone",
+    p.idade && p.idade !== IDADE_NAO_INFORMADA ? p.idade + " anos" : "",
+    endereco
+  ].filter(Boolean).join("  ·  ");
+
+  const linha2 = [
+    p.pontoReferencia && p.pontoReferencia !== SEM_REFERENCIA ? "Ref.: " + p.pontoReferencia : "",
+    "Visitado: " + (p.visitadoEm ? "sim (" + p.visitadoEm + ")" : "não"),
+    "Estudo bíblico: " + (p.estudoEm ? "sim (" + p.estudoEm + ")" : "não"),
+    "Cadastro: " + (p.dataCadastro || "—")
+  ].filter(Boolean).join("  ·  ");
+
+  doc.setFont("helvetica", "normal").setFontSize(8.4);
+  const largura = REL.dir - REL.esq - 6;
+  return [].concat(doc.splitTextToSize(linha1, largura), doc.splitTextToSize(linha2, largura));
+}
+
+function desenharPessoa(doc, p, indice, linhas, y) {
+  doc.setFont("helvetica", "bold").setFontSize(10.4).setTextColor(28, 33, 40);
+  doc.text(`${indice}. ${p.nome || "Sem nome"}`, REL.esq, y, { maxWidth: REL.dir - REL.esq - 16 });
+
+  if (p.classe) {
+    const cor = COR_CLASSE[p.classe];
+    doc.setFillColor(cor[0], cor[1], cor[2]);
+    doc.roundedRect(REL.dir - 9, y - 4, 9, 5.6, 1.4, 1.4, "F");
+    // Amarelo com letra branca fica ilegível; só o C usa tinta escura.
+    if (p.classe === "C") doc.setTextColor(28, 33, 40); else doc.setTextColor(255, 255, 255);
+    doc.setFontSize(8.6).text(p.classe, REL.dir - 4.5, y, { align: "center" });
+  }
+
+  doc.setFont("helvetica", "normal").setFontSize(8.4).setTextColor(90, 86, 78);
+  let yy = y + 4.2;
+  linhas.forEach(l => { doc.text(l, REL.esq + 4, yy); yy += 3.9; });
+
+  doc.setDrawColor(240, 237, 229).setLineWidth(0.2);
+  doc.line(REL.esq, yy - 1.4, REL.dir, yy - 1.4);
+  return yy + 1.2;
+}
+
+function rodapesRelatorio(doc) {
+  const total = doc.getNumberOfPages();
+  for (let i = 1; i <= total; i++) {
+    doc.setPage(i);
+    doc.setFont("helvetica", "normal").setFontSize(7.6).setTextColor(154, 149, 138);
+    doc.text("Gerenciador de Evangelismo", REL.esq, REL.alt - 8);
+    doc.text(`${i} / ${total}`, REL.dir, REL.alt - 8, { align: "right" });
+  }
+}
+
+
+// ---------------------------------------------------------------------------
 // Equipe do evento
 // ---------------------------------------------------------------------------
 // O administrador cadastra aqui quem vai trabalhar com ele. Cada pessoa recebe
@@ -3387,6 +3748,9 @@ function participantesDoDiretorio() {
   return cacheParticipantes.filter(p => minhas.has(p.rua || ""));
 }
 
+const RUAS_DE_PRIMEIRA = 12;
+let restanteDoDiretorio = null;
+
 function montarDiretorio() {
   const termo = normalizarTexto($("busca-diretorio").value.trim());
   const container = $("diretorio-lista");
@@ -3437,6 +3801,7 @@ function montarDiretorio() {
         <tr class="${novato ? "dir-novato" : ""}">
           <td data-label="Telefone">${esc(p.telefone)}</td>
           <td data-label="Nome">${esc(p.nome)}${novato ? '<span class="dir-badge-novo">novo</span>' : ""}</td>
+          <td data-label="Classe">${botoesClasse(p)}</td>
           <td data-label="Visitado(a)?">${botaoMarca(p, "visitado")}</td>
           <td data-label="Estudo bíblico?">${botaoMarca(p, "estudo")}</td>
           <td data-label="Idade">${esc(p.idade)}</td>
@@ -3456,14 +3821,28 @@ function montarDiretorio() {
         </div>
         <div class="dir-table-wrap">
           <table>
-            <thead><tr><th>Telefone</th><th>Nome</th><th>Visitado(a)?</th><th>Estudo bíblico?</th><th>Idade</th><th>Data</th><th>Número</th><th>Bairro</th><th>Ponto de referência</th></tr></thead>
+            <thead><tr><th>Telefone</th><th>Nome</th><th>Classe</th><th>Visitado(a)?</th><th>Estudo bíblico?</th><th>Idade</th><th>Data</th><th>Número</th><th>Bairro</th><th>Ponto de referência</th></tr></thead>
             <tbody>${linhas}</tbody>
           </table>
         </div>
       </div>`;
-  }).join("");
+  }).filter(Boolean);
 
-  container.innerHTML = blocos.trim() ? blocos : `<p style="color:var(--muted)">Nenhum resultado encontrado.</p>`;
+  // A base real tem 872 pessoas e cada uma carrega cinco botões: são 4.360
+  // elementos, mais de um segundo de montagem num desktop e o triplo num
+  // celular. Desenhamos as primeiras ruas na hora e emendamos o resto no quadro
+  // seguinte — a tela responde de imediato e a lista completa chega sozinha.
+  clearTimeout(restanteDoDiretorio);
+  if (!blocos.length) {
+    container.innerHTML = `<p style="color:var(--muted)">Nenhum resultado encontrado.</p>`;
+    return;
+  }
+  container.innerHTML = blocos.slice(0, RUAS_DE_PRIMEIRA).join("");
+  if (blocos.length > RUAS_DE_PRIMEIRA) {
+    restanteDoDiretorio = setTimeout(() => {
+      container.insertAdjacentHTML("beforeend", blocos.slice(RUAS_DE_PRIMEIRA).join(""));
+    }, 0);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -3509,6 +3888,40 @@ function atualizarBotaoMarca(id, campo) {
  *  estranha: escapamos antes de usar o valor num seletor CSS. */
 function cssEscape(valor) {
   return window.CSS && CSS.escape ? CSS.escape(valor) : String(valor).replace(/["\\]/g, "\\$&");
+}
+
+const CLASSES = ["A", "B", "C"];
+
+function botoesClasse(p) {
+  return `<div class="classes">${CLASSES.map(letra => `
+    <button type="button" class="cl ${letra.toLowerCase()} ${p.classe === letra ? "on" : ""}"
+            data-classe="${letra}" data-id="${esc(p.id)}"
+            title="Classe ${letra}${p.classe === letra ? " — toque de novo para tirar" : ""}">${letra}</button>`).join("")}</div>`;
+}
+
+function atualizarBotoesClasse(id) {
+  const p = cacheParticipantes.find(x => x.id === id);
+  if (!p) return;
+  document.querySelectorAll(`#diretorio-lista .cl[data-id="${cssEscape(id)}"]`).forEach(b => {
+    b.classList.toggle("on", p.classe === b.dataset.classe);
+  });
+}
+
+/** Tocar na classe que já está marcada tira a classificação — não há um quarto
+ *  botão de "nenhuma", que só ocuparia espaço em 872 linhas. */
+function definirClasse(id, letra) {
+  const p = cacheParticipantes.find(x => x.id === id);
+  if (!p) return;
+
+  const nova = p.classe === letra ? "" : letra;
+  const anterior = { classe: p.classe };
+  p.classe = nova;
+
+  filaAcompanhamento = filaAcompanhamento.filter(it => !(it.id === id && it.campo === "classe"));
+  filaAcompanhamento.push({ id, campo: "classe", valor: nova, anterior, nome: p.nome });
+
+  atualizarBotoesClasse(id);
+  agendarEnvioAcompanhamento();
 }
 
 let filaAcompanhamento = [];
@@ -3570,7 +3983,8 @@ async function enviarAcompanhamento() {
     lote.forEach(it => {
       const p = cacheParticipantes.find(x => x.id === it.id);
       if (p) Object.assign(p, it.anterior);
-      atualizarBotaoMarca(it.id, it.campo);
+      if (it.campo === "classe") atualizarBotoesClasse(it.id);
+      else atualizarBotaoMarca(it.id, it.campo);
     });
     showToast(e.message || "Não consegui salvar a marcação. Confira a internet e tente de novo.");
     console.error(e);
@@ -3600,14 +4014,17 @@ function enviarRuaWhatsApp(rua) {
     if (p.pontoReferencia && p.pontoReferencia !== SEM_REFERENCIA) partes.push(`(${p.pontoReferencia})`);
     // Quem recebe a lista precisa saber onde já passaram, senão bate duas vezes
     // na mesma porta e deixa a casa do lado sem visita.
-    const marcas = `visita: ${p.visitadoEm ? "sim" : "não"} | estudo: ${p.estudoEm ? "sim" : "não"}`;
-    return `${i + 1}. ${partes.join(" — ")} — ${p.telefone || "sem telefone"}\n    _${marcas}_`;
+    const marcas = `visita: ${p.visitadoEm ? "sim" : "não"} | estudo: ${p.estudoEm ? "sim" : "não"}` +
+                   (p.classe ? ` | classe ${p.classe}` : "");
+    return `${i + 1}. ${partes.join(" — ")}${p.classe ? ` *[${p.classe}]*` : ""} — ${p.telefone || "sem telefone"}\n    _${marcas}_`;
   }).join("\n");
 
   const visitados = pessoas.filter(p => p.visitadoEm).length;
   const estudos = pessoas.filter(p => p.estudoEm).length;
+  const porClasse = CLASSES.map(l => `${l}: ${pessoas.filter(p => p.classe === l).length}`).join(" · ");
   const resumo = `${pessoas.length} pessoa${pessoas.length === 1 ? "" : "s"} cadastrada${pessoas.length === 1 ? "" : "s"} · ` +
-                 `${visitados} já visitada${visitados === 1 ? "" : "s"} · ${estudos} com estudo bíblico`;
+                 `${visitados} já visitada${visitados === 1 ? "" : "s"} · ${estudos} com estudo bíblico\n` +
+                 `Classificação — ${porClasse}`;
 
   const texto = `*Rua: ${rua}*\n${resumo}\n\n${linhas}\n\n_Lista gerada pelo Gerenciador de Evangelismo_`;
   window.open("https://wa.me/?text=" + encodeURIComponent(texto), "_blank");
@@ -3805,13 +4222,27 @@ $("btn-reiniciar-numero").addEventListener("click", reiniciarSorteioNumero);
 $("btn-sortear-nome").addEventListener("click", sortearNome);
 $("btn-reiniciar-nome").addEventListener("click", reiniciarSorteioNome);
 
-$("busca-diretorio").addEventListener("input", montarDiretorio);
+// Sem a espera, cada tecla digitada remontaria o diretório inteiro.
+let buscaDiretorioAgendada = null;
+$("busca-diretorio").addEventListener("input", () => {
+  clearTimeout(buscaDiretorioAgendada);
+  buscaDiretorioAgendada = setTimeout(montarDiretorio, 220);
+});
 $("diretorio-lista").addEventListener("click", e => {
   const btn = e.target.closest(".dir-wa-btn");
   if (btn) { enviarRuaWhatsApp(btn.dataset.rua); return; }
 
   const marca = e.target.closest("button[data-marca]");
-  if (marca) alternarMarca(marca.dataset.id, marca.dataset.marca);
+  if (marca) { alternarMarca(marca.dataset.id, marca.dataset.marca); return; }
+
+  const classe = e.target.closest("button[data-classe]");
+  if (classe) definirClasse(classe.dataset.id, classe.dataset.classe);
+});
+
+$("rel-btn-minhas").addEventListener("click", () => trocarEscopoRelatorio("minhas"));
+$("rel-btn-todas").addEventListener("click", () => trocarEscopoRelatorio("todas"));
+document.querySelectorAll(".cartao-rel").forEach(b => {
+  b.addEventListener("click", () => gerarRelatorio(b.dataset.rel));
 });
 
 $("subtab-btn-minhas").addEventListener("click", () => trocarEscopoDiretorio("minhas"));
