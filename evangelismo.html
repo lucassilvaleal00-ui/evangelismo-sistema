@@ -218,6 +218,35 @@
   .btn-engrenagem { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
                     font-size: 1.15rem; line-height: 1; padding: 9px 12px; flex: 0 0 auto; }
   .btn-engrenagem:hover { border-color: var(--accent); }
+  a.btn-engrenagem { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+
+  /* Link do manual em PDF — aparece na tela de conexão e no ⚙️ */
+  .linha-manual { display: flex; align-items: flex-start; gap: 10px; text-decoration: none; margin-top: 18px;
+                  border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; color: inherit; text-align: left; }
+  .linha-manual:hover { border-color: var(--accent); }
+  .linha-manual .ic { font-size: 1.25rem; line-height: 1.2; flex: 0 0 auto; }
+  .linha-manual strong { display: block; font-size: 0.9rem; color: var(--accent); }
+  .linha-manual .mini { display: block; font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+
+  /* Zona de perigo — apagar os dados da planilha */
+  .zona-perigo { border: 1px solid #e3bdb5; background: #fbf1ef; border-radius: 12px; padding: 14px; margin-top: 22px; }
+  .zona-perigo h4 { margin: 0 0 4px; font-size: 0.9rem; color: var(--warn); }
+  .zona-perigo p { font-size: 0.82rem; color: var(--muted); margin: 0 0 12px; }
+  .btn-perigo { background: var(--warn); color: #fff; border: 1px solid var(--warn); border-radius: 10px;
+                padding: 11px 14px; font-size: 0.9rem; font-weight: 700; width: 100%; }
+  .btn-perigo:disabled { opacity: 0.5; }
+  .alerta-forte { background: #f6e8e5; border: 1px solid #e3bdb5; border-left: 4px solid var(--warn);
+                  border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; }
+  .alerta-forte strong { display: block; color: var(--warn); font-size: 0.92rem; margin-bottom: 4px; }
+  .alerta-forte p { font-size: 0.83rem; color: var(--ink); margin: 0; }
+  .lista-limpeza { list-style: none; padding: 0; margin: 0 0 14px; font-size: 0.84rem; }
+  .lista-limpeza li { display: flex; gap: 8px; padding: 4px 0; align-items: flex-start; }
+  .lista-limpeza .marc { flex: 0 0 auto; font-weight: 700; }
+  .lista-limpeza .apaga .marc { color: var(--warn); }
+  .lista-limpeza .fica .marc { color: var(--accent); }
+  .caixa-equipe { display: flex; gap: 9px; align-items: flex-start; font-size: 0.84rem;
+                  border: 1px solid var(--line); border-radius: 10px; padding: 11px 13px; margin-bottom: 14px; }
+  .caixa-equipe input { width: auto; margin: 2px 0 0; }
   .acoes-topo { display: flex; gap: 6px; flex: 0 0 auto; flex-wrap: wrap; justify-content: flex-end; }
   .passo-instalar { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px; font-size: 0.88rem; }
   .passo-instalar .n { flex: 0 0 auto; width: 20px; height: 20px; border-radius: 50%; background: var(--accent-soft);
@@ -362,6 +391,14 @@
   <input id="input-sheet-url" type="text" placeholder="https://script.google.com/macros/s/.../exec" />
   <button class="btn-primary" style="width:100%" id="btn-conectar">Conectar</button>
   <p class="sub" id="erro-conexao" style="color:var(--warn); min-height:1em"></p>
+
+  <a class="linha-manual" id="link-manual-conectar" href="#" target="_blank" rel="noopener">
+    <span class="ic">📘</span>
+    <span>
+      <strong>Manual passo a passo (PDF)</strong>
+      <span class="mini">Todas as telas do Google, uma por uma, com print de cada botão.</span>
+    </span>
+  </a>
 </div>
 
 <div id="tela-erro" class="center-screen" style="display:none">
@@ -384,6 +421,8 @@
         </div>
       </div>
       <div class="acoes-topo">
+        <a class="btn-engrenagem" id="btn-manual" href="#" target="_blank" rel="noopener"
+           title="Manual da planilha em PDF" aria-label="Manual da planilha em PDF">📘</a>
         <button class="btn-engrenagem" id="btn-instalar" title="Instalar como app no celular" aria-label="Instalar no celular">📲</button>
         <button class="btn-engrenagem" id="btn-config" title="Trocar a planilha conectada" aria-label="Configurações da planilha">⚙️</button>
         <button class="btn-engrenagem" id="btn-sair" title="Sair desta conta" aria-label="Sair">🚪</button>
@@ -912,6 +951,13 @@
     <label>Planilha conectada agora</label>
     <p class="url-atual" id="config-url-atual">—</p>
 
+    <div class="passo-zero" id="config-passo-zero">
+      <strong>Precisa de uma planilha nova?</strong>
+      <p>Gere outra a partir do modelo — ela já vem com o programa dentro e nasce vazia, pronta para um evangelismo novo. A atual não é tocada.</p>
+      <a class="btn-primary" id="btn-gerar-planilha-config" href="#" target="_blank" rel="noopener">📄 Gerar outra planilha</a>
+      <p class="mini">Depois de gerá-la, implante o Web App nela e cole a URL aqui embaixo.</p>
+    </div>
+
     <label for="config-nova-url">URL do Web App da planilha nova</label>
     <input id="config-nova-url" type="text" placeholder="https://script.google.com/macros/s/.../exec" />
     <p class="sub" style="margin:-4px 0 0">A planilha nova precisa ter o código do Apps Script instalado e implantado. O passo a passo está no guia que você recebeu.</p>
@@ -920,6 +966,68 @@
     <div class="modal-acoes">
       <button class="btn-ghost btn-sm" id="config-cancelar">Cancelar</button>
       <button class="btn-primary btn-sm" id="config-confirmar">Conectar a nova planilha</button>
+    </div>
+
+    <a class="linha-manual" id="link-manual-config" href="#" target="_blank" rel="noopener">
+      <span class="ic">📘</span>
+      <span>
+        <strong>Manual passo a passo (PDF)</strong>
+        <span class="mini">Como gerar a planilha, implantar o Web App e pegar a URL.</span>
+      </span>
+    </a>
+
+    <div class="zona-perigo">
+      <h4>⚠️ Limpar a planilha</h4>
+      <p>Apaga os dados desta mesma planilha para começar um evangelismo novo — sem precisar de outra planilha nem de outra implantação. <strong>Não tem como desfazer.</strong></p>
+      <button class="btn-perigo" id="btn-abrir-limpar">🧹 Limpar a planilha</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-fundo" id="modal-limpar">
+  <div class="modal">
+    <h3>Limpar a planilha</h3>
+
+    <div class="alerta-forte">
+      <strong>⚠️ Atenção: os dados serão perdidos para sempre.</strong>
+      <p>Não existe botão de desfazer, nem lixeira, nem como recuperar depois. Se você ainda pode precisar destes cadastros, <strong>faça uma cópia de segurança antes</strong> — leva dez segundos e é o botão logo abaixo.</p>
+    </div>
+
+    <label>Vai ser apagado desta planilha</label>
+    <ul class="lista-limpeza">
+      <li class="apaga"><span class="marc">✕</span><span id="limpar-conta-cadastros">Todos os participantes cadastrados</span></li>
+      <li class="apaga"><span class="marc">✕</span><span>Todas as presenças já registradas</span></li>
+      <li class="apaga"><span class="marc">✕</span><span>Todos os pontos, depósitos e retiradas</span></li>
+      <li class="apaga"><span class="marc">✕</span><span>Todo o histórico de sorteios</span></li>
+      <li class="apaga"><span class="marc">✕</span><span>Visitas, estudos bíblicos e classificações A, B e C</span></li>
+    </ul>
+
+    <label>Continua de pé</label>
+    <ul class="lista-limpeza">
+      <li class="fica"><span class="marc">✓</span><span>O seu link de acesso e o seu PIN de administrador</span></li>
+      <li class="fica"><span class="marc">✓</span><span>A conexão com esta planilha — nada precisa ser reconectado</span></li>
+      <li class="fica"><span class="marc">✓</span><span id="limpar-texto-equipe">Os missionários e recepcionistas, com os mesmos tokens</span></li>
+    </ul>
+
+    <div class="passo-zero">
+      <strong>Antes de apagar: faça uma cópia de segurança</strong>
+      <p>O Google cria uma cópia da planilha inteira, com todos os dados de agora, guardada no seu Drive. Ela não fica conectada ao sistema — é só o seu backup.</p>
+      <a class="btn-primary" id="btn-backup-planilha" href="#" target="_blank" rel="noopener">📄 Fazer uma cópia de segurança</a>
+      <p class="mini">Abre o Google numa aba nova. <a id="link-abrir-planilha" href="#" target="_blank" rel="noopener">Abrir a planilha atual</a> para conferir o que tem nela.</p>
+    </div>
+
+    <label class="caixa-equipe" for="limpar-equipe">
+      <input type="checkbox" id="limpar-equipe" />
+      <span>Apagar também os <strong>missionários e recepcionistas</strong> cadastrados. Se você marcar isto, os tokens de 6 dígitos deles deixam de funcionar e a equipe precisa ser cadastrada de novo.</span>
+    </label>
+
+    <label for="limpar-confirmacao">Para confirmar, digite <strong>LIMPAR</strong> no campo abaixo</label>
+    <input id="limpar-confirmacao" type="text" autocomplete="off" placeholder="LIMPAR" />
+    <p class="sub" id="limpar-erro" style="color:var(--warn); min-height:1em; margin:8px 0 0"></p>
+
+    <div class="modal-acoes">
+      <button class="btn-ghost btn-sm" id="limpar-cancelar">Cancelar</button>
+      <button class="btn-perigo btn-sm" id="limpar-confirmar" style="width:auto" disabled>Apagar tudo</button>
     </div>
   </div>
 </div>
@@ -958,7 +1066,13 @@ const PLANILHA_MODELO = "11u6Cjlcmsw889Y3IRZ6NweYXLW4jBrZ1mjzF_MPi4fg";
 
 const SUPABASE_URL = "https://jmogaclwihvsouqixozo.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imptb2dhY2x3aWh2c291cWl4b3pvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyNTk5MzIsImV4cCI6MjEwMjgzNTkzMn0.kzvlfUAzRrEeb2UGlEViCOVh0vIMuHVkR_EzUSjn87U";
-const VERSAO_BACKEND_ESPERADA = 9;
+const VERSAO_BACKEND_ESPERADA = 10;
+
+// Manual em PDF de como conectar a planilha. O arquivo fica ao lado deste
+// index, no mesmo lugar onde o sistema está publicado. Se um dia ele mudar de
+// nome ou de endereço, é só trocar aqui — os dois botões que oferecem o
+// download (tela de conexão e painel) leem daqui.
+const URL_MANUAL = "Manual - Como conectar a planilha.pdf";
 // =======================
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false } });
@@ -972,6 +1086,7 @@ let presencasHojeIds = new Set();
 let presencasHojeNomes = new Set();
 let cacheSaldos = {};
 let codigoConsulta = null;
+let infoDaPlanilha = null;   // { planilhaId, planilhaNome, planilhaUrl } da planilha conectada
 let idPontuacaoAtual = null;
 let selecionadosCartao = new Set();
 
@@ -1432,6 +1547,134 @@ function abrirConfig() {
   setTimeout(() => $("config-nova-url").focus(), 50);
 }
 
+// ---------------------------------------------------------------------------
+// Limpar a planilha (dentro do ⚙️)
+// ---------------------------------------------------------------------------
+// Trocar de planilha guarda a antiga como backup; limpar reaproveita a mesma.
+// É o caminho mais simples para um evangelismo novo — o link, o PIN e a
+// implantação continuam os mesmos —, mas é destrutivo e sem volta. Por isso a
+// tela mostra o que some, o que fica, oferece a cópia de segurança e ainda
+// exige a palavra LIMPAR digitada. O backend confere essa palavra de novo.
+
+/** Descobre id/nome/URL da planilha conectada. Só pede uma vez por planilha. */
+async function garantirInfoPlanilha() {
+  if (!infoDaPlanilha) {
+    const info = await appsScriptFetch("infoPlanilha");
+    infoDaPlanilha = info || {};
+    if (info && info.codigoConsulta) codigoConsulta = info.codigoConsulta;
+  }
+  return infoDaPlanilha;
+}
+
+async function abrirLimparPlanilha() {
+  $("modal-config").classList.remove("show");
+
+  $("limpar-confirmacao").value = "";
+  $("limpar-equipe").checked = false;
+  $("limpar-erro").textContent = "";
+  $("limpar-confirmar").disabled = true;
+  $("limpar-confirmar").textContent = "Apagar tudo";
+  atualizarTextoEquipe();
+
+  const total = cacheParticipantes.length;
+  $("limpar-conta-cadastros").textContent =
+    total ? `Os ${total} participantes cadastrados` : "Todos os participantes cadastrados";
+
+  // Enquanto o Google não responde, os atalhos de backup ficam desligados —
+  // melhor um botão apagado do que um link que não leva a lugar nenhum.
+  const backup = $("btn-backup-planilha"), abrir = $("link-abrir-planilha");
+  backup.style.pointerEvents = "none";
+  backup.style.opacity = "0.55";
+  $("modal-limpar").classList.add("show");
+
+  try {
+    const info = await garantirInfoPlanilha();
+    if (info && info.planilhaId) {
+      backup.href = `https://docs.google.com/spreadsheets/d/${info.planilhaId}/copy`;
+      abrir.href = info.planilhaUrl || `https://docs.google.com/spreadsheets/d/${info.planilhaId}/edit`;
+      backup.style.pointerEvents = "";
+      backup.style.opacity = "";
+    } else {
+      throw new Error("sem id");
+    }
+  } catch (e) {
+    // Planilha antiga (backend anterior à v10) não devolve o id. A limpeza
+    // continua possível; só o atalho de cópia não dá para montar.
+    backup.textContent = "📄 Abrir a planilha para copiar";
+    backup.href = "https://drive.google.com";
+    backup.style.pointerEvents = "";
+    backup.style.opacity = "";
+    $("limpar-erro").textContent =
+      "Não consegui montar o atalho da cópia. Abra a planilha no Google Drive e use Arquivo > Fazer uma cópia antes de continuar.";
+  }
+}
+
+function atualizarTextoEquipe() {
+  const apaga = $("limpar-equipe").checked;
+  const linha = $("limpar-texto-equipe");
+  linha.textContent = apaga
+    ? "A equipe também será apagada (você marcou a opção abaixo)"
+    : "Os missionários e recepcionistas, com os mesmos tokens";
+  linha.parentElement.classList.toggle("fica", !apaga);
+  linha.parentElement.classList.toggle("apaga", apaga);
+  linha.previousElementSibling.textContent = apaga ? "✕" : "✓";
+}
+
+async function limparPlanilhaAgora() {
+  const palavra = $("limpar-confirmacao").value.trim().toUpperCase();
+  const erroBox = $("limpar-erro");
+  erroBox.textContent = "";
+
+  if (palavra !== "LIMPAR") {
+    erroBox.textContent = "Digite LIMPAR para confirmar.";
+    return;
+  }
+
+  const apagarEquipe = $("limpar-equipe").checked;
+  const botao = $("limpar-confirmar");
+  botao.disabled = true;
+  botao.textContent = "Apagando...";
+
+  try {
+    const r = await appsScriptFetch("limparPlanilha", { confirmacao: "LIMPAR", apagarEquipe });
+
+    // Tudo que estava em memória virou lixo no mesmo instante.
+    cacheParticipantes = [];
+    cacheSaldos = {};
+    cacheResumoPresencas = null;
+    erroResumoPresencas = null;
+    presencasHojeIds = new Set();
+    presencasHojeNomes = new Set();
+    selecionadosCartao.clear();
+    filaEnvio = [];
+    salvarFila();
+    filaAcompanhamento = [];
+    idEmEdicao = null;
+    idSelecionadoPresenca = null;
+    paginaCadastro = 1;
+    paginaPontuacao = 1;
+    restanteDoDiretorio = null;
+    limparFormularioCadastro();
+
+    await carregarParticipantes();
+    $("modal-limpar").classList.remove("show");
+    trocarAba("cadastro");
+
+    const n = (r && r.total) || 0;
+    showToast(n ? `Planilha limpa. ${n} registro(s) apagado(s).` : "Planilha limpa — ela já estava vazia.");
+  } catch (e) {
+    console.error(e);
+    // Planilha com o código antigo não conhece a limpeza. O erro cru
+    // ("Ação desconhecida") não diz nada a quem está do outro lado.
+    erroBox.textContent = /desconhecida/i.test(e.message || "")
+      ? "O código da sua planilha ainda não tem essa função. Atualize-o pelo Apps Script (o aviso no topo do painel ensina como) e tente de novo. Nada foi apagado."
+      : (e.message || "Não consegui limpar a planilha. Tente de novo.");
+  } finally {
+    botao.disabled = $("limpar-confirmacao").value.trim().toUpperCase() !== "LIMPAR";
+    botao.textContent = "Apagar tudo";
+  }
+}
+
 async function trocarDePlanilha() {
   const url = $("config-nova-url").value.trim();
   const erroBox = $("config-erro");
@@ -1461,6 +1704,7 @@ async function trocarDePlanilha() {
 
     // Zera tudo que era da planilha antiga
     codigoConsulta = null;
+    infoDaPlanilha = null;
     cacheSaldos = {};
     cacheResumoPresencas = null;
     erroResumoPresencas = null;
@@ -1854,8 +2098,7 @@ async function abrirPontuacao() {
   renderizarPontuacao();
   try {
     if (!codigoConsulta) {
-      const info = await appsScriptFetch("infoPlanilha");
-      codigoConsulta = info && info.codigoConsulta;
+      await garantirInfoPlanilha();
     }
     cacheSaldos = await appsScriptFetch("listarSaldos") || {};
   } catch (e) {
@@ -2617,8 +2860,7 @@ function atualizarInfoLote() {
 async function gerarPdfDeCartoes(pessoas, nomeBase, botao) {
   await garantirLibsCartao();
   if (!codigoConsulta) {
-    const info = await appsScriptFetch("infoPlanilha");
-    codigoConsulta = info && info.codigoConsulta;
+    await garantirInfoPlanilha();
   }
   const { jsPDF } = window.jspdf;
 
@@ -2912,10 +3154,7 @@ async function abrirLeitor() {
     // Lista fresca: alguém pode ter sido cadastrado agora, na mesa ao lado.
     await carregarParticipantes();
     await carregarPresencasHoje();
-    if (!codigoConsulta) {
-      const info = await appsScriptFetch("infoPlanilha").catch(() => null);
-      codigoConsulta = info && info.codigoConsulta;
-    }
+    if (!codigoConsulta) await garantirInfoPlanilha().catch(() => null);
   } catch (e) {
     console.error(e);
   }
@@ -4148,12 +4387,15 @@ $("modal-lote").addEventListener("click", e => { if (e.target.id === "modal-lote
 
 // O "/copy" no fim do endereço faz o Google abrir direto a janela de cópia, em
 // vez de abrir a planilha do modelo para leitura.
-if (PLANILHA_MODELO) {
-  $("btn-gerar-planilha").href =
-    `https://docs.google.com/spreadsheets/d/${PLANILHA_MODELO}/copy`;
-} else {
-  $("btn-gerar-planilha").closest(".passo-zero").style.display = "none";
-}
+// Dois lugares oferecem a mesma cópia: a tela de conectar (primeira instalação)
+// e o ⚙️ (começar um evangelismo novo, guardando o anterior como backup).
+["btn-gerar-planilha", "btn-gerar-planilha-config"].forEach(id => {
+  if (PLANILHA_MODELO) {
+    $(id).href = `https://docs.google.com/spreadsheets/d/${PLANILHA_MODELO}/copy`;
+  } else {
+    $(id).closest(".passo-zero").style.display = "none";
+  }
+});
 
 $("btn-conectar").addEventListener("click", conectarPlanilha);
 $("input-sheet-url").addEventListener("keydown", e => { if (e.key === "Enter") conectarPlanilha(); });
@@ -4193,6 +4435,36 @@ $("config-cancelar").addEventListener("click", () => $("modal-config").classList
 $("config-confirmar").addEventListener("click", trocarDePlanilha);
 $("config-nova-url").addEventListener("keydown", e => { if (e.key === "Enter") trocarDePlanilha(); });
 $("modal-config").addEventListener("click", e => { if (e.target.id === "modal-config") $("modal-config").classList.remove("show"); });
+
+// --- Limpar a planilha ---
+// O botão de apagar só acorda quando a palavra estiver escrita certa: não dá
+// para perder tudo com um toque desatento em cima do "Apagar tudo".
+$("btn-abrir-limpar").addEventListener("click", abrirLimparPlanilha);
+$("limpar-equipe").addEventListener("change", atualizarTextoEquipe);
+$("limpar-confirmacao").addEventListener("input", () => {
+  $("limpar-confirmar").disabled = $("limpar-confirmacao").value.trim().toUpperCase() !== "LIMPAR";
+});
+$("limpar-confirmacao").addEventListener("keydown", e => {
+  if (e.key === "Enter" && !$("limpar-confirmar").disabled) limparPlanilhaAgora();
+});
+$("limpar-cancelar").addEventListener("click", () => $("modal-limpar").classList.remove("show"));
+$("limpar-confirmar").addEventListener("click", limparPlanilhaAgora);
+$("modal-limpar").addEventListener("click", e => { if (e.target.id === "modal-limpar") $("modal-limpar").classList.remove("show"); });
+
+// --- Manual em PDF ---
+// Três portas para o mesmo arquivo: a tela de conexão (quem ainda está
+// instalando), o ⚙️ (quem vai trocar de planilha) e o 📘 do painel (quem
+// precisa da instrução no meio do evento).
+["link-manual-conectar", "link-manual-config", "btn-manual"].forEach(id => {
+  const el = $(id);
+  if (!el) return;
+  if (URL_MANUAL) {
+    el.href = URL_MANUAL;
+    el.setAttribute("download", "");
+  } else {
+    el.style.display = "none";
+  }
+});
 
 $("btn-salvar-cadastro").addEventListener("click", salvarCadastro);
 $("btn-cancelar-edicao").addEventListener("click", limparFormularioCadastro);
