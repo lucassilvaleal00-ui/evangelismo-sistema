@@ -1,0 +1,61 @@
+ATUALIZAÇÃO v8 — colaboradores, estado, "Livro impresso"
+========================================================
+
+>>> IMPORTANTE: esta versão inclui TUDO o que estava na anterior (estado e
+>>> colaboradores). Se a caixinha dos colaboradores não apareceu para você,
+>>> era o navegador ainda servindo os arquivos velhos — veja abaixo.
+
+O que instalar
+--------------
+Substitua no repositório, nos mesmos lugares:
+
+    sw.js                (na raiz)
+    js/db.js
+    js/app.js
+    js/referencias.js
+    js/fichamento.js
+
+O js/config-app.js NÃO está aqui de propósito (guarda as suas chaves do
+Supabase).
+
+Como conferir se chegou
+-----------------------
+Abra o app → engrenagem (⚙) → role até o fim. Agora há um quadro "Versão".
+Ele precisa dizer **v8**. Se disser v6 ou v7, aperte o botão
+"↻ Buscar atualização agora" logo abaixo: ele joga fora os arquivos guardados
+e recarrega o app do zero. Faça isso no celular também.
+
+Por que a caixinha não tinha aparecido
+--------------------------------------
+O app guarda os arquivos no aparelho para funcionar sem internet. Quando você
+publica uma correção, a página que já está aberta continua usando o que estava
+guardado — só o SEGUNDO recarregamento pegava a novidade. A partir desta
+versão isso foi resolvido: assim que o app percebe que saiu versão nova, ele
+se recarrega sozinho, uma vez. E, se ainda assim algo travar, existe o botão
+manual em Configurações.
+
+O que mudou nesta rodada
+------------------------
+1. TIPO DE OBRA NO FICHAMENTO: sai "Livro impresso." mesmo quando o campo
+   "Impressa ou digital" não foi preenchido. Antes saía só "Livro." O tipo
+   nunca mais aparece sozinho. Obras novas já nascem marcadas como impressas
+   (basta trocar para "Digital" quando for o caso).
+
+2. VERSÃO VISÍVEL + BOTÃO DE ATUALIZAR em Configurações (descritos acima).
+
+E o que já vinha da entrega anterior
+------------------------------------
+3. ESTADO: campo "Estado (sigla, ex.: SP)" logo depois de "Cidade da editora".
+   Preenchido, a referência sai "Belém, PA"; vazio, sai só "Belém".
+
+4. COLABORADORES: caixinha "Esta obra tem colaboradores" logo abaixo do bloco
+   dos autores. Marcada, abre a lista de nomes.
+     Turabian (nota) ......... com Arthur Spalding
+     Turabian (bibliografia) . Com Arthur Spalding.
+     ABNT .................... Colaboração de Arthur Spalding.
+   Quatro ou mais: o primeiro seguido de "et al.".
+
+Banco de dados no aparelho
+--------------------------
+O IndexedDB sobe da versão 2 para a 3 sozinho na primeira abertura. A migração
+só acrescenta os campos novos vazios nas obras que já existem. Nada é apagado.
