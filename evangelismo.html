@@ -54,6 +54,7 @@
     --veu: rgba(20, 32, 46, 0.45);
     --faixa-roleta: rgba(255, 255, 255, 0.62);
     --grafico: #1a5fb4; --grafico-neutro: #aab6c6;
+    --barra: #b6c4d6; --barra-trilho: #e6ecf4;
   }
 
   html[data-tema="escuro"] {
@@ -73,6 +74,7 @@
     --veu: rgba(0, 0, 0, 0.62);
     --faixa-roleta: rgba(90, 162, 255, 0.16);
     --grafico: #5aa2ff; --grafico-neutro: #5e6b7c;
+    --barra: #3a4654; --barra-trilho: #171d26;
   }
 
   html { color-scheme: light; }
@@ -127,6 +129,28 @@
     padding: 4px 2px; margin: -4px -2px;
   }
   .tabs::-webkit-scrollbar { display: none; }
+
+  /* Barra de rolagem desenhada à mão.
+     A nativa não servia: o Chrome novo usa barra flutuante, que some quando
+     ninguém está rolando — justamente quando ela precisaria aparecer, para
+     avisar que existem abas fora da vista. Esta fica sempre visível no
+     computador e some no celular, onde a faixa é arrastada com o dedo. */
+  .tabs-barra {
+    display: none; height: 8px; margin-top: 8px; border-radius: 4px;
+    background: var(--barra-trilho); position: relative; cursor: pointer;
+  }
+  .tabs-faixa.rolavel .tabs-barra { display: block; }
+  .tabs-polegar {
+    position: absolute; top: 0; bottom: 0; left: 0; min-width: 28px;
+    border-radius: 4px; background: var(--barra); transition: background 0.15s;
+  }
+  .tabs-barra:hover .tabs-polegar, .tabs-polegar.arrastando { background: var(--accent); }
+
+  /* No toque não existe ponteiro para arrastar o polegar, e a barra só
+     ocuparia espaço numa tela que já é estreita. */
+  @media (hover: none), (pointer: coarse) {
+    .tabs-faixa.rolavel .tabs-barra { display: none; }
+  }
   .tab-btn {
     background: var(--card); border: 1px solid var(--line); color: var(--muted);
     flex: 0 0 auto; white-space: nowrap; scroll-margin: 40px;
@@ -326,6 +350,12 @@
   .lista-limpeza .marc { flex: 0 0 auto; font-weight: 700; }
   .lista-limpeza .apaga .marc { color: var(--warn); }
   .lista-limpeza .fica .marc { color: var(--accent); }
+  .caixa-backup { display: flex; gap: 10px; align-items: flex-start; font-size: 0.84rem;
+                  border: 1.5px solid var(--accent); background: var(--accent-soft);
+                  border-radius: 11px; padding: 12px 14px; margin-bottom: 14px; }
+  .caixa-backup input { width: auto; margin: 3px 0 0; flex: 0 0 auto; }
+  .caixa-backup strong { display: block; color: var(--accent); margin-bottom: 2px; }
+  .caixa-backup .mini { display: block; font-size: 0.78rem; color: var(--muted); }
   .caixa-equipe { display: flex; gap: 9px; align-items: flex-start; font-size: 0.84rem;
                   border: 1px solid var(--line); border-radius: 10px; padding: 11px 13px; margin-bottom: 14px; }
   .caixa-equipe input { width: auto; margin: 2px 0 0; }
@@ -593,7 +623,8 @@
       <button class="tab-btn" data-tab="diretorio">🗺️ Diretório de ruas</button>
       <button class="tab-btn" data-tab="relatorios">📄 Relatórios</button>
       <button class="tab-btn" data-tab="equipe">👥 Equipe</button>
-    </div>
+      </div>
+      <div class="tabs-barra" id="tabs-barra"><div class="tabs-polegar" id="tabs-polegar"></div></div>
     </div>
 
     <!-- CADASTRO -->
@@ -1162,7 +1193,9 @@
     <div class="bloco-config">
       <label>Banco de dados</label>
       <p class="url-atual" id="config-url-atual">—</p>
-      <p class="sub" style="margin:6px 0 0">Conectado e mantido pelo suporte. Para mudar de banco de dados, fale com o Lucas Leal — (63) 99940-4515.</p>
+      <p class="sub" style="margin:6px 0 10px">Conectado e mantido pelo suporte. Para mudar de banco de dados, fale com o Lucas Leal — (63) 99940-4515.</p>
+      <button class="btn-ghost btn-sm" id="btn-backup-excel" style="width:100%">📊 Baixar backup em Excel</button>
+      <p class="sub" id="backup-excel-aviso" style="min-height:1em; margin:6px 0 0"></p>
     </div>
 
     <div class="zona-perigo">
@@ -1205,9 +1238,19 @@
     <div class="passo-zero">
       <strong>Antes de apagar: faça uma cópia de segurança</strong>
       <p>O Google cria uma cópia da planilha inteira, com todos os dados de agora, guardada no seu Drive. Ela não fica conectada ao sistema — é só o seu backup.</p>
-      <a class="btn-primary" id="btn-backup-planilha" href="#" target="_blank" rel="noopener">📄 Fazer uma cópia de segurança</a>
+      <a class="btn-primary" id="btn-backup-planilha" href="#" target="_blank" rel="noopener">📄 Fazer uma cópia no Google Drive</a>
       <p class="mini">Abre o Google numa aba nova. <a id="link-abrir-planilha" href="#" target="_blank" rel="noopener">Abrir a planilha atual</a> para conferir o que tem nela.</p>
     </div>
+
+    <!-- Vem marcado: a pergunta é se a pessoa quer DISPENSAR o backup, não se
+         quer fazê-lo. Quem está nesta tela está prestes a perder tudo. -->
+    <label class="caixa-backup" for="limpar-backup">
+      <input type="checkbox" id="limpar-backup" checked />
+      <span>
+        <strong>📊 Baixar um backup em Excel antes de apagar</strong>
+        <span class="mini">Uma planilha do Excel vai para o seu celular ou computador, com uma aba para cada coisa: cadastros, presenças, pontos, sorteio e equipe. Se o download falhar, nada é apagado.</span>
+      </span>
+    </label>
 
     <label class="caixa-equipe" for="limpar-equipe">
       <input type="checkbox" id="limpar-equipe" />
@@ -1220,7 +1263,7 @@
 
     <div class="modal-acoes">
       <button class="btn-ghost btn-sm" id="limpar-cancelar">Cancelar</button>
-      <button class="btn-perigo btn-sm" id="limpar-confirmar" style="width:auto" disabled>Apagar tudo</button>
+      <button class="btn-perigo btn-sm" id="limpar-confirmar" style="width:auto" disabled>Baixar e apagar</button>
     </div>
   </div>
 </div>
@@ -1249,7 +1292,7 @@
 // ==== CONFIGURAÇÃO ====
 const SUPABASE_URL = "https://jmogaclwihvsouqixozo.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imptb2dhY2x3aWh2c291cWl4b3pvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyNTk5MzIsImV4cCI6MjEwMjgzNTkzMn0.kzvlfUAzRrEeb2UGlEViCOVh0vIMuHVkR_EzUSjn87U";
-const VERSAO_BACKEND_ESPERADA = 11;
+const VERSAO_BACKEND_ESPERADA = 12;
 
 // Para onde vai o "Falar com o suporte" da tela de espera.
 const WHATSAPP_SUPORTE = "5563999404515";
@@ -1826,6 +1869,83 @@ async function salvarNomeDoEvento() {
 }
 
 // ---------------------------------------------------------------------------
+// Backup em Excel
+// ---------------------------------------------------------------------------
+// O arquivo é montado AQUI, no navegador, não na planilha. Gerar o .xlsx no
+// Apps Script exigiria permissão de Drive, e mandá-lo por e-mail exigiria
+// permissão de envio — as duas permissões que esta planilha nunca pediu, e que
+// deixariam a tela de autorização do Google bem mais assustadora.
+//
+// Sai uma aba por tabela, com os dados em bruto, como estão na planilha. É um
+// retrato, não um relatório: para relatório bonito já existem os seis PDFs.
+
+let libXlsx = null;
+function garantirXlsx() {
+  if (!libXlsx) {
+    libXlsx = (window.XLSX
+      ? Promise.resolve()
+      : carregarScript("https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js")
+    ).catch(e => { libXlsx = null; throw e; });
+  }
+  return libXlsx;
+}
+
+/** Tira acento e caractere proibido do nome do arquivo. */
+function nomeDeArquivo(texto) {
+  return String(texto)
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[\\/:*?"<>|]/g, "-")
+    .replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Monta o .xlsx a partir do que a planilha devolveu e dispara o download.
+ * Devolve um resumo do que entrou, para a mensagem na tela.
+ */
+function montarArquivoExcel(dados, XLSX) {
+  const livro = XLSX.utils.book_new();
+  const resumo = [];
+
+  dados.abas.forEach(aba => {
+    const matriz = [aba.cabecalho].concat(aba.linhas);
+    const folha = XLSX.utils.aoa_to_sheet(matriz);
+
+    // Largura das colunas pelo conteúdo: sem isto tudo sai em 8 caracteres e
+    // quem abre o arquivo vê uma parede de "####".
+    folha["!cols"] = aba.cabecalho.map((titulo, i) => {
+      const maior = matriz.reduce((m, l) => Math.max(m, String(l[i] === undefined ? "" : l[i]).length), 0);
+      return { wch: Math.min(Math.max(maior + 2, titulo.length + 2), 42) };
+    });
+
+    // Filtro no cabeçalho: no Excel ele vira aquelas setinhas de ordenar e
+    // filtrar. Congelar a primeira linha seria melhor ainda, mas a versão
+    // livre da biblioteca ignora isso na hora de gravar.
+    folha["!autofilter"] = { ref: XLSX.utils.encode_range({
+      s: { r: 0, c: 0 }, e: { r: matriz.length - 1, c: aba.cabecalho.length - 1 } }) };
+
+    XLSX.utils.book_append_sheet(livro, folha, aba.titulo);
+    resumo.push(`${aba.linhas.length} ${aba.titulo.toLowerCase()}`);
+  });
+
+  const carimbo = (dados.geradoEm || "").replace(/[/:]/g, "-").replace(" ", " ");
+  const arquivo = nomeDeArquivo(`${dados.nomeEvento || "Evangelismo"} - backup ${carimbo}`) + ".xlsx";
+  XLSX.writeFile(livro, arquivo);
+
+  return { arquivo, resumo, total: dados.abas.reduce((n, a) => n + a.linhas.length, 0) };
+}
+
+/**
+ * Baixa o backup completo. Lança se algo der errado — quem chama decide o que
+ * fazer, e na limpeza isso é o que impede de apagar sem ter salvado.
+ */
+async function baixarBackupExcel() {
+  await garantirXlsx();
+  const dados = await appsScriptFetch("exportarTudo");
+  if (!dados || !dados.abas) throw new Error("A planilha não devolveu os dados do backup.");
+  return montarArquivoExcel(dados, window.XLSX);
+}
+
+// ---------------------------------------------------------------------------
 // Limpar a planilha (dentro do ⚙️)
 // ---------------------------------------------------------------------------
 // Zera o banco para um evangelismo novo, mantendo o mesmo acesso, o mesmo PIN
@@ -1849,10 +1969,11 @@ async function abrirLimparPlanilha() {
 
   $("limpar-confirmacao").value = "";
   $("limpar-equipe").checked = false;
+  $("limpar-backup").checked = true;
   $("limpar-erro").textContent = "";
   $("limpar-confirmar").disabled = true;
-  $("limpar-confirmar").textContent = "Apagar tudo";
   atualizarTextoEquipe();
+  atualizarBotaoApagar();
 
   const total = cacheParticipantes.length;
   $("limpar-conta-cadastros").textContent =
@@ -1898,6 +2019,11 @@ function atualizarTextoEquipe() {
   linha.previousElementSibling.textContent = apaga ? "✕" : "✓";
 }
 
+/** O botão diz o que vai acontecer, que muda conforme a caixa do backup. */
+function atualizarBotaoApagar() {
+  $("limpar-confirmar").textContent = $("limpar-backup").checked ? "Baixar e apagar" : "Apagar tudo";
+}
+
 async function limparPlanilhaAgora() {
   const palavra = $("limpar-confirmacao").value.trim().toUpperCase();
   const erroBox = $("limpar-erro");
@@ -1909,8 +2035,27 @@ async function limparPlanilhaAgora() {
   }
 
   const apagarEquipe = $("limpar-equipe").checked;
+  const querBackup = $("limpar-backup").checked;
   const botao = $("limpar-confirmar");
   botao.disabled = true;
+
+  // O backup vem ANTES e, se falhar, a limpeza nem é tentada. Era o erro mais
+  // caro possível: apagar tudo e descobrir depois que o arquivo não baixou.
+  let backup = null;
+  if (querBackup) {
+    botao.textContent = "Baixando o backup...";
+    try {
+      backup = await baixarBackupExcel();
+    } catch (e) {
+      console.error(e);
+      erroBox.textContent = (e.message || "Não consegui gerar o backup.") +
+        " Nada foi apagado. Tente de novo ou desmarque o backup para apagar mesmo assim.";
+      botao.disabled = false;
+      atualizarBotaoApagar();
+      return;
+    }
+  }
+
   botao.textContent = "Apagando...";
 
   try {
@@ -1939,7 +2084,8 @@ async function limparPlanilhaAgora() {
     trocarAba("cadastro");
 
     const n = (r && r.total) || 0;
-    showToast(n ? `Planilha limpa. ${n} registro(s) apagado(s).` : "Planilha limpa — ela já estava vazia.");
+    const aviso = n ? `Planilha limpa. ${n} registro(s) apagado(s).` : "Planilha limpa — ela já estava vazia.";
+    showToast(backup ? `${aviso} Backup salvo em ${backup.arquivo}.` : aviso);
   } catch (e) {
     console.error(e);
     // Planilha com o código antigo não conhece a limpeza. O erro cru
@@ -1949,7 +2095,7 @@ async function limparPlanilhaAgora() {
       : (e.message || "Não consegui limpar a planilha. Tente de novo.");
   } finally {
     botao.disabled = $("limpar-confirmacao").value.trim().toUpperCase() !== "LIMPAR";
-    botao.textContent = "Apagar tudo";
+    atualizarBotaoApagar();
   }
 }
 
@@ -1989,13 +2135,70 @@ function trazerAbaParaVista(nome) {
   }
 }
 
-/** Liga e desliga as sombras das pontas conforme sobra conteúdo para o lado. */
+/**
+ * Liga e desliga as sombras das pontas e redesenha a barra de rolagem,
+ * conforme sobra conteúdo para o lado.
+ */
 function atualizarSombrasDasAbas() {
   const faixa = $("tabs"), moldura = $("tabs-faixa");
   if (!faixa || !moldura) return;
   const sobra = faixa.scrollWidth - faixa.clientWidth;
   moldura.classList.toggle("tem-antes", faixa.scrollLeft > 4);
   moldura.classList.toggle("tem-depois", sobra > 4 && faixa.scrollLeft < sobra - 4);
+  moldura.classList.toggle("rolavel", sobra > 4);
+
+  const trilho = $("tabs-barra"), polegar = $("tabs-polegar");
+  if (!trilho || !polegar || sobra <= 4) return;
+  const largura = trilho.clientWidth;
+  // O polegar ocupa a mesma fração que a parte visível ocupa do total.
+  const tamanho = Math.max(28, largura * (faixa.clientWidth / faixa.scrollWidth));
+  polegar.style.width = tamanho + "px";
+  polegar.style.transform = `translateX(${((largura - tamanho) * (faixa.scrollLeft / sobra)).toFixed(1)}px)`;
+}
+
+/**
+ * Arrastar o polegar e clicar no trilho. Feito na mão porque a barra nativa
+ * do Chrome novo é flutuante: ela some quando ninguém está rolando, que é
+ * exatamente quando ela precisaria estar à vista.
+ */
+function ligarBarraDasAbas() {
+  const faixa = $("tabs"), trilho = $("tabs-barra"), polegar = $("tabs-polegar");
+  if (!faixa || !trilho || !polegar) return;
+
+  let arrastando = false, xInicial = 0, rolagemInicial = 0;
+
+  const mover = x => {
+    const sobra = faixa.scrollWidth - faixa.clientWidth;
+    const curso = trilho.clientWidth - polegar.offsetWidth;
+    if (curso <= 0) return;
+    faixa.scrollLeft = rolagemInicial + ((x - xInicial) / curso) * sobra;
+  };
+
+  polegar.addEventListener("pointerdown", e => {
+    arrastando = true;
+    xInicial = e.clientX;
+    rolagemInicial = faixa.scrollLeft;
+    polegar.classList.add("arrastando");
+    polegar.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+  polegar.addEventListener("pointermove", e => { if (arrastando) mover(e.clientX); });
+  const soltar = e => {
+    if (!arrastando) return;
+    arrastando = false;
+    polegar.classList.remove("arrastando");
+    try { polegar.releasePointerCapture(e.pointerId); } catch (err) { /* já solto */ }
+  };
+  polegar.addEventListener("pointerup", soltar);
+  polegar.addEventListener("pointercancel", soltar);
+
+  // Clique no trilho: leva o centro do polegar para onde a pessoa clicou.
+  trilho.addEventListener("pointerdown", e => {
+    if (e.target === polegar) return;
+    const caixa = trilho.getBoundingClientRect();
+    const fracao = (e.clientX - caixa.left - polegar.offsetWidth / 2) / (caixa.width - polegar.offsetWidth);
+    faixa.scrollLeft = Math.max(0, Math.min(1, fracao)) * (faixa.scrollWidth - faixa.clientWidth);
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -4865,6 +5068,7 @@ $("modal-lote").addEventListener("click", e => { if (e.target.id === "modal-lote
 // --- Barra de abas ---
 $("tabs").addEventListener("scroll", atualizarSombrasDasAbas, { passive: true });
 window.addEventListener("resize", atualizarSombrasDasAbas);
+ligarBarraDasAbas();
 atualizarSombrasDasAbas();
 
 $("btn-conferir-banco").addEventListener("click", conferirBancoDeDados);
@@ -4904,6 +5108,27 @@ $("modal-instalar").addEventListener("click", e => { if (e.target.id === "modal-
 
 $("btn-config").addEventListener("click", abrirConfig);
 $("config-cancelar").addEventListener("click", () => $("modal-config").classList.remove("show"));
+$("btn-backup-excel").addEventListener("click", async () => {
+  const botao = $("btn-backup-excel"), aviso = $("backup-excel-aviso");
+  aviso.style.color = "var(--muted)";
+  aviso.textContent = "";
+  botao.disabled = true;
+  botao.textContent = "Montando a planilha...";
+  try {
+    const b = await baixarBackupExcel();
+    aviso.textContent = `Pronto: ${b.arquivo} · ${b.resumo.join(" · ")}.`;
+  } catch (e) {
+    console.error(e);
+    aviso.style.color = "var(--warn)";
+    aviso.textContent = /desconhecida/i.test(e.message || "")
+      ? "O programa do seu banco de dados ainda não tem essa função. Fale com o suporte."
+      : (e.message || "Não consegui gerar o backup.");
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "📊 Baixar backup em Excel";
+  }
+});
+
 $("config-nome-salvar").addEventListener("click", salvarNomeDoEvento);
 $("config-nome-evento").addEventListener("keydown", e => { if (e.key === "Enter") salvarNomeDoEvento(); });
 document.querySelectorAll(".opcao-tema").forEach(b =>
@@ -4915,6 +5140,7 @@ $("modal-config").addEventListener("click", e => { if (e.target.id === "modal-co
 // para perder tudo com um toque desatento em cima do "Apagar tudo".
 $("btn-abrir-limpar").addEventListener("click", abrirLimparPlanilha);
 $("limpar-equipe").addEventListener("change", atualizarTextoEquipe);
+$("limpar-backup").addEventListener("change", atualizarBotaoApagar);
 $("limpar-confirmacao").addEventListener("input", () => {
   $("limpar-confirmar").disabled = $("limpar-confirmacao").value.trim().toUpperCase() !== "LIMPAR";
 });
