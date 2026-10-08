@@ -531,6 +531,105 @@ async function salvarBancoDeDados() {
   carregarUsuarios();
 }
 
+// ---------------------------------------------------------------------------
+// Backup em Excel do banco de um cliente
+// ---------------------------------------------------------------------------
+// O painel fala direto com a planilha do cliente, usando a URL e o token que
+// já estão aqui — os mesmos que o sistema dele usa. Serve para você guardar
+// uma cópia antes de renovar, de limpar ou de encerrar um acesso, sem ter que
+// pedir nada a ninguém.
+//
+// O arquivo é montado aqui no navegador. A planilha só devolve as linhas.
+
+function carregarScript(url) {
+  return new Promise((ok, erro) => {
+    const s = document.createElement("script");
+    s.src = url;
+    s.onload = () => ok();
+    s.onerror = () => erro(new Error("Não consegui carregar o componente da planilha. Verifique sua internet."));
+    document.head.appendChild(s);
+  });
+}
+
+let libXlsx = null;
+function garantirXlsx() {
+  if (!libXlsx) {
+    libXlsx = (window.XLSX
+      ? Promise.resolve()
+      : carregarScript("https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js")
+    ).catch(e => { libXlsx = null; throw e; });
+  }
+  return libXlsx;
+}
+
+function nomeDeArquivo(texto) {
+  return String(texto)
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[\\/:*?"<>|]/g, "-")
+    .replace(/\s+/g, " ").trim();
+}
+
+async function baixarBackupDoCliente(id, botao) {
+  const u = usuarios.find(x => x.id === id);
+  if (!u) return;
+  const url = (u.webapp_url || "").trim();
+  if (!url) { showToast("Este cliente ainda não tem banco de dados conectado."); return; }
+
+  const textoOriginal = botao.textContent;
+  botao.disabled = true;
+  botao.textContent = "Baixando...";
+
+  try {
+    await garantirXlsx();
+
+    // Sem cabeçalho Content-Type, igual ao sistema: mantém a requisição
+    // "simples" e evita o preflight de CORS, que o Apps Script não responde.
+    const res = await fetch(url, {
+      method: "POST",
+      body: JSON.stringify({ action: "exportarTudo", token: u.token })
+    });
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.erro || "A planilha recusou o pedido.");
+
+    const d = json.dados;
+    if (!d || !d.abas) throw new Error("A planilha não devolveu os dados do backup.");
+
+    const livro = XLSX.utils.book_new();
+    d.abas.forEach(aba => {
+      const matriz = [aba.cabecalho].concat(aba.linhas);
+      const folha = XLSX.utils.aoa_to_sheet(matriz);
+      folha["!cols"] = aba.cabecalho.map((titulo, i) => {
+        const maior = matriz.reduce((m, l) => Math.max(m, String(l[i] === undefined ? "" : l[i]).length), 0);
+        return { wch: Math.min(Math.max(maior + 2, titulo.length + 2), 42) };
+      });
+
+      // Filtro no cabeçalho: no Excel ele vira aquelas setinhas de ordenar e
+      // filtrar. Congelar a primeira linha seria melhor ainda, mas a versão
+      // livre da biblioteca ignora isso na hora de gravar.
+      folha["!autofilter"] = { ref: XLSX.utils.encode_range({
+        s: { r: 0, c: 0 }, e: { r: matriz.length - 1, c: aba.cabecalho.length - 1 } }) };
+      XLSX.utils.book_append_sheet(livro, folha, aba.titulo);
+    });
+
+    const carimbo = (d.geradoEm || "").replace(/[/:]/g, "-");
+    // O nome do arquivo leva o nome do CLIENTE, não o do evangelismo: aqui
+    // você vai ter backups de várias igrejas na mesma pasta de downloads.
+    const arquivo = nomeDeArquivo(`${u.nome} - backup ${carimbo}`) + ".xlsx";
+    XLSX.writeFile(livro, arquivo);
+
+    const total = d.abas.reduce((n, a) => n + a.linhas.length, 0);
+    showToast(`Backup de ${u.nome}: ${total} registro(s) em ${arquivo}.`);
+  } catch (e) {
+    console.error(e);
+    showToast(/desconhecida/i.test(e.message || "")
+      ? `A planilha de ${u.nome} está numa versão antiga do código. Atualize-a para poder baixar o backup.`
+      : "Não consegui baixar o backup: " + (e.message || "erro desconhecido"));
+  } finally {
+    botao.disabled = false;
+    botao.textContent = textoOriginal;
+  }
+}
+
 async function desconectarPlanilha(id) {
   const u = usuarios.find(x => x.id === id);
   if (!u) return;
@@ -653,6 +752,7 @@ function renderizarUsuarios() {
             <button class="btn-ghost btn-sm" data-acao="novopin" data-id="${esc(u.id)}">Novo PIN</button>
             <button class="btn-ghost btn-sm" data-acao="status" data-id="${esc(u.id)}">${u.status === "ativo" ? "Inativar" : "Ativar"}</button>
             <button class="${conectada ? "btn-ghost" : "btn-primary"} btn-sm" data-acao="banco" data-id="${esc(u.id)}">${conectada ? "Trocar banco" : "➕ Conectar banco"}</button>
+            ${conectada ? `<button class="btn-ghost btn-sm" data-acao="backup" data-id="${esc(u.id)}">📊 Backup</button>` : ""}
             ${conectada ? `<button class="btn-ghost btn-sm" data-acao="desconectar" data-id="${esc(u.id)}">Desconectar planilha</button>` : ""}
             <button class="btn-danger btn-sm" data-acao="novolink" data-id="${esc(u.id)}">Novo link</button>
             <button class="btn-danger btn-sm" data-acao="excluir" data-id="${esc(u.id)}">Excluir</button>
@@ -685,6 +785,7 @@ $("tbody-usuarios").addEventListener("click", e => {
     case "renovar":     abrirModalRenovar(id); break;
     case "status":      alternarStatus(id); break;
     case "banco":       abrirModalBanco(id); break;
+    case "backup":      baixarBackupDoCliente(id, btn); break;
     case "desconectar": desconectarPlanilha(id); break;
     case "novolink":    regenerarLink(id); break;
     case "excluir":     excluirUsuario(id); break;
