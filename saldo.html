@@ -4,12 +4,34 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Meu saldo de pontos</title>
+<meta name="theme-color" content="#1a5fb4">
+<script>
+  // Esta página é aberta pelo participante, que nunca passou pelo painel e
+  // portanto não escolheu tema nenhum. Então ela segue o aparelho dele.
+  (function () {
+    try {
+      var escuro = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.setAttribute("data-tema", escuro ? "escuro" : "claro");
+      if (escuro) {
+        var m = document.querySelector('meta[name="theme-color"]');
+        if (m) m.setAttribute("content", "#0b0f14");
+      }
+    } catch (e) { document.documentElement.setAttribute("data-tema", "claro"); }
+  })();
+</script>
 <style>
-  :root {
-    --ink: #1c2128; --paper: #f7f5f0; --card: #ffffff; --line: #e2ded4;
-    --accent: #3a5a49; --accent-soft: #e7efe9; --warn: #a24030; --muted: #6b6558;
-    --azul: #0b3d91; --azul-claro: #1f6fd0;
+  :root, html[data-tema="claro"] {
+    --ink: #14202e; --paper: #f4f7fb; --card: #ffffff; --line: #d9e2ee;
+    --muted: #5a6b80; --warn: #b3261e;
+    --azul: #14498c; --azul-claro: #2f7de0;
   }
+  html[data-tema="escuro"] {
+    --ink: #eef3f8; --paper: #0b0f14; --card: #161c24; --line: #2b333f;
+    --muted: #9aa8ba; --warn: #ff7a6e;
+    --azul: #12345f; --azul-claro: #2b6fc9;
+  }
+  html { color-scheme: light; }
+  html[data-tema="escuro"] { color-scheme: dark; }
   * { box-sizing: border-box; }
   body {
     margin: 0; min-height: 100vh; background: var(--paper); color: var(--ink);
@@ -21,7 +43,7 @@
   .cartao {
     background: linear-gradient(135deg, var(--azul) 0%, var(--azul-claro) 100%);
     color: white; border-radius: 16px; padding: 26px 22px; text-align: center;
-    box-shadow: 0 10px 30px rgba(11,61,145,0.22);
+    box-shadow: 0 10px 30px rgba(11,61,145,0.26);
   }
   .cartao .rotulo { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.8; }
   .cartao .nome { font-size: 1.15rem; font-weight: 700; margin: 4px 0 18px; word-break: break-word; }
@@ -38,7 +60,7 @@
 <body>
 
 <div class="wrap">
-  <div class="eyebrow">Cartão do Participante</div>
+  <div class="eyebrow" id="titulo-evento">Cartão do Participante</div>
 
   <div id="carregando" class="aviso">Consultando seu saldo...</div>
 
@@ -55,7 +77,7 @@
       <div class="unidade" id="unidade">pontos</div>
     </div>
 
-    <div class="rodape">Gerenciador de Evangelismo</div>
+    <div class="rodape" id="rodape-nome">Gerenciador de Evangelismo</div>
   </div>
 </div>
 
@@ -123,6 +145,10 @@ async function consultar() {
 }
 
 function render(d) {
+  // O nome do evangelismo é escolhido pelo cliente e vem junto com o saldo.
+  // Sem ele (planilha ainda não atualizada), fica o texto antigo.
+  if (d.nomeEvento) $("titulo-evento").textContent = d.nomeEvento;
+  $("rodape-nome").textContent = d.nomeEvento || "Gerenciador de Evangelismo";
   $("nome").textContent = d.nome || "Participante";
   $("saldo").textContent = d.saldo;
   $("unidade").textContent = Math.abs(d.saldo) === 1 ? "ponto" : "pontos";

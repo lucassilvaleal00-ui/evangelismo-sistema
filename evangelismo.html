@@ -9,7 +9,20 @@
      o navegador usa o endereço da página aberta — que carrega o token do usuário.
      Com um start_url fixo, o atalho abriria sem token e cairia em "link inválido". -->
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#3a5a49">
+<meta name="theme-color" content="#1a5fb4">
+<script>
+  // Antes de qualquer pintura, senão a tela pisca em branco e só depois
+  // escurece. É a única coisa que roda fora do script principal.
+  (function () {
+    var t = "claro";
+    try { t = localStorage.getItem("evang_tema") || "claro"; } catch (e) { /* sem armazenamento */ }
+    document.documentElement.setAttribute("data-tema", t === "escuro" ? "escuro" : "claro");
+    if (t === "escuro") {
+      var m = document.querySelector('meta[name="theme-color"]');
+      if (m) m.setAttribute("content", "#0b0f14");
+    }
+  })();
+</script>
 <link rel="icon" href="icone-192.png">
 <link rel="apple-touch-icon" href="icone-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -17,10 +30,53 @@
 <meta name="apple-mobile-web-app-title" content="Evangelismo">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  :root {
-    --ink: #1c2128; --paper: #f7f5f0; --card: #ffffff; --line: #e2ded4;
-    --accent: #3a5a49; --accent-soft: #e7efe9; --warn: #a24030; --warn-soft: #f6e8e5; --muted: #6b6558;
+  /* ---------------------------------------------------------------------
+     TEMAS
+     Tudo que tem cor lê daqui. O tema vive no atributo data-tema do <html>,
+     escolhido nas configurações e lembrado neste aparelho. Os dois conjuntos
+     passaram no teste de contraste (texto, destaque, alerta e as três classes)
+     e na simulação de daltonismo.
+     --------------------------------------------------------------------- */
+  :root, html[data-tema="claro"] {
+    --ink: #14202e; --paper: #f4f7fb; --card: #ffffff; --line: #d9e2ee;
+    --muted: #5a6b80;
+    --accent: #1a5fb4; --accent-forte: #14498c; --accent-soft: #e7f0fc;
+    --botao: #1a5fb4; --botao-forte: #14498c; --sobre-accent: #ffffff;
+    --warn: #b3261e; --warn-soft: #fdecea; --warn-linha: #f0c4c0;
+    --campo: #ffffff; --campo-off: #eef2f7;
+    --neutro-soft: #eef2f7;
+    --classe-a: #1f7a4d; --classe-b: #1a5fb4; --classe-c: #9a6a00;
+    --sobre-classe: #ffffff;
+    --zap: #1a7f37; --zap-forte: #146c2e;
+    --cartao-chip: #e7f0fc; --cartao-chip-ink: #14498c;
+    --ouro: #8a6d1f; --ouro-soft: #fbf0d6;
+    --sombra: 0 1px 2px rgba(20, 32, 46, 0.06);
+    --veu: rgba(20, 32, 46, 0.45);
+    --faixa-roleta: rgba(255, 255, 255, 0.62);
+    --grafico: #1a5fb4; --grafico-neutro: #aab6c6;
   }
+
+  html[data-tema="escuro"] {
+    --ink: #eef3f8; --paper: #0b0f14; --card: #161c24; --line: #2b333f;
+    --muted: #9aa8ba;
+    --accent: #5aa2ff; --accent-forte: #7db6ff; --accent-soft: #15283f;
+    --botao: #1f6feb; --botao-forte: #2f7ef5; --sobre-accent: #ffffff;
+    --warn: #ff7a6e; --warn-soft: #3a1a17; --warn-linha: #5c2a24;
+    --campo: #0f151c; --campo-off: #1b222c;
+    --neutro-soft: #1b222c;
+    --classe-a: #4fcd8c; --classe-b: #5aa2ff; --classe-c: #e3b547;
+    --sobre-classe: #061427;
+    --zap: #3fb950; --zap-forte: #56d364;
+    --cartao-chip: #15283f; --cartao-chip-ink: #9ec8ff;
+    --ouro: #e3b547; --ouro-soft: #332a12;
+    --sombra: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --veu: rgba(0, 0, 0, 0.62);
+    --faixa-roleta: rgba(90, 162, 255, 0.16);
+    --grafico: #5aa2ff; --grafico-neutro: #5e6b7c;
+  }
+
+  html { color-scheme: light; }
+  html[data-tema="escuro"] { color-scheme: dark; }
   * { box-sizing: border-box; }
   body { margin: 0; font-family: "Segoe UI", system-ui, -apple-system, sans-serif; background: var(--paper); color: var(--ink); min-height: 100vh; }
   .wrap { max-width: 960px; margin: 0 auto; padding: 32px 20px 80px; }
@@ -39,22 +95,48 @@
   p.sub { color: var(--muted); font-size: 0.88rem; }
   button { font-family: inherit; cursor: pointer; border: none; border-radius: 8px; padding: 10px 16px; font-size: 0.9rem; font-weight: 600; }
   button:disabled { opacity: 0.55; cursor: default; }
-  .btn-primary { background: var(--accent); color: white; }
-  .btn-primary:hover:not(:disabled) { background: #2e4a3c; }
+  .btn-primary { background: var(--botao); color: var(--sobre-accent); }
+  .btn-primary:hover:not(:disabled) { background: var(--botao-forte); }
   .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
   .btn-sm { padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; }
-  input, select { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 0.9rem; margin-bottom: 12px; font-family: inherit; background: white; }
+  input, select { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 0.9rem; margin-bottom: 12px; font-family: inherit; background: var(--campo); color: var(--ink); }
   label { display: block; font-size: 0.75rem; color: var(--muted); margin-bottom: 4px; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 22px; margin-bottom: 20px; }
   .card h2 { font-size: 1rem; margin: 0 0 16px; }
   .card-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
   .card-head h2 { margin: 0; }
   .card-head .btn-sm { margin-left: auto; }
-  .tabs { display: flex; gap: 6px; margin-bottom: 22px; flex-wrap: wrap; }
-  .tab-btn { background: var(--card); border: 1px solid var(--line); color: var(--muted); }
-  .tab-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+  /* ---- Barra de abas ----
+     Antes as abas quebravam em três linhas no celular e o painel parecia
+     bagunçado. Agora é uma faixa só, que rola para o lado. As sombras nas
+     pontas avisam que há mais aba fora da vista — sem elas, quem não arrasta
+     por hábito nunca descobre o resto. */
+  .tabs-faixa { position: relative; margin-bottom: 22px; }
+  .tabs-faixa::before, .tabs-faixa::after {
+    content: ""; position: absolute; top: 0; bottom: 0; width: 34px; pointer-events: none;
+    z-index: 2; opacity: 0; transition: opacity 0.18s;
+  }
+  .tabs-faixa::before { left: 0; background: linear-gradient(to right, var(--paper), transparent); }
+  .tabs-faixa::after  { right: 0; background: linear-gradient(to left, var(--paper), transparent); }
+  .tabs-faixa.tem-antes::before { opacity: 1; }
+  .tabs-faixa.tem-depois::after { opacity: 1; }
+
+  .tabs {
+    display: flex; gap: 6px; overflow-x: auto; scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    padding: 4px 2px; margin: -4px -2px;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    background: var(--card); border: 1px solid var(--line); color: var(--muted);
+    flex: 0 0 auto; white-space: nowrap; scroll-margin: 40px;
+  }
+  .tab-btn.active {
+    background: var(--botao); color: var(--sobre-accent); border-color: var(--botao);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--botao) 34%, transparent);
+  }
   .subtab-btn { background: var(--card); border: 1px solid var(--line); color: var(--muted); cursor: pointer; border-radius: 8px; padding: 10px 16px; font-size: 0.9rem; font-weight: 600; font-family: inherit; }
-  .subtab-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+  .subtab-btn.active { background: var(--botao); color: var(--sobre-accent); border-color: var(--botao); }
   .subtabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
 
   /* Função de quem está usando o painel (aparece ao lado do plano) */
@@ -80,10 +162,10 @@
      (separação 22,1 em protanopia, contraste 5,7 e 6,3 com a letra branca), e
      a palavra escrita dentro do botão mantém a informação legível para quem
      não distingue as duas. */
-  .marca { border: 1px solid #a24030; background: #a24030; color: #ffffff; border-radius: 999px;
+  .marca { border: 1px solid var(--warn); background: var(--warn); color: var(--sobre-classe); border-radius: 999px;
            padding: 3px 12px; font-size: 0.78rem; font-weight: 700; cursor: pointer; font-family: inherit;
            white-space: nowrap; min-width: 62px; }
-  .marca.sim { background: #2166bd; border-color: #2166bd; color: #ffffff; }
+  .marca.sim { background: var(--classe-b); border-color: var(--classe-b); color: var(--sobre-classe); }
   .marca:disabled { cursor: default; opacity: 0.75; }
   .marca.salvando { opacity: 0.5; }
 
@@ -96,9 +178,9 @@
   .cl { width: 26px; height: 26px; border-radius: 7px; border: 1px solid var(--line); background: var(--card);
         color: var(--muted); font-weight: 800; font-size: 0.78rem; cursor: pointer; font-family: inherit; padding: 0; }
   .cl:hover { border-color: var(--muted); }
-  .cl.on.a { background: #1f7a4d; border-color: #1f7a4d; color: #ffffff; }
-  .cl.on.b { background: #2166bd; border-color: #2166bd; color: #ffffff; }
-  .cl.on.c { background: #eda100; border-color: #eda100; color: #1c2128; }
+  .cl.on.a { background: var(--classe-a); border-color: var(--classe-a); color: var(--sobre-classe); }
+  .cl.on.b { background: var(--classe-b); border-color: var(--classe-b); color: var(--sobre-classe); }
+  .cl.on.c { background: var(--classe-c); border-color: var(--classe-c); color: var(--sobre-classe); }
 
   /* Cartões da aba de relatórios */
   .grade-relatorios { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
@@ -115,9 +197,9 @@
   /* A mesma cor em etiqueta, para as listas e o topo dos relatórios. */
   .selo-classe { display: inline-block; min-width: 20px; text-align: center; border-radius: 6px;
                  padding: 1px 6px; font-weight: 800; font-size: 0.75rem; }
-  .selo-classe.a { background: #1f7a4d; color: #fff; }
-  .selo-classe.b { background: #2166bd; color: #fff; }
-  .selo-classe.c { background: #eda100; color: #1c2128; }
+  .selo-classe.a { background: var(--classe-a); color: var(--sobre-classe); }
+  .selo-classe.b { background: var(--classe-b); color: var(--sobre-classe); }
+  .selo-classe.c { background: var(--classe-c); color: var(--sobre-classe); }
   .token-equipe { font-family: monospace; font-size: 0.95rem; font-weight: 700; letter-spacing: 2px;
                   background: var(--accent-soft); color: var(--ink); border-radius: 6px; padding: 2px 8px; }
   .tab-panel { display: none; }
@@ -126,13 +208,13 @@
   th { text-align: left; color: var(--muted); font-weight: 600; font-size: 0.72rem; text-transform: uppercase; padding: 8px 10px; border-bottom: 1px solid var(--line); }
   td { padding: 9px 10px; border-bottom: 1px solid var(--line); }
   .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
-  #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--ink); color: white; padding: 10px 18px; border-radius: 8px; font-size: 0.85rem; opacity: 0; pointer-events: none; transition: opacity 0.25s; max-width: 90vw; text-align: center; z-index: 50; }
+  #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 10px 18px; border-radius: 8px; font-size: 0.85rem; opacity: 0; pointer-events: none; transition: opacity 0.25s; max-width: 90vw; text-align: center; z-index: 50; }
   #toast.show { opacity: 1; }
 
   .aviso { background: var(--warn-soft); border: 1px solid var(--warn); color: var(--warn); border-radius: 10px; padding: 12px 16px; font-size: 0.85rem; margin-bottom: 18px; }
   .campo-check { display: flex; align-items: center; gap: 6px; margin: -6px 0 12px; font-size: 0.8rem; color: var(--muted); }
   .campo-check input[type="checkbox"] { width: auto; margin: 0; }
-  input:disabled { background: #f2f0ea; color: var(--muted); }
+  input:disabled { background: var(--campo-off); color: var(--muted); }
   .icon-btn { background: transparent; border: none; cursor: pointer; font-size: 1rem; padding: 2px 4px; border-radius: 5px; }
   .icon-btn:hover { background: var(--accent-soft); }
   .icones-linha { display: flex; gap: 2px; white-space: nowrap; }
@@ -140,7 +222,7 @@
   .badge-edicao button { background: transparent; border: none; color: var(--accent); text-decoration: underline; cursor: pointer; font-size: 0.8rem; padding: 0; }
   #busca-presenca { margin-bottom: 14px; }
   .lista-presenca { display: flex; flex-direction: column; gap: 4px; max-height: 320px; overflow-y: auto; }
-  .item-presenca { text-align: left; background: white; border: 1px solid var(--line); padding: 10px 12px; border-radius: 8px; font-size: 0.88rem; width: 100%; font-weight: 500; }
+  .item-presenca { text-align: left; background: var(--card); border: 1px solid var(--line); padding: 10px 12px; border-radius: 8px; font-size: 0.88rem; width: 100%; font-weight: 500; }
   .item-presenca:hover { border-color: var(--accent); }
   .item-presenca.selecionado { border-color: var(--accent); background: var(--accent-soft); }
   /* Nasce colado no nome tocado, dentro da própria lista: o dedo não precisa
@@ -158,11 +240,11 @@
      desacelera quando a resposta chega — assim nunca congela num nome errado. */
   /* Faixa clara atrás da linha do meio: é onde o resultado para. */
   .roleta { position: relative; overflow: hidden;
-            background: linear-gradient(to bottom, transparent 33.34%, rgba(255,255,255,0.6) 33.34%,
-                        rgba(255,255,255,0.6) 66.66%, transparent 66.66%); }
+            background: linear-gradient(to bottom, transparent 33.34%, var(--faixa-roleta) 33.34%,
+                        var(--faixa-roleta) 66.66%, transparent 66.66%); }
   .roleta::before, .roleta::after { content: ""; position: absolute; left: 0; right: 0; height: 34%; z-index: 2; pointer-events: none; }
-  .roleta::before { top: 0; background: linear-gradient(to bottom, var(--accent-soft) 12%, rgba(231,239,233,0)); }
-  .roleta::after { bottom: 0; background: linear-gradient(to top, var(--accent-soft) 12%, rgba(231,239,233,0)); }
+  .roleta::before { top: 0; background: linear-gradient(to bottom, var(--accent-soft) 12%, transparent); }
+  .roleta::after { bottom: 0; background: linear-gradient(to top, var(--accent-soft) 12%, transparent); }
   .roleta-fita { will-change: transform; }
   .roleta-item { display: flex; align-items: center; justify-content: center; font-weight: 800; color: var(--accent);
                  padding: 0 6px; line-height: 1.1; text-align: center; }
@@ -179,13 +261,13 @@
 
   .dir-street-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 16px; background: var(--accent-soft); border-radius: 10px 10px 0 0; }
   .dir-street-bar h3 { font-family: inherit; font-size: 1rem; margin: 0; color: var(--accent); }
-  .dir-tally { font-size: 0.75rem; color: var(--muted); background: white; border-radius: 20px; padding: 2px 10px; }
-  .dir-wa-btn { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; background: #25923a; color: white; font-size: 0.8rem; font-weight: 600; padding: 7px 12px; border-radius: 7px; border: none; cursor: pointer; }
-  .dir-wa-btn:hover { background: #1f7a30; }
+  .dir-tally { font-size: 0.75rem; color: var(--muted); background: var(--card); border-radius: 20px; padding: 2px 10px; }
+  .dir-wa-btn { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; background: var(--zap); color: #ffffff; font-size: 0.8rem; font-weight: 600; padding: 7px 12px; border-radius: 7px; border: none; cursor: pointer; }
+  .dir-wa-btn:hover { background: var(--zap-forte); }
   .dir-table-wrap { border: 1px solid var(--line); border-top: none; border-radius: 0 0 10px 10px; overflow-x: auto; margin-bottom: 18px; }
   tr.dir-novato { background: var(--warn-soft) !important; }
   tr.dir-novato td { color: var(--warn); }
-  .dir-badge-novo { display: inline-block; margin-left: 6px; font-size: 0.65rem; text-transform: uppercase; background: var(--warn); color: white; border-radius: 20px; padding: 1px 8px; vertical-align: middle; }
+  .dir-badge-novo { display: inline-block; margin-left: 6px; font-size: 0.65rem; text-transform: uppercase; background: var(--warn); color: var(--sobre-classe); border-radius: 20px; padding: 1px 8px; vertical-align: middle; }
 
   /* ---- Pontuação ---- */
   .toolbar-pontos { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
@@ -201,7 +283,7 @@
   .tabela-rolavel { overflow-x: auto; margin: 0 -4px; padding: 0 4px; }
   .btn-dep { background: var(--accent-soft); color: var(--accent); border: 1px solid transparent; }
   .btn-ret { background: var(--warn-soft); color: var(--warn); border: 1px solid transparent; }
-  .btn-cartao { background: #e8eefb; color: #0b3d91; border: 1px solid transparent; }
+  .btn-cartao { background: var(--cartao-chip); color: var(--cartao-chip-ink); border: 1px solid transparent; }
   .celula-marcar input, #marcar-todos { width: auto; margin: 0; transform: scale(1.25); cursor: pointer; }
   tr.linha-marcada { background: var(--accent-soft); }
   .area-rolavel { max-height: 420px; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
@@ -210,7 +292,7 @@
   .paginacao button { background: var(--card); border: 1px solid var(--line); color: var(--muted);
                       min-width: 34px; padding: 6px 9px; font-size: 0.82rem; border-radius: 7px; }
   .paginacao button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
-  .paginacao button.atual { background: var(--accent); border-color: var(--accent); color: white; }
+  .paginacao button.atual { background: var(--botao); border-color: var(--botao); color: var(--sobre-accent); }
   .paginacao button:disabled { opacity: 0.4; }
   .paginacao .reticencias { color: var(--muted); padding: 0 2px; }
   .topo-painel { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
@@ -229,13 +311,13 @@
   .linha-manual .mini { display: block; font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
 
   /* Zona de perigo — apagar os dados da planilha */
-  .zona-perigo { border: 1px solid #e3bdb5; background: #fbf1ef; border-radius: 12px; padding: 14px; margin-top: 22px; }
+  .zona-perigo { border: 1px solid var(--warn-linha); background: var(--warn-soft); border-radius: 12px; padding: 14px; margin-top: 22px; }
   .zona-perigo h4 { margin: 0 0 4px; font-size: 0.9rem; color: var(--warn); }
   .zona-perigo p { font-size: 0.82rem; color: var(--muted); margin: 0 0 12px; }
-  .btn-perigo { background: var(--warn); color: #fff; border: 1px solid var(--warn); border-radius: 10px;
+  .btn-perigo { background: var(--warn); color: var(--sobre-classe); border: 1px solid var(--warn); border-radius: 10px;
                 padding: 11px 14px; font-size: 0.9rem; font-weight: 700; width: 100%; }
   .btn-perigo:disabled { opacity: 0.5; }
-  .alerta-forte { background: #f6e8e5; border: 1px solid #e3bdb5; border-left: 4px solid var(--warn);
+  .alerta-forte { background: var(--warn-soft); border: 1px solid var(--warn-linha); border-left: 4px solid var(--warn);
                   border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; }
   .alerta-forte strong { display: block; color: var(--warn); font-size: 0.92rem; margin-bottom: 4px; }
   .alerta-forte p { font-size: 0.83rem; color: var(--ink); margin: 0; }
@@ -272,9 +354,9 @@
   .resultado { position: absolute; left: 12px; right: 12px; bottom: 12px; border-radius: 14px; padding: 16px 18px;
                color: white; opacity: 0; transform: translateY(12px); transition: opacity 0.15s, transform 0.15s; }
   .resultado.show { opacity: 1; transform: none; }
-  .resultado.ok { background: #1f7a4d; }
-  .resultado.repetido { background: #8a6d1f; }
-  .resultado.erro { background: #a24030; }
+  .resultado.ok { background: #1f7a4d; color: #ffffff; }
+  .resultado.repetido { background: #8a6d1f; color: #ffffff; }
+  .resultado.erro { background: #a24030; color: #ffffff; }
   .resultado .nome { font-size: 1.25rem; font-weight: 800; line-height: 1.2; word-break: break-word; }
   .resultado .detalhe { font-size: 0.9rem; opacity: 0.95; margin-top: 3px; }
 
@@ -289,8 +371,8 @@
   .faixa-plano { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
   .chip-plano, .chip-prazo { font-size: 0.78rem; font-weight: 600; padding: 4px 11px; border-radius: 20px; white-space: nowrap; }
   .chip-plano { background: var(--accent-soft); color: var(--accent); }
-  .chip-prazo { background: #eeece6; color: var(--muted); }
-  .chip-prazo.perto { background: #f7efdc; color: #8a6d1f; }
+  .chip-prazo { background: var(--neutro-soft); color: var(--muted); }
+  .chip-prazo.perto { background: var(--ouro-soft); color: var(--ouro); }
   .chip-prazo.urgente { background: var(--warn-soft); color: var(--warn); }
   .url-atual { font-family: monospace; font-size: 0.74rem; color: var(--muted); background: var(--paper);
                border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; word-break: break-all; margin: 0 0 14px; }
@@ -312,7 +394,7 @@
   .gr-grade { stroke: var(--line); stroke-width: 1; }
   .gr-barra { cursor: default; }
   .gr-barra:hover { opacity: 0.82; }
-  .gr-dica { position: absolute; pointer-events: none; background: var(--ink); color: white; font-size: 0.78rem;
+  .gr-dica { position: absolute; pointer-events: none; background: var(--ink); color: var(--paper); font-size: 0.78rem;
              padding: 6px 10px; border-radius: 7px; white-space: nowrap; opacity: 0; transition: opacity 0.12s; transform: translate(-50%, -130%); z-index: 5; }
   .gr-dica.show { opacity: 1; }
   .gr-vazio { color: var(--muted); font-size: 0.86rem; padding: 20px 0; }
@@ -322,21 +404,21 @@
   .tabela-numeros table { font-size: 0.85rem; }
   .tabela-numeros td:last-child, .tabela-numeros th:last-child { text-align: right; }
 
-  .modal-fundo { position: fixed; inset: 0; background: rgba(28,33,40,0.45); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 80; }
+  .modal-fundo { position: fixed; inset: 0; background: var(--veu); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 80; }
   .modal-fundo.show { display: flex; }
   .modal { background: var(--card); border-radius: 14px; padding: 24px; max-width: 400px; width: 100%; max-height: 90vh; overflow-y: auto; }
   .modal h3 { margin: 0 0 6px; font-size: 1.05rem; }
   .modal p.sub { margin-top: 0; }
   .modal-acoes { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
   .chip-data { background: var(--accent-soft); color: var(--accent); border: none; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
-  .chip-data.ativo { background: var(--accent); color: white; }
+  .chip-data.ativo { background: var(--botao); color: var(--sobre-accent); }
 
   /* ---- Celular: tabelas viram cartões (usa os data-label de cada célula) ---- */
   @media (max-width: 720px) {
     .wrap { padding: 20px 14px 70px; }
     .dir-table-wrap { overflow-x: visible; border: none; }
     table thead { display: none; }
-    table tr { display: block; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 10px; background: white; padding: 4px 0; }
+    table tr { display: block; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 10px; background: var(--card); padding: 4px 0; }
     tr.dir-novato { border-color: var(--warn); }
     table td { display: flex; justify-content: space-between; align-items: baseline; gap: 14px; border: none; padding: 5px 12px; text-align: right; }
     table td[data-label]::before { content: attr(data-label); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); font-weight: 700; text-align: left; flex: 0 0 auto; }
@@ -346,6 +428,69 @@
     .acoes-pontos { flex-wrap: wrap; justify-content: flex-end; }
     .dir-wa-btn { margin-left: 0; width: 100%; justify-content: center; }
   }
+
+  /* ---- Tela de espera do banco de dados ---- */
+  .aviso-espera { background: var(--accent-soft); border-radius: 12px; padding: 14px 16px;
+                  text-align: left; margin-bottom: 18px; }
+  .aviso-espera strong { display: block; font-size: 0.92rem; color: var(--accent); margin-bottom: 3px; }
+  .aviso-espera p { font-size: 0.84rem; color: var(--muted); margin: 0; }
+  .linha-suporte { display: flex; align-items: flex-start; gap: 10px; text-decoration: none; margin-top: 18px;
+                   border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; color: inherit; text-align: left; }
+  .linha-suporte:hover { border-color: var(--accent); }
+  .linha-suporte .ic { font-size: 1.25rem; line-height: 1.2; flex: 0 0 auto; }
+  .linha-suporte strong { display: block; font-size: 0.9rem; color: var(--accent); }
+  .linha-suporte .mini { display: block; font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+
+  /* ---- Configurações ---- */
+  .bloco-config { border-bottom: 1px solid var(--line); padding-bottom: 18px; margin-bottom: 18px; }
+  .escolha-tema { display: flex; gap: 10px; }
+  .opcao-tema { flex: 1 1 0; background: var(--card); border: 2px solid var(--line); border-radius: 12px;
+                padding: 10px; cursor: pointer; font-family: inherit; display: flex; flex-direction: column;
+                align-items: center; gap: 8px; }
+  .opcao-tema.escolhido { border-color: var(--accent); }
+  .opcao-tema .nome { font-size: 0.85rem; font-weight: 600; color: var(--ink); }
+  .amostra { display: block; width: 100%; height: 42px; border-radius: 8px; border: 1px solid var(--line);
+             padding: 7px 9px; display: flex; flex-direction: column; justify-content: center; gap: 5px; }
+  .amostra i { display: block; height: 6px; border-radius: 3px; }
+  .amostra-claro { background: #f4f7fb; border-color: #d9e2ee; }
+  .amostra-claro i:first-child { background: #1a5fb4; width: 62%; }
+  .amostra-claro i:last-child  { background: #d9e2ee; width: 88%; }
+  .amostra-escuro { background: #0b0f14; border-color: #2b333f; }
+  .amostra-escuro i:first-child { background: #1f6feb; width: 62%; }
+  .amostra-escuro i:last-child  { background: #2b333f; width: 88%; }
+
+  /* ---- Escâner de pontos ----
+     Reaproveita toda a moldura do leitor de presença (#leitor), que já é
+     escura por causa da câmera; só o rodapé muda. */
+  .modo-pontos { display: flex; gap: 8px; margin-bottom: 10px; }
+  .modo-pontos button { flex: 1 1 0; background: rgba(255,255,255,0.10); color: #ffffff;
+                        border: 1.5px solid rgba(255,255,255,0.22); border-radius: 9px;
+                        padding: 10px 8px; font-size: 0.88rem; font-weight: 700; font-family: inherit; }
+  .modo-pontos button.on.deposito { background: #1f7a4d; border-color: #1f7a4d; }
+  .modo-pontos button.on.retirada { background: #a24030; border-color: #a24030; }
+
+  .leitor-pessoa { background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.18);
+                   border-radius: 11px; padding: 11px 13px; margin-bottom: 10px; color: #ffffff; }
+  .leitor-pessoa .nome { font-weight: 700; font-size: 1rem; margin-bottom: 2px; }
+  .leitor-pessoa .saldo { font-size: 0.82rem; color: #cfd8e3; }
+  .leitor-pessoa .saldo b { color: #ffffff; font-size: 0.95rem; }
+  .leitor-pessoa .acoes { display: flex; gap: 8px; margin-top: 10px; }
+  .leitor-pessoa .acoes button { flex: 1 1 0; border: none; border-radius: 9px; padding: 11px;
+                                 font-size: 0.9rem; font-weight: 700; font-family: inherit; color: #ffffff; }
+  .btn-confirmar-dep { background: #1f7a4d; }
+  .btn-confirmar-ret { background: #a24030; }
+  .btn-pular { background: rgba(255,255,255,0.16); flex: 0 0 auto !important; width: 92px; }
+  .leitor-pessoa .erro { color: #ffb4a8; font-size: 0.82rem; margin-top: 6px; }
+
+  .historico-pontos { max-height: 108px; overflow-y: auto; margin-bottom: 8px; }
+  .historico-pontos .linha { display: flex; align-items: center; gap: 8px; font-size: 0.78rem;
+                             color: #cfd8e3; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .historico-pontos .linha:last-child { border-bottom: none; }
+  .historico-pontos .val { margin-left: auto; font-weight: 700; white-space: nowrap; }
+  .historico-pontos .val.mais { color: #7fcf9f; }
+  .historico-pontos .val.menos { color: #ffb4a8; }
+  .historico-pontos .quem { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .historico-vazio { font-size: 0.78rem; color: #9fb0c2; padding: 4px 0 8px; }
 </style>
 </head>
 <body>
@@ -375,28 +520,31 @@
   <p class="sub" id="erro-pin" style="color:var(--warn); min-height:1em"></p>
 </div>
 
-<div id="tela-planilha" class="center-screen" style="display:none">
-  <div class="eyebrow">Conectar</div>
-  <h1>Conectar a planilha</h1>
+<!-- Enquanto o banco de dados do cliente não estiver cadastrado no painel de
+     controle, é esta tela que ele vê. Antes da v11 o próprio cliente colava a
+     URL do Apps Script aqui; quem faz isso agora é o Lucas, no admin.html. -->
+<div id="tela-aguardando" class="center-screen" style="display:none">
+  <div class="eyebrow">Quase lá</div>
+  <h1>Estamos preparando o seu sistema</h1>
+  <p class="sub" style="margin-bottom:18px">
+    Seu acesso já está liberado, mas o banco de dados do seu evangelismo ainda está sendo
+    montado. Assim que ficar pronto, você entra por este mesmo link — sem precisar
+    instalar nem configurar nada.
+  </p>
 
-  <div class="passo-zero">
-    <strong>Ainda não tem a planilha?</strong>
-    <p>Gere a sua a partir do nosso modelo — ele já vem com o programa dentro, você não precisa colar código nenhum.</p>
-    <a class="btn-primary" id="btn-gerar-planilha" href="#" target="_blank" rel="noopener">📄 Gerar a minha planilha</a>
-    <p class="mini">Abre no Google e pede para confirmar a cópia. A planilha fica na <strong>sua</strong> conta.</p>
+  <div class="aviso-espera">
+    <strong>Você não precisa fazer nada.</strong>
+    <p>Nós criamos e conectamos o banco de dados para você. Normalmente fica pronto no mesmo dia.</p>
   </div>
 
-  <p class="sub">Já tem a planilha e implantou o Web App? Cole abaixo a URL gerada pelo Apps Script (termina em <code>/exec</code>).</p>
-  <label for="input-sheet-url">URL do Web App</label>
-  <input id="input-sheet-url" type="text" placeholder="https://script.google.com/macros/s/.../exec" />
-  <button class="btn-primary" style="width:100%" id="btn-conectar">Conectar</button>
-  <p class="sub" id="erro-conexao" style="color:var(--warn); min-height:1em"></p>
+  <button class="btn-primary" style="width:100%" id="btn-conferir-banco">Já está pronto? Conferir agora</button>
+  <p class="sub" id="erro-espera" style="min-height:1em; margin-top:10px"></p>
 
-  <a class="linha-manual" id="link-manual-conectar" href="#" target="_blank" rel="noopener">
-    <span class="ic">📘</span>
+  <a class="linha-suporte" id="link-suporte" href="#" target="_blank" rel="noopener">
+    <span class="ic">💬</span>
     <span>
-      <strong>Manual passo a passo (PDF)</strong>
-      <span class="mini">Todas as telas do Google, uma por uma, com print de cada botão.</span>
+      <strong>Falar com o suporte</strong>
+      <span class="mini">Lucas Leal · (63) 99940-4515</span>
     </span>
   </a>
 </div>
@@ -421,21 +569,22 @@
         </div>
       </div>
       <div class="acoes-topo">
-        <a class="btn-engrenagem" id="btn-manual" href="#" target="_blank" rel="noopener"
-           title="Manual da planilha em PDF" aria-label="Manual da planilha em PDF">📘</a>
         <button class="btn-engrenagem" id="btn-instalar" title="Instalar como app no celular" aria-label="Instalar no celular">📲</button>
-        <button class="btn-engrenagem" id="btn-config" title="Trocar a planilha conectada" aria-label="Configurações da planilha">⚙️</button>
+        <button class="btn-engrenagem" id="btn-config" title="Configurações" aria-label="Configurações">⚙️</button>
         <button class="btn-engrenagem" id="btn-sair" title="Sair desta conta" aria-label="Sair">🚪</button>
       </div>
     </header>
 
+    <!-- O cliente não mexe mais no Apps Script: quem atualiza o código da
+         planilha é o suporte. Então o aviso vira um recado, não uma tarefa. -->
     <div id="aviso-versao" class="aviso" style="display:none">
-      O código da sua planilha está desatualizado. Abra a planilha, vá em
-      <strong>Extensões &gt; Apps Script</strong>, cole a versão nova do código e depois em
-      <strong>Implantar &gt; Gerenciar implantações &gt; Nova versão</strong>.
+      O programa do seu banco de dados está numa versão antiga, então algumas funções novas
+      podem não aparecer. Tudo o que você já usa continua funcionando normalmente.
+      Fale com o suporte — <strong>Lucas Leal · (63) 99940-4515</strong> — que a atualização é rápida.
     </div>
 
-    <div class="tabs">
+    <div class="tabs-faixa" id="tabs-faixa">
+    <div class="tabs" id="tabs">
       <button class="tab-btn active" data-tab="cadastro">📋 Cadastro</button>
       <button class="tab-btn" data-tab="presenca">✅ Registro de Presença</button>
       <button class="tab-btn" data-tab="pontuacao">🪙 Pontuação</button>
@@ -444,6 +593,7 @@
       <button class="tab-btn" data-tab="diretorio">🗺️ Diretório de ruas</button>
       <button class="tab-btn" data-tab="relatorios">📄 Relatórios</button>
       <button class="tab-btn" data-tab="equipe">👥 Equipe</button>
+    </div>
     </div>
 
     <!-- CADASTRO -->
@@ -562,6 +712,9 @@
     <div class="tab-panel" id="tab-pontuacao">
       <div class="card">
         <h2>🪙 Pontuação</h2>
+        <button class="btn-primary" id="btn-leitor-pontos" style="width:100%; margin-bottom:16px; padding:14px">
+          📷 Depositar ou retirar por QR Code
+        </button>
         <div class="toolbar-pontos">
           <input id="busca-pontuacao" type="text" placeholder="Pesquisar por nome..." />
           <button class="btn-ghost btn-sm" id="btn-lote">🗂️ Gerar cartões por lote</button>
@@ -884,7 +1037,7 @@
 
 <div id="leitor">
   <div class="leitor-topo">
-    <span class="titulo">Leitura de cartões</span>
+    <span class="titulo" id="leitor-titulo">Leitura de cartões</span>
     <button class="fechar" id="leitor-fechar">✕ Encerrar</button>
   </div>
 
@@ -898,7 +1051,8 @@
     </div>
   </div>
 
-  <div class="leitor-rodape">
+  <!-- Rodapé da leitura de PRESENÇA -->
+  <div class="leitor-rodape" id="rodape-presenca">
     <div class="leitor-pontos">
       <label for="leitor-pontos" style="margin:0; color:#cfcabd">Pontos por presença</label>
       <input id="leitor-pontos" inputmode="numeric" placeholder="0" />
@@ -907,6 +1061,41 @@
     <div class="leitor-numeros">
       <span>Registrados agora: <strong id="leitor-conta">0</strong></span>
       <span>Repetidos: <strong id="leitor-repetidos">0</strong></span>
+    </div>
+  </div>
+
+  <!-- Rodapé da leitura de PONTOS (depósito e retirada) -->
+  <div class="leitor-rodape" id="rodape-pontos" style="display:none">
+    <div class="modo-pontos">
+      <button class="deposito on" id="modo-deposito">💰 Depositar</button>
+      <button class="retirada" id="modo-retirada">💸 Retirar</button>
+    </div>
+
+    <div class="leitor-pontos">
+      <label for="pontos-valor" style="margin:0; color:#cfcabd">Valor</label>
+      <input id="pontos-valor" inputmode="numeric" placeholder="100" />
+      <span style="color:#cfd8e3">pontos por leitura</span>
+    </div>
+
+    <!-- Aparece quando um cartão é lido e some quando o lançamento termina -->
+    <div class="leitor-pessoa" id="pontos-pessoa" style="display:none">
+      <div class="nome" id="pontos-nome">—</div>
+      <div class="saldo">Saldo atual: <b id="pontos-saldo">0</b> pt<span id="pontos-depois"></span></div>
+      <div class="erro" id="pontos-erro" style="display:none"></div>
+      <div class="acoes">
+        <button class="btn-confirmar-dep" id="pontos-confirmar">Confirmar</button>
+        <button class="btn-pular" id="pontos-pular">Pular</button>
+      </div>
+    </div>
+
+    <div class="historico-pontos" id="pontos-historico"></div>
+    <div class="historico-vazio" id="pontos-historico-vazio">
+      O que você lançar aparece aqui. A lista some ao encerrar a leitura.
+    </div>
+    <div class="leitor-numeros">
+      <span>Depositado: <strong id="pontos-total-dep">0</strong></span>
+      <span>Retirado: <strong id="pontos-total-ret">0</strong></span>
+      <span>Pessoas: <strong id="pontos-total-pessoas">0</strong></span>
     </div>
   </div>
 </div>
@@ -945,41 +1134,45 @@
 
 <div class="modal-fundo" id="modal-config">
   <div class="modal">
-    <h3>Trocar a planilha conectada</h3>
-    <p class="sub">Aponte o sistema para outra planilha — por exemplo, para começar um evangelismo novo. <strong>A planilha atual não é apagada nem alterada:</strong> ela fica guardada com todos os dados, como backup.</p>
+    <h3>Configurações</h3>
 
-    <label>Planilha conectada agora</label>
-    <p class="url-atual" id="config-url-atual">—</p>
-
-    <div class="passo-zero" id="config-passo-zero">
-      <strong>Precisa de uma planilha nova?</strong>
-      <p>Gere outra a partir do modelo — ela já vem com o programa dentro e nasce vazia, pronta para um evangelismo novo. A atual não é tocada.</p>
-      <a class="btn-primary" id="btn-gerar-planilha-config" href="#" target="_blank" rel="noopener">📄 Gerar outra planilha</a>
-      <p class="mini">Depois de gerá-la, implante o Web App nela e cole a URL aqui embaixo.</p>
+    <div class="bloco-config">
+      <label for="config-nome-evento">Nome do evangelismo</label>
+      <p class="sub" style="margin:-2px 0 8px">Aparece nos cartões dos participantes e na tela onde eles consultam os pontos. Deixe em branco para usar apenas <em>Evangelismo</em>.</p>
+      <input id="config-nome-evento" type="text" maxlength="40" placeholder="Evangelismo" />
+      <p class="sub" id="config-nome-erro" style="color:var(--warn); min-height:1em; margin:-6px 0 0"></p>
+      <button class="btn-primary btn-sm" id="config-nome-salvar" style="width:100%">Salvar o nome</button>
     </div>
 
-    <label for="config-nova-url">URL do Web App da planilha nova</label>
-    <input id="config-nova-url" type="text" placeholder="https://script.google.com/macros/s/.../exec" />
-    <p class="sub" style="margin:-4px 0 0">A planilha nova precisa ter o código do Apps Script instalado e implantado. O passo a passo está no guia que você recebeu.</p>
-    <p class="sub" id="config-erro" style="color:var(--warn); min-height:1em; margin:8px 0 0"></p>
-
-    <div class="modal-acoes">
-      <button class="btn-ghost btn-sm" id="config-cancelar">Cancelar</button>
-      <button class="btn-primary btn-sm" id="config-confirmar">Conectar a nova planilha</button>
+    <div class="bloco-config">
+      <label>Tema</label>
+      <p class="sub" style="margin:-2px 0 8px">Vale só neste aparelho. Cada pessoa da equipe escolhe o seu.</p>
+      <div class="escolha-tema">
+        <button class="opcao-tema" data-tema="claro">
+          <span class="amostra amostra-claro"><i></i><i></i></span>
+          <span class="nome">Claro</span>
+        </button>
+        <button class="opcao-tema" data-tema="escuro">
+          <span class="amostra amostra-escuro"><i></i><i></i></span>
+          <span class="nome">Escuro</span>
+        </button>
+      </div>
     </div>
 
-    <a class="linha-manual" id="link-manual-config" href="#" target="_blank" rel="noopener">
-      <span class="ic">📘</span>
-      <span>
-        <strong>Manual passo a passo (PDF)</strong>
-        <span class="mini">Como gerar a planilha, implantar o Web App e pegar a URL.</span>
-      </span>
-    </a>
+    <div class="bloco-config">
+      <label>Banco de dados</label>
+      <p class="url-atual" id="config-url-atual">—</p>
+      <p class="sub" style="margin:6px 0 0">Conectado e mantido pelo suporte. Para mudar de banco de dados, fale com o Lucas Leal — (63) 99940-4515.</p>
+    </div>
 
     <div class="zona-perigo">
       <h4>⚠️ Limpar a planilha</h4>
-      <p>Apaga os dados desta mesma planilha para começar um evangelismo novo — sem precisar de outra planilha nem de outra implantação. <strong>Não tem como desfazer.</strong></p>
+      <p>Apaga os dados deste banco para começar um evangelismo novo, mantendo o mesmo acesso. <strong>Não tem como desfazer.</strong></p>
       <button class="btn-perigo" id="btn-abrir-limpar">🧹 Limpar a planilha</button>
+    </div>
+
+    <div class="modal-acoes">
+      <button class="btn-ghost btn-sm" id="config-cancelar">Fechar</button>
     </div>
   </div>
 </div>
@@ -1054,25 +1247,16 @@
 "use strict";
 
 // ==== CONFIGURAÇÃO ====
-// Planilha-modelo, com o Code.gs já dentro. O cliente clica, o Google faz uma
-// cópia na conta DELE — e o script vinculado vai junto. Some a parte de abrir o
-// editor e colar código, que é onde quase todo mundo tropeçava.
-//
-// Para trocar de modelo, basta mudar o ID abaixo. O modelo precisa estar
-// compartilhado como "Qualquer pessoa com o link — Leitor", com a opção de
-// impedir cópia DESLIGADA, e nunca pode ter sido conectado a um link de acesso
-// (senão cada cópia nasce achando que pertence a outro token).
-const PLANILHA_MODELO = "11u6Cjlcmsw889Y3IRZ6NweYXLW4jBrZ1mjzF_MPi4fg";
-
 const SUPABASE_URL = "https://jmogaclwihvsouqixozo.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imptb2dhY2x3aWh2c291cWl4b3pvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcyNTk5MzIsImV4cCI6MjEwMjgzNTkzMn0.kzvlfUAzRrEeb2UGlEViCOVh0vIMuHVkR_EzUSjn87U";
-const VERSAO_BACKEND_ESPERADA = 10;
+const VERSAO_BACKEND_ESPERADA = 11;
 
-// Manual em PDF de como conectar a planilha. O arquivo fica ao lado deste
-// index, no mesmo lugar onde o sistema está publicado. Se um dia ele mudar de
-// nome ou de endereço, é só trocar aqui — os dois botões que oferecem o
-// download (tela de conexão e painel) leem daqui.
-const URL_MANUAL = "Manual - Como conectar a planilha.pdf";
+// Para onde vai o "Falar com o suporte" da tela de espera.
+const WHATSAPP_SUPORTE = "5563999404515";
+
+// Nome do evento quando o cliente não escolheu nenhum. Fica junto do cartão e
+// da tela de saldo; a planilha guarda o escolhido.
+const NOME_EVENTO_PADRAO = "Evangelismo";
 // =======================
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false } });
@@ -1087,6 +1271,7 @@ let presencasHojeNomes = new Set();
 let cacheSaldos = {};
 let codigoConsulta = null;
 let infoDaPlanilha = null;   // { planilhaId, planilhaNome, planilhaUrl } da planilha conectada
+let nomeDoEvento = NOME_EVENTO_PADRAO;   // escolhido pelo cliente, guardado na planilha
 let idPontuacaoAtual = null;
 let selecionadosCartao = new Set();
 
@@ -1328,13 +1513,13 @@ async function entrarComPin() {
       $("tela-pin").style.display = "none";
 
       if (webAppUrl) await abrirPainel();
-      else $("tela-planilha").style.display = "block";
+      else $("tela-aguardando").style.display = "block";
       return;
     }
 
     // 6 dígitos: quem confere é a planilha do cliente, onde a equipe mora.
     if (!webAppUrl) {
-      throw new Error("O administrador ainda não conectou a planilha deste evento. Fale com ele antes de entrar.");
+      throw new Error("O banco de dados deste evangelismo ainda está sendo preparado. Tente de novo mais tarde.");
     }
     const membro = await appsScriptFetch("validarEquipe", { equipe: pin });
 
@@ -1370,7 +1555,7 @@ function sairDaConta() {
   presencasHojeIds = new Set();
   presencasHojeNomes = new Set();
   $("app-screen").style.display = "none";
-  $("tela-planilha").style.display = "none";
+  $("tela-aguardando").style.display = "none";
   abrirTelaPin();
 }
 
@@ -1386,6 +1571,7 @@ function aplicarPapel() {
     b.style.display = permitidas.includes(b.dataset.tab) ? "" : "none";
   });
   $("btn-config").style.display = papelAtual === "admin" ? "" : "none";
+  atualizarSombrasDasAbas();
 
   const ehMissionario = papelAtual === "missionario";
   $("subtabs-diretorio").style.display = ehMissionario ? "flex" : "none";
@@ -1442,7 +1628,7 @@ function mostrarPlano() {
 
 function mostrarInvalido(texto) {
   $("tela-carregando").style.display = "none";
-  $("tela-planilha").style.display = "none";
+  $("tela-aguardando").style.display = "none";
   $("tela-erro").style.display = "none";
   $("app-screen").style.display = "none";
   if (texto) $("texto-invalido").textContent = texto;
@@ -1476,46 +1662,59 @@ async function appsScriptFetch(action, extra = {}) {
   return json.dados;
 }
 
-async function conectarPlanilha() {
-  const url = $("input-sheet-url").value.trim();
-  const erroBox = $("erro-conexao");
+/**
+ * "Já está pronto? Conferir agora" — consulta o Supabase de novo para ver se o
+ * banco de dados do cliente já foi cadastrado no painel de controle. Evita que
+ * ele tenha que fechar e reabrir o link para descobrir.
+ */
+async function conferirBancoDeDados() {
+  const erroBox = $("erro-espera");
+  const botao = $("btn-conferir-banco");
+  erroBox.style.color = "var(--muted)";
   erroBox.textContent = "";
-
-  if (!/^https:\/\/script\.google\.com\/.+\/exec$/.test(url)) {
-    erroBox.textContent = "A URL precisa começar com https://script.google.com/ e terminar em /exec.";
-    return;
-  }
-
-  const botao = $("btn-conectar");
   botao.disabled = true;
-  botao.textContent = "Conectando...";
-  webAppUrl = url;
+  botao.textContent = "Conferindo...";
 
   try {
-    await appsScriptFetch("setup");
-    const { error } = await sb.rpc("vincular_planilha", { p_token: tokenAtual, p_url: url });
-    if (error) {
-      webAppUrl = null;
-      erroBox.textContent = "A planilha respondeu, mas não consegui salvar o vínculo: " + error.message;
+    const { data, error } = await sb.rpc("validar_token", { p_token: tokenAtual });
+    if (error) throw new Error("Não consegui falar com o servidor. Verifique sua internet.");
+
+    const u = data && data[0];
+    if (u && u.webapp_url) {
+      webAppUrl = u.webapp_url;
+      $("tela-aguardando").style.display = "none";
+      $("tela-carregando").style.display = "block";
+      await abrirPainel();
+      $("tela-carregando").style.display = "none";
+      showToast("Tudo pronto! Bom evangelismo.");
       return;
     }
-    showToast("Planilha conectada com sucesso.");
-    $("tela-planilha").style.display = "none";
-    await abrirPainel();
+    erroBox.textContent = "Ainda não — continua sendo preparado. Tente de novo mais tarde.";
   } catch (e) {
-    webAppUrl = null;
-    erroBox.textContent = e.message || "Não foi possível conectar. Confira a URL e a implantação do Web App.";
     console.error(e);
+    erroBox.style.color = "var(--warn)";
+    erroBox.textContent = e.message || "Não consegui conferir agora.";
   } finally {
     botao.disabled = false;
-    botao.textContent = "Conectar";
+    botao.textContent = "Já está pronto? Conferir agora";
   }
 }
+
+let jaFezSetup = false;
 
 async function abrirPainel() {
   // Antes, se a planilha falhasse aqui, a promessa estourava sem tratamento e
   // o usuário ficava olhando uma tela em branco, sem nenhuma explicação.
   try {
+    // Até a v10 quem chamava `setup` era a tela de conectar, no momento em que
+    // o cliente colava a URL. Essa tela não existe mais: agora a URL chega
+    // pronta do painel de controle, e é aqui que a planilha é apresentada ao
+    // token pela primeira vez. Sem isto ela recusaria todas as leituras.
+    // É idempotente e roda uma vez por sessão.
+    if (!jaFezSetup) {
+      await appsScriptFetch("setup");
+      jaFezSetup = true;
+    }
     await carregarParticipantes();
     sincronizarCamposPontos(lerPontosSalvos());
     carregarFilaSalva();
@@ -1528,7 +1727,8 @@ async function abrirPainel() {
     aplicarPapel();
   } catch (e) {
     console.error(e);
-    mostrarErro(e.message || "Não consegui ler a planilha. Confira sua conexão e a implantação do Web App.");
+    mostrarErro(e.message ||
+      "Não consegui falar com o seu banco de dados. Verifique sua internet — se continuar, fale com o suporte: Lucas Leal (63) 99940-4515.");
   }
 }
 
@@ -1540,21 +1740,98 @@ async function abrirPainel() {
 // gravar na nova. Dá para voltar para a antiga depois, colando a URL dela.
 
 function abrirConfig() {
-  $("config-url-atual").textContent = webAppUrl || "Nenhuma";
-  $("config-nova-url").value = "";
-  $("config-erro").textContent = "";
+  // A URL aparece encurtada: ela é longa, não é editável por aqui e o que o
+  // cliente precisa saber é só se existe um banco conectado.
+  const nomePlanilha = infoDaPlanilha && infoDaPlanilha.planilhaNome;
+  $("config-url-atual").textContent = webAppUrl
+    ? (nomePlanilha ? "Conectado · " + nomePlanilha : "Conectado")
+    : "Nenhum banco conectado";
+  $("config-nome-evento").value = nomeDoEvento === NOME_EVENTO_PADRAO ? "" : nomeDoEvento;
+  $("config-nome-erro").textContent = "";
+  marcarTemaEscolhido();
   $("modal-config").classList.add("show");
-  setTimeout(() => $("config-nova-url").focus(), 50);
+}
+
+// ---------------------------------------------------------------------------
+// Tema (dentro do ⚙️)
+// ---------------------------------------------------------------------------
+// A escolha é por aparelho, não por conta: no mesmo evangelismo uma pessoa usa
+// o celular no sol da rua e outra usa no escuro do salão. Fica no localStorage
+// e é aplicada antes da primeira pintura (script no <head>), senão a tela
+// pisca em branco antes de virar escura.
+
+const CHAVE_TEMA = "evang_tema";
+
+function aplicarTema(tema, guardar) {
+  const escolhido = tema === "escuro" ? "escuro" : "claro";
+  document.documentElement.setAttribute("data-tema", escolhido);
+  const barra = document.querySelector('meta[name="theme-color"]');
+  if (barra) barra.setAttribute("content", escolhido === "escuro" ? "#0b0f14" : "#1a5fb4");
+  if (guardar) {
+    try { localStorage.setItem(CHAVE_TEMA, escolhido); } catch (e) { /* sem armazenamento */ }
+    marcarTemaEscolhido();
+    // Os gráficos são desenhados em canvas: as cores vêm do JavaScript, não do
+    // CSS, então precisam ser redesenhados na troca.
+    if ($("tab-graficos") && $("tab-graficos").classList.contains("active")) abrirGraficos();
+  }
+}
+
+function marcarTemaEscolhido() {
+  const atual = document.documentElement.getAttribute("data-tema") || "claro";
+  document.querySelectorAll(".opcao-tema").forEach(b =>
+    b.classList.toggle("escolhido", b.dataset.tema === atual));
+}
+
+/** Lê uma cor do tema atual para quem desenha em canvas. */
+function corDoTema(nome) {
+  return getComputedStyle(document.documentElement).getPropertyValue(nome).trim();
+}
+
+// ---------------------------------------------------------------------------
+// Nome do evangelismo (dentro do ⚙️)
+// ---------------------------------------------------------------------------
+// Fica guardado na planilha, não no aparelho: o cartão é gerado por quem está
+// na recepção e a tela de saldo é aberta pelo participante, em outro celular,
+// sem passar pelo painel. Os dois precisam ver o mesmo nome.
+
+async function salvarNomeDoEvento() {
+  const campo = $("config-nome-evento");
+  const erro = $("config-nome-erro");
+  const botao = $("config-nome-salvar");
+  const nome = campo.value.trim();
+  erro.textContent = "";
+
+  if (nome.length > 40) {
+    erro.textContent = "O nome precisa ter no máximo 40 caracteres.";
+    return;
+  }
+
+  botao.disabled = true;
+  botao.textContent = "Salvando...";
+  try {
+    const r = await appsScriptFetch("definirNomeEvento", { nome });
+    nomeDoEvento = (r && r.nomeEvento) || NOME_EVENTO_PADRAO;
+    if (infoDaPlanilha) infoDaPlanilha.nomeEvento = nomeDoEvento;
+    campo.value = nomeDoEvento === NOME_EVENTO_PADRAO ? "" : nomeDoEvento;
+    showToast(`Pronto. Os cartões vão sair com "${nomeDoEvento}".`);
+  } catch (e) {
+    console.error(e);
+    erro.textContent = /desconhecida/i.test(e.message || "")
+      ? "O código da sua planilha ainda não tem essa função. Fale com o suporte para atualizá-lo."
+      : (e.message || "Não consegui salvar o nome.");
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "Salvar o nome";
+  }
 }
 
 // ---------------------------------------------------------------------------
 // Limpar a planilha (dentro do ⚙️)
 // ---------------------------------------------------------------------------
-// Trocar de planilha guarda a antiga como backup; limpar reaproveita a mesma.
-// É o caminho mais simples para um evangelismo novo — o link, o PIN e a
-// implantação continuam os mesmos —, mas é destrutivo e sem volta. Por isso a
-// tela mostra o que some, o que fica, oferece a cópia de segurança e ainda
-// exige a palavra LIMPAR digitada. O backend confere essa palavra de novo.
+// Zera o banco para um evangelismo novo, mantendo o mesmo acesso, o mesmo PIN
+// e a mesma conexão. É destrutivo e sem volta, então a tela mostra o que some,
+// o que fica, oferece a cópia de segurança e ainda exige a palavra LIMPAR
+// digitada. O backend confere essa palavra de novo antes de apagar.
 
 /** Descobre id/nome/URL da planilha conectada. Só pede uma vez por planilha. */
 async function garantirInfoPlanilha() {
@@ -1562,6 +1839,7 @@ async function garantirInfoPlanilha() {
     const info = await appsScriptFetch("infoPlanilha");
     infoDaPlanilha = info || {};
     if (info && info.codigoConsulta) codigoConsulta = info.codigoConsulta;
+    if (info && info.nomeEvento) nomeDoEvento = info.nomeEvento;
   }
   return infoDaPlanilha;
 }
@@ -1667,65 +1945,11 @@ async function limparPlanilhaAgora() {
     // Planilha com o código antigo não conhece a limpeza. O erro cru
     // ("Ação desconhecida") não diz nada a quem está do outro lado.
     erroBox.textContent = /desconhecida/i.test(e.message || "")
-      ? "O código da sua planilha ainda não tem essa função. Atualize-o pelo Apps Script (o aviso no topo do painel ensina como) e tente de novo. Nada foi apagado."
+      ? "O programa do seu banco de dados ainda não tem essa função. Fale com o suporte para atualizá-lo. Nada foi apagado."
       : (e.message || "Não consegui limpar a planilha. Tente de novo.");
   } finally {
     botao.disabled = $("limpar-confirmacao").value.trim().toUpperCase() !== "LIMPAR";
     botao.textContent = "Apagar tudo";
-  }
-}
-
-async function trocarDePlanilha() {
-  const url = $("config-nova-url").value.trim();
-  const erroBox = $("config-erro");
-  erroBox.textContent = "";
-
-  if (!/^https:\/\/script\.google\.com\/.+\/exec$/.test(url)) {
-    erroBox.textContent = "A URL precisa começar com https://script.google.com/ e terminar em /exec.";
-    return;
-  }
-  if (url === webAppUrl) {
-    erroBox.textContent = "Essa já é a planilha conectada.";
-    return;
-  }
-
-  const botao = $("config-confirmar");
-  botao.disabled = true;
-  botao.textContent = "Conectando...";
-  const anterior = webAppUrl;
-
-  try {
-    // Primeiro conversa com a planilha nova: se ela não responder, nada muda.
-    webAppUrl = url;
-    await appsScriptFetch("setup");
-
-    const { error } = await sb.rpc("trocar_planilha", { p_token: tokenAtual, p_url: url });
-    if (error) throw new Error(error.message);
-
-    // Zera tudo que era da planilha antiga
-    codigoConsulta = null;
-    infoDaPlanilha = null;
-    cacheSaldos = {};
-    cacheResumoPresencas = null;
-    erroResumoPresencas = null;
-    selecionadosCartao.clear();
-    presencasHojeIds = new Set();
-    presencasHojeNomes = new Set();
-    paginaCadastro = 1;
-    paginaPontuacao = 1;
-    limparFormularioCadastro();
-
-    await carregarParticipantes();
-    $("modal-config").classList.remove("show");
-    trocarAba("cadastro");
-    showToast(`Planilha trocada. Agora com ${cacheParticipantes.length} participante(s).`);
-  } catch (e) {
-    webAppUrl = anterior;
-    console.error(e);
-    erroBox.textContent = e.message || "Não consegui conectar nessa planilha. Confira a URL e a implantação.";
-  } finally {
-    botao.disabled = false;
-    botao.textContent = "Conectar a nova planilha";
   }
 }
 
@@ -1735,6 +1959,7 @@ async function trocarDePlanilha() {
 
 function trocarAba(nome) {
   document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === nome));
+  trazerAbaParaVista(nome);
   document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
   $("tab-" + nome).classList.add("active");
   if (nome === "presenca") montarListaPresenca();
@@ -1747,6 +1972,30 @@ function trocarAba(nome) {
     carregarEstadoSorteio();
     if ($("subtab-btn-nome").classList.contains("active")) carregarElegiveisSorteioNome();
   }
+}
+
+/**
+ * A faixa de abas rola para o lado, então a aba ativa pode estar fora da vista
+ * — principalmente logo depois de entrar, quando o papel do usuário esconde as
+ * primeiras. Isto a traz para o meio, sem sacudir a página.
+ */
+function trazerAbaParaVista(nome) {
+  const btn = document.querySelector(`.tab-btn[data-tab="${nome}"]`);
+  const faixa = $("tabs");
+  if (!btn || !faixa || btn.offsetParent === null) return;
+  const b = btn.getBoundingClientRect(), f = faixa.getBoundingClientRect();
+  if (b.left < f.left + 8 || b.right > f.right - 8) {
+    faixa.scrollTo({ left: faixa.scrollLeft + (b.left - f.left) - (f.width - b.width) / 2, behavior: "smooth" });
+  }
+}
+
+/** Liga e desliga as sombras das pontas conforme sobra conteúdo para o lado. */
+function atualizarSombrasDasAbas() {
+  const faixa = $("tabs"), moldura = $("tabs-faixa");
+  if (!faixa || !moldura) return;
+  const sobra = faixa.scrollWidth - faixa.clientWidth;
+  moldura.classList.toggle("tem-antes", faixa.scrollLeft > 4);
+  moldura.classList.toggle("tem-depois", sobra > 4 && faixa.scrollLeft < sobra - 4);
 }
 
 // ---------------------------------------------------------------------------
@@ -2234,7 +2483,9 @@ async function confirmarLancamento() {
 // Desenhados em SVG na mão, sem biblioteca: são quatro gráficos simples e o
 // painel precisa abrir rápido no celular, no meio do evento.
 
-const COR_DADOS = "#1f7a4d";   // verde da marca, ajustado para leitura em gráfico
+// As cores dos gráficos vêm do tema: são lidas na hora de desenhar, não
+// guardadas numa constante, senão o gráfico continuaria claro no tema escuro.
+const corDados = () => corDoTema("--grafico") || "#1a5fb4";
 const ALTURA_GRAFICO = 250;
 
 let cacheResumoPresencas = null;
@@ -2322,7 +2573,7 @@ function graficoColunas(area, dados) {
     return `
       <g class="gr-barra" data-rotulo="${esc(d.rotuloLongo || d.rotulo)}" data-valor="${d.valor}" data-x="${(x + larguraBarra / 2).toFixed(1)}" data-y="${topoBarra.toFixed(1)}">
         <rect x="${(x - 3).toFixed(1)}" y="${margemTopo}" width="${(larguraBarra + 6).toFixed(1)}" height="${alturaPlot}" fill="transparent" />
-        <path d="${caminhoColuna(x, topoBarra, larguraBarra, alturaBarra, 4)}" fill="${d.cor || COR_DADOS}" />
+        <path d="${caminhoColuna(x, topoBarra, larguraBarra, alturaBarra, 4)}" fill="${d.cor || corDados()}" />
         ${mostrarValor ? `<text class="gr-valor" x="${(x + larguraBarra / 2).toFixed(1)}" y="${(topoBarra - 6).toFixed(1)}" text-anchor="middle">${d.valor}</text>` : ""}
         ${rotulo}
       </g>`;
@@ -2356,7 +2607,7 @@ function graficoBarras(area, dados, mensagemVazia) {
       <g class="gr-barra" data-rotulo="${esc(d.rotuloLongo || d.rotulo)}" data-valor="${d.valor}" data-x="${(margemEsq + comprimento).toFixed(1)}" data-y="${y + alturaBarra / 2}">
         <rect x="0" y="${y - 3}" width="${largura}" height="${passo}" fill="transparent" />
         <text class="gr-eixo" x="${margemEsq - 8}" y="${y + alturaBarra - 3}" text-anchor="end">${esc(d.rotulo)}</text>
-        <path d="${caminhoBarra(margemEsq, y, comprimento, alturaBarra, 4)}" fill="${COR_DADOS}" />
+        <path d="${caminhoBarra(margemEsq, y, comprimento, alturaBarra, 4)}" fill="${corDados()}" />
         <text class="gr-valor" x="${(margemEsq + comprimento + 6).toFixed(1)}" y="${y + alturaBarra - 3}">${d.valor}</text>
       </g>`;
   }).join("");
@@ -2438,15 +2689,21 @@ function dadosRuas() {
  * contraste contra o fundo. A letra no eixo e o número em cima da coluna fazem
  * o gráfico continuar legível mesmo impresso em preto e branco.
  */
-const COR_CLASSE_HEX = { A: "#1f7a4d", B: "#2166bd", C: "#eda100" };
+const coresDasClasses = () => ({
+  A: corDoTema("--classe-a") || "#1f7a4d",
+  B: corDoTema("--classe-b") || "#1a5fb4",
+  C: corDoTema("--classe-c") || "#9a6a00"
+});
 
 function dadosClasses() {
+  const cores = coresDasClasses();
   const contagem = CLASSES.map(l => ({
-    rotulo: l, rotuloLongo: "Classe " + l, cor: COR_CLASSE_HEX[l],
+    rotulo: l, rotuloLongo: "Classe " + l, cor: cores[l],
     valor: cacheParticipantes.filter(p => p.classe === l).length
   }));
   const sem = cacheParticipantes.filter(p => !p.classe).length;
-  if (sem) contagem.push({ rotulo: "Sem", rotuloLongo: "Sem classificação", cor: "#b8b3a6", valor: sem });
+  if (sem) contagem.push({ rotulo: "Sem", rotuloLongo: "Sem classificação",
+                           cor: corDoTema("--grafico-neutro") || "#9aa8ba", valor: sem });
   return contagem;
 }
 
@@ -2488,9 +2745,9 @@ function desenharGraficos() {
     // Aviso fixo no lugar do gráfico: um toast some em três segundos e deixa a
     // pessoa achando que simplesmente não há dados.
     $("gr-frequencia").innerHTML = `<div class="aviso" style="margin:0">
-        Este gráfico precisa da versão nova do código da planilha. Abra a planilha em
-        <strong>Extensões &gt; Apps Script</strong>, cole o <code>Code.gs</code> novo e depois
-        <strong>Implantar &gt; Gerenciar implantações &gt; Nova versão</strong>.
+        Este gráfico precisa da versão nova do programa do banco de dados.
+        Fale com o suporte — <strong>Lucas Leal · (63) 99940-4515</strong> — que a atualização é rápida
+        e não interrompe nada do que você já usa.
         <div style="margin-top:6px; font-size:0.78rem; opacity:0.85">Resposta da planilha: ${esc(erroResumoPresencas)}</div>
       </div>`;
   } else {
@@ -2699,15 +2956,25 @@ function desenharCartao(nome, larguraPx) {
   g.lineTo(W, 0); g.closePath(); g.fill();
   g.restore();
 
-  // título
+  // Nome do evangelismo, no lugar onde um cartão de verdade traz o nome do
+  // banco. É o que muda de campanha para campanha; o resto da arte é fixo.
   g.fillStyle = "#0b3d91";
   g.textBaseline = "alphabetic";
-  const tamTitulo = fonteQueCabe(g, "CARTÃO DO PARTICIPANTE", 44 * u, Math.round(3.1 * u), mono, "bold");
+  const titulo = String(nomeDoEvento || NOME_EVENTO_PADRAO).toUpperCase();
+  // 38 mm, não 44: no alto do cartão as ondas azuis entram mais cedo pela
+  // direita, e um nome comprido passava por baixo delas.
+  const tamTitulo = fonteQueCabe(g, titulo, 38 * u, Math.round(3.5 * u), mono, "bold");
   g.font = `bold ${tamTitulo}px ${mono}`;
-  g.fillText("CARTÃO DO PARTICIPANTE", 6.5 * u, 11 * u);
+  g.fillText(titulo, 6.5 * u, 10 * u);
+
+  // subtítulo fixo
+  g.fillStyle = "#4a6fa8";
+  const tamSub = fonteQueCabe(g, "CARTÃO DO PARTICIPANTE", 38 * u, Math.round(2.3 * u), mono, "normal");
+  g.font = `${tamSub}px ${mono}`;
+  g.fillText("CARTÃO DO PARTICIPANTE", 6.5 * u, 14 * u);
 
   // chip
-  const cx = 6.5 * u, cy = 17 * u, cw = 9.5 * u, ch = 7.2 * u;
+  const cx = 6.5 * u, cy = 18.5 * u, cw = 9.5 * u, ch = 7.2 * u;
   const grad = g.createLinearGradient(cx, cy, cx + cw, cy + ch);
   grad.addColorStop(0, "#e8c463"); grad.addColorStop(1, "#c99a2e");
   g.fillStyle = grad;
@@ -2758,11 +3025,13 @@ function qrPng(texto, px) {
 // A arte é idêntica em todos os cartões — só o nome e o QR mudam. Ela é
 // desenhada uma única vez e reaproveitada pelo PDF através do mesmo apelido,
 // senão um lote de 400 pessoas geraria 400 imagens e um arquivo de 17 MB.
-let fundoCache = { larguraMm: null, dataUrl: null };
+let fundoCache = { larguraMm: null, nome: null, dataUrl: null };
 function fundoDoCartao(larguraMm) {
-  if (fundoCache.larguraMm !== larguraMm) {
+  // O nome do evangelismo entra na arte, então ele faz parte da chave do
+  // cache: sem isso, trocar o nome e gerar outro lote devolveria a arte velha.
+  if (fundoCache.larguraMm !== larguraMm || fundoCache.nome !== nomeDoEvento) {
     const arte = desenharCartao("", Math.max(700, Math.round(larguraMm * 12)));
-    fundoCache = { larguraMm, dataUrl: arte.toDataURL("image/jpeg", 0.92) };
+    fundoCache = { larguraMm, nome: nomeDoEvento, dataUrl: arte.toDataURL("image/jpeg", 0.92) };
   }
   return fundoCache.dataUrl;
 }
@@ -2959,6 +3228,7 @@ async function gerarCartoesSelecionados() {
 //      nada do que já foi lido se perde.
 
 let leitorAtivo = false;
+let modoLeitor = "presenca";     // "presenca" ou "pontos"
 let leitorStream = null;
 let leitorDetector = null;      // BarcodeDetector nativo, quando existe
 let leitorUltimoCodigo = "";
@@ -3096,12 +3366,18 @@ function mostrarResultado(classe, nome, detalhe) {
 }
 
 function processarLeitura(texto) {
+  // No modo pontos, enquanto alguém espera confirmação a câmera continua
+  // rodando mas as leituras são ignoradas: senão o cartão seguinte trocaria a
+  // pessoa da tela no instante em que o operador fosse tocar em Confirmar.
+  if (modoLeitor === "pontos" && pontosPendente) return;
+
   const agora = Date.now();
   if (texto === leitorUltimoCodigo && agora - leitorUltimoInstante < INTERVALO_MESMO_CODIGO) return;
   leitorUltimoCodigo = texto;
   leitorUltimoInstante = agora;
 
   const resultado = lerCartao(texto);
+  if (modoLeitor === "pontos") return leituraDePontos(resultado);
   if (resultado.erro) {
     mostrarResultado("erro", "Cartão não reconhecido", resultado.erro);
     bip(220, 0.25); vibrar([90, 60, 90]);
@@ -3136,24 +3412,194 @@ function processarLeitura(texto) {
   bip(880, 0.12); vibrar(35);
 }
 
-async function abrirLeitor() {
+// ---------------------------------------------------------------------------
+// Escâner de pontos (depósito e retirada)
+// ---------------------------------------------------------------------------
+// Mesma câmera, mesma decodificação e mesmo cartão do escâner de presença —
+// só o rodapé muda. Aqui NÃO existe fila em lote: tirar ponto de alguém é
+// irreversível e o operador precisa ver o saldo antes e depois de cada
+// lançamento, então cada confirmação é uma chamada à planilha, uma por vez.
+//
+// O histórico é de propósito só da sessão: serve para o operador conferir o
+// que acabou de fazer, não para virar um segundo registro paralelo ao da
+// planilha, que é onde o extrato de verdade mora.
+
+let tipoLancamento = "deposito";     // "deposito" ou "retirada"
+let pontosPendente = null;           // pessoa lida, esperando confirmação
+let historicoPontos = [];            // só enquanto o escâner está aberto
+let pontosTotalDep = 0, pontosTotalRet = 0;
+
+function trocarTipoLancamento(tipo) {
+  tipoLancamento = tipo === "retirada" ? "retirada" : "deposito";
+  $("modo-deposito").classList.toggle("on", tipoLancamento === "deposito");
+  $("modo-retirada").classList.toggle("on", tipoLancamento === "retirada");
+  const botao = $("pontos-confirmar");
+  botao.className = tipoLancamento === "deposito" ? "btn-confirmar-dep" : "btn-confirmar-ret";
+  if (pontosPendente) desenharPessoaDoLeitor();
+}
+
+function valorDoLancamento() {
+  const n = parseInt(String($("pontos-valor").value).replace(/\D/g, ""), 10);
+  return isNaN(n) ? 0 : n;
+}
+
+function saldoDe(id) {
+  const v = cacheSaldos[id];
+  return typeof v === "number" ? v : 0;
+}
+
+/** Mostra quem foi lido, o saldo e como ele vai ficar. */
+function desenharPessoaDoLeitor() {
+  const p = pontosPendente;
+  if (!p) return;
+  const valor = valorDoLancamento();
+  const saldo = saldoDe(p.id);
+  const depois = tipoLancamento === "deposito" ? saldo + valor : saldo - valor;
+
+  $("pontos-nome").textContent = p.nome;
+  $("pontos-saldo").textContent = saldo;
+  $("pontos-depois").innerHTML = valor > 0
+    ? ` → ficará com <b>${depois}</b> pt`
+    : "";
+
+  const erro = $("pontos-erro");
+  const botao = $("pontos-confirmar");
+  if (valor <= 0) {
+    erro.textContent = "Digite um valor maior que zero antes de confirmar.";
+    erro.style.display = "block";
+    botao.disabled = true;
+  } else if (tipoLancamento === "retirada" && valor > saldo) {
+    erro.textContent = `${p.nome.split(" ")[0]} tem só ${saldo} pt. Não dá para retirar ${valor}.`;
+    erro.style.display = "block";
+    botao.disabled = true;
+  } else {
+    erro.style.display = "none";
+    botao.disabled = false;
+  }
+  botao.textContent = tipoLancamento === "deposito"
+    ? `Depositar ${valor || ""} pt`.replace("  ", " ")
+    : `Retirar ${valor || ""} pt`.replace("  ", " ");
+}
+
+function leituraDePontos(resultado) {
+  if (resultado.erro) {
+    mostrarResultado("erro", "Cartão não reconhecido", resultado.erro);
+    bip(220, 0.25); vibrar([90, 60, 90]);
+    return;
+  }
+  pontosPendente = resultado.pessoa;
+  $("pontos-pessoa").style.display = "block";
+  desenharPessoaDoLeitor();
+  bip(660, 0.1); vibrar(30);
+}
+
+function dispensarPessoaDoLeitor() {
+  pontosPendente = null;
+  $("pontos-pessoa").style.display = "none";
+  // Zera o antirrepique para a mesma pessoa poder ser lida de novo logo em
+  // seguida — acontece quando o operador pula sem querer.
+  leitorUltimoCodigo = "";
+}
+
+async function confirmarLancamentoDoLeitor() {
+  const p = pontosPendente;
+  if (!p) return;
+  const valor = valorDoLancamento();
+  if (valor <= 0) return;
+
+  const botao = $("pontos-confirmar");
+  const erro = $("pontos-erro");
+  botao.disabled = true;
+  botao.textContent = "Lançando...";
+
+  try {
+    const r = await appsScriptFetch("lancarPontos", {
+      id: p.id, nome: p.nome, tipo: tipoLancamento, valor
+    });
+    const novoSaldo = r && typeof r.saldo === "number" ? r.saldo
+      : (tipoLancamento === "deposito" ? saldoDe(p.id) + valor : saldoDe(p.id) - valor);
+    cacheSaldos[p.id] = novoSaldo;
+
+    if (tipoLancamento === "deposito") pontosTotalDep += valor;
+    else pontosTotalRet += valor;
+
+    historicoPontos.unshift({ nome: p.nome, tipo: tipoLancamento, valor, saldo: novoSaldo });
+    desenharHistoricoPontos();
+
+    mostrarResultado("ok", p.nome,
+      (tipoLancamento === "deposito" ? `+${valor} pt` : `−${valor} pt`) + ` · saldo agora: ${novoSaldo} pt`);
+    bip(880, 0.12); vibrar(35);
+    dispensarPessoaDoLeitor();
+  } catch (e) {
+    console.error(e);
+    erro.textContent = e.message || "Não consegui lançar. Tente de novo.";
+    erro.style.display = "block";
+    bip(220, 0.25); vibrar([90, 60, 90]);
+    botao.disabled = false;
+    desenharPessoaDoLeitor();
+  }
+}
+
+function desenharHistoricoPontos() {
+  const caixa = $("pontos-historico");
+  const vazio = $("pontos-historico-vazio");
+  const pessoas = new Set(historicoPontos.map(h => h.nome)).size;
+
+  $("pontos-total-dep").textContent = pontosTotalDep;
+  $("pontos-total-ret").textContent = pontosTotalRet;
+  $("pontos-total-pessoas").textContent = pessoas;
+
+  if (!historicoPontos.length) {
+    caixa.innerHTML = "";
+    vazio.style.display = "block";
+    return;
+  }
+  vazio.style.display = "none";
+  caixa.innerHTML = historicoPontos.map(h => `
+    <div class="linha">
+      <span class="quem">${esc(h.nome)}</span>
+      <span class="val ${h.tipo === "deposito" ? "mais" : "menos"}">${h.tipo === "deposito" ? "+" : "−"}${h.valor} → ${h.saldo} pt</span>
+    </div>`).join("");
+}
+
+async function abrirLeitor(modo) {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     showToast("Este navegador não consegue abrir a câmera. Use o Chrome no Android ou o Safari no iPhone.");
     return;
   }
 
+  modoLeitor = modo === "pontos" ? "pontos" : "presenca";
+  const ehPontos = modoLeitor === "pontos";
+
   $("leitor").classList.add("show");
+  $("leitor-titulo").textContent = ehPontos ? "Depósito e retirada" : "Leitura de cartões";
+  $("rodape-presenca").style.display = ehPontos ? "none" : "";
+  $("rodape-pontos").style.display = ehPontos ? "" : "none";
   $("leitor-aviso").style.display = "block";
-  $("leitor-aviso").textContent = "Atualizando a lista de participantes...";
-  leitorConta = 0; leitorRepetidos = 0;
-  $("leitor-conta").textContent = "0";
-  $("leitor-repetidos").textContent = "0";
-  $("leitor-pontos").value = lerPontosSalvos();
+  $("leitor-aviso").textContent = ehPontos
+    ? "Atualizando os saldos..."
+    : "Atualizando a lista de participantes...";
+
+  if (ehPontos) {
+    pontosPendente = null;
+    historicoPontos = [];
+    pontosTotalDep = 0; pontosTotalRet = 0;
+    $("pontos-pessoa").style.display = "none";
+    $("pontos-valor").value = lerValorDePontosSalvo();
+    trocarTipoLancamento("deposito");
+    desenharHistoricoPontos();
+  } else {
+    leitorConta = 0; leitorRepetidos = 0;
+    $("leitor-conta").textContent = "0";
+    $("leitor-repetidos").textContent = "0";
+    $("leitor-pontos").value = lerPontosSalvos();
+  }
 
   try {
     // Lista fresca: alguém pode ter sido cadastrado agora, na mesa ao lado.
     await carregarParticipantes();
-    await carregarPresencasHoje();
+    if (ehPontos) cacheSaldos = await appsScriptFetch("listarSaldos") || {};
+    else await carregarPresencasHoje();
     if (!codigoConsulta) await garantirInfoPlanilha().catch(() => null);
   } catch (e) {
     console.error(e);
@@ -3232,6 +3678,21 @@ function fecharLeitor() {
   $("leitor-video").srcObject = null;
   $("leitor").classList.remove("show");
 
+  if (modoLeitor === "pontos") {
+    // O histórico era só da sessão de leitura: some junto com o escâner.
+    const resumo = [];
+    if (pontosTotalDep) resumo.push(`${pontosTotalDep} pt depositados`);
+    if (pontosTotalRet) resumo.push(`${pontosTotalRet} pt retirados`);
+    if (resumo.length) showToast(resumo.join(" · "));
+    pontosPendente = null;
+    historicoPontos = [];
+    pontosTotalDep = 0; pontosTotalRet = 0;
+    desenharHistoricoPontos();
+    guardarValorDePontos();
+    abrirPontuacao();
+    return;
+  }
+
   clearTimeout(agendamentoFila); agendamentoFila = null;
   escoarFilaAgora();
   const resumo = [];
@@ -3241,6 +3702,19 @@ function fecharLeitor() {
   if (resumo.length) showToast(resumo.join(" · "));
 
   montarListaPresenca();
+}
+
+// O valor dos pontos fica lembrado neste aparelho, igual ao dos pontos por
+// presença: numa noite inteira o operador usa quase sempre o mesmo número.
+function chaveValorPontos() { return "evang_valor_pontos_" + String(tokenAtual || "").slice(-8); }
+function lerValorDePontosSalvo() {
+  try { return localStorage.getItem(chaveValorPontos()) || ""; } catch (e) { return ""; }
+}
+function guardarValorDePontos() {
+  try {
+    const v = valorDoLancamento();
+    if (v > 0) localStorage.setItem(chaveValorPontos(), String(v));
+  } catch (e) { /* sem armazenamento */ }
 }
 
 // ---------------------------------------------------------------------------
@@ -3599,7 +4073,9 @@ const TITULOS_RELATORIO = {
   A: "Classificação A", B: "Classificação B", C: "Classificação C"
 };
 
-const COR_CLASSE = { A: [31, 122, 77], B: [33, 102, 189], C: [237, 161, 0] };
+// O relatório sai em papel, que é sempre branco: estas cores são as do tema
+// claro e não mudam quando o usuário escolhe o tema escuro.
+const COR_CLASSE = { A: [31, 122, 77], B: [26, 95, 180], C: [154, 106, 0] };
 
 function porNome(a, b) { return (a.nome || "").localeCompare(b.nome || "", "pt-BR"); }
 
@@ -4386,19 +4862,15 @@ $("modal-lote-confirmar").addEventListener("click", gerarCartoesEmLote);
 $("modal-lote").addEventListener("click", e => { if (e.target.id === "modal-lote") $("modal-lote").classList.remove("show"); });
 
 // O "/copy" no fim do endereço faz o Google abrir direto a janela de cópia, em
-// vez de abrir a planilha do modelo para leitura.
-// Dois lugares oferecem a mesma cópia: a tela de conectar (primeira instalação)
-// e o ⚙️ (começar um evangelismo novo, guardando o anterior como backup).
-["btn-gerar-planilha", "btn-gerar-planilha-config"].forEach(id => {
-  if (PLANILHA_MODELO) {
-    $(id).href = `https://docs.google.com/spreadsheets/d/${PLANILHA_MODELO}/copy`;
-  } else {
-    $(id).closest(".passo-zero").style.display = "none";
-  }
-});
+// --- Barra de abas ---
+$("tabs").addEventListener("scroll", atualizarSombrasDasAbas, { passive: true });
+window.addEventListener("resize", atualizarSombrasDasAbas);
+atualizarSombrasDasAbas();
 
-$("btn-conectar").addEventListener("click", conectarPlanilha);
-$("input-sheet-url").addEventListener("keydown", e => { if (e.key === "Enter") conectarPlanilha(); });
+$("btn-conferir-banco").addEventListener("click", conferirBancoDeDados);
+$("link-suporte").href = `https://wa.me/${WHATSAPP_SUPORTE}?text=` +
+  encodeURIComponent("Olá! Estou esperando o banco de dados do meu evangelismo ficar pronto.");
+
 $("btn-tentar-de-novo").addEventListener("click", () => {
   $("tela-erro").style.display = "none";
   $("tela-carregando").style.display = "block";
@@ -4432,8 +4904,10 @@ $("modal-instalar").addEventListener("click", e => { if (e.target.id === "modal-
 
 $("btn-config").addEventListener("click", abrirConfig);
 $("config-cancelar").addEventListener("click", () => $("modal-config").classList.remove("show"));
-$("config-confirmar").addEventListener("click", trocarDePlanilha);
-$("config-nova-url").addEventListener("keydown", e => { if (e.key === "Enter") trocarDePlanilha(); });
+$("config-nome-salvar").addEventListener("click", salvarNomeDoEvento);
+$("config-nome-evento").addEventListener("keydown", e => { if (e.key === "Enter") salvarNomeDoEvento(); });
+document.querySelectorAll(".opcao-tema").forEach(b =>
+  b.addEventListener("click", () => aplicarTema(b.dataset.tema, true)));
 $("modal-config").addEventListener("click", e => { if (e.target.id === "modal-config") $("modal-config").classList.remove("show"); });
 
 // --- Limpar a planilha ---
@@ -4450,21 +4924,6 @@ $("limpar-confirmacao").addEventListener("keydown", e => {
 $("limpar-cancelar").addEventListener("click", () => $("modal-limpar").classList.remove("show"));
 $("limpar-confirmar").addEventListener("click", limparPlanilhaAgora);
 $("modal-limpar").addEventListener("click", e => { if (e.target.id === "modal-limpar") $("modal-limpar").classList.remove("show"); });
-
-// --- Manual em PDF ---
-// Três portas para o mesmo arquivo: a tela de conexão (quem ainda está
-// instalando), o ⚙️ (quem vai trocar de planilha) e o 📘 do painel (quem
-// precisa da instrução no meio do evento).
-["link-manual-conectar", "link-manual-config", "btn-manual"].forEach(id => {
-  const el = $(id);
-  if (!el) return;
-  if (URL_MANUAL) {
-    el.href = URL_MANUAL;
-    el.setAttribute("download", "");
-  } else {
-    el.style.display = "none";
-  }
-});
 
 $("btn-salvar-cadastro").addEventListener("click", salvarCadastro);
 $("btn-cancelar-edicao").addEventListener("click", limparFormularioCadastro);
@@ -4520,7 +4979,13 @@ $("lista-presenca").addEventListener("click", e => {
   const btn = e.target.closest(".item-presenca");
   if (btn) selecionarParticipantePresenca(btn.dataset.id);
 });
-$("btn-abrir-leitor").addEventListener("click", abrirLeitor);
+$("btn-abrir-leitor").addEventListener("click", () => abrirLeitor("presenca"));
+$("btn-leitor-pontos").addEventListener("click", () => abrirLeitor("pontos"));
+$("modo-deposito").addEventListener("click", () => trocarTipoLancamento("deposito"));
+$("modo-retirada").addEventListener("click", () => trocarTipoLancamento("retirada"));
+$("pontos-valor").addEventListener("input", () => { if (pontosPendente) desenharPessoaDoLeitor(); });
+$("pontos-confirmar").addEventListener("click", confirmarLancamentoDoLeitor);
+$("pontos-pular").addEventListener("click", dispensarPessoaDoLeitor);
 $("leitor-fechar").addEventListener("click", fecharLeitor);
 // Se o navegador fechar com leituras pendentes, elas voltam na próxima abertura.
 window.addEventListener("beforeunload", e => {
