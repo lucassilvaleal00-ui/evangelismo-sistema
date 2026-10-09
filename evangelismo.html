@@ -241,6 +241,15 @@
   input:disabled { background: var(--campo-off); color: var(--muted); }
   .icon-btn { background: transparent; border: none; cursor: pointer; font-size: 1rem; padding: 2px 4px; border-radius: 5px; }
   .icon-btn:hover { background: var(--accent-soft); }
+
+  /* Na equipe os dois botões ganham nome: ali eles ficam sozinhos no alto do
+     cartão e, sem rótulo, passavam por enfeite — ninguém achava onde editar. */
+  .btn-acao { display: inline-flex; align-items: center; gap: 6px; background: var(--card);
+              border: 1px solid var(--line); border-radius: 8px; cursor: pointer;
+              font-family: inherit; font-size: 0.8rem; font-weight: 600; color: var(--muted);
+              padding: 7px 11px; }
+  .btn-acao:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-acao.perigo:hover { border-color: var(--warn); color: var(--warn); }
   .icones-linha { display: flex; gap: 2px; white-space: nowrap; }
   .badge-edicao { display: inline-flex; align-items: center; gap: 6px; background: var(--accent-soft); color: var(--accent); padding: 6px 12px; border-radius: 8px; font-size: 0.82rem; margin-bottom: 12px; }
   .badge-edicao button { background: transparent; border: none; color: var(--accent); text-decoration: underline; cursor: pointer; font-size: 0.8rem; padding: 0; }
@@ -453,6 +462,9 @@
     table td { display: flex; justify-content: space-between; align-items: baseline; gap: 14px; border: none; padding: 5px 12px; text-align: right; }
     table td[data-label]::before { content: attr(data-label); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); font-weight: 700; text-align: left; flex: 0 0 auto; }
     table td.celula-acoes { justify-content: flex-end; padding-top: 8px; }
+    #tbody-equipe td.celula-acoes { justify-content: stretch; padding: 8px 12px 4px; }
+    #tbody-equipe td.celula-acoes .icones-linha { flex: 1 1 auto; gap: 8px; }
+    #tbody-equipe .btn-acao { flex: 1 1 0; justify-content: center; padding: 9px 8px; }
     table td:empty { display: none; }
     .tabela-rolavel { overflow-x: visible; margin: 0; padding: 0; }
     .acoes-pontos { flex-wrap: wrap; justify-content: flex-end; }
@@ -814,6 +826,13 @@
         <input id="busca-rua" class="busca-rua" type="text" placeholder="Pesquisar rua..." />
         <div class="area-rolavel"><div class="area-grafico" id="gr-ruas"></div></div>
         <div class="tabela-numeros" id="tb-ruas"></div>
+      </div>
+
+      <div class="bloco-gr">
+        <h3>Pessoas por bairro</h3>
+        <p class="legenda" id="legenda-bairros">Quantas pessoas cadastradas moram em cada bairro.</p>
+        <div class="area-rolavel"><div class="area-grafico" id="gr-bairros"></div></div>
+        <div class="tabela-numeros" id="tb-bairros"></div>
       </div>
 
       <div class="bloco-gr">
@@ -1324,10 +1343,11 @@ let selecionadosCartao = new Set();
 let papelAtual = null;
 let membroAtual = null;     // { id, nome, funcao, ruas: [] } quando é equipe
 let tokenEquipe = null;     // o número de 6 dígitos, reenviado a cada marcação
+let pinGuardado = null;     // o PIN digitado nesta sessão, para poder retomá-la
 
 const ABAS_POR_PAPEL = {
   admin:         ["cadastro", "presenca", "pontuacao", "graficos", "sorteio", "diretorio", "relatorios", "equipe"],
-  recepcionista: ["cadastro", "presenca", "pontuacao", "sorteio"],
+  recepcionista: ["cadastro", "presenca", "pontuacao", "graficos", "sorteio"],
   missionario:   ["diretorio", "relatorios"]
 };
 
@@ -1487,6 +1507,8 @@ async function validarAcesso() {
   webAppUrl = registro.webapp_url || null;
   mostrarPlano();
 
+  // Se já havia sessão neste aparelho, volta direto para o painel.
+  if (await retomarSessao()) return;
   abrirTelaPin();
 }
 
@@ -1517,6 +1539,106 @@ function guardarPin(pin) {
     lista.unshift(pin);
     localStorage.setItem(chavePins(), JSON.stringify(lista.slice(0, 6)));
   } catch (e) { /* navegador sem armazenamento: só perde a sugestão */ }
+}
+
+
+// --- Sessão aberta ----------------------------------------------------------
+// O atalho na tela do celular não é um app de verdade: é uma página. Quando a
+// pessoa sai para o WhatsApp e volta, o Android muitas vezes já descarregou a
+// página, e ela recarrega do zero — por isso o sistema pedia o código de novo
+// no meio do evento.
+//
+// A sessão agora fica guardada no aparelho e é retomada sozinha. Duas camadas:
+// o sessionStorage cobre o caso comum (a janela continua viva) e o
+// localStorage cobre o caso em que o sistema matou a página de vez. O segundo
+// tem prazo, senão um celular perdido continuaria entrando para sempre.
+//
+// Isto não afrouxa a segurança: o código já ficava guardado neste mesmo
+// aparelho, como sugestão no campo de digitação, desde a v8.
+
+const HORAS_DE_SESSAO = 12;
+
+function chaveSessao() { return "evang_sessao_" + (tokenAtual || "").slice(-8); }
+
+function guardarSessao() {
+  const sessao = JSON.stringify({
+    papel: papelAtual,
+    pin: papelAtual === "admin" ? pinGuardado : tokenEquipe,
+    membro: membroAtual,
+    em: Date.now()
+  });
+  try { sessionStorage.setItem(chaveSessao(), sessao); } catch (e) { /* sem armazenamento */ }
+  try { localStorage.setItem(chaveSessao(), sessao); } catch (e) { /* sem armazenamento */ }
+}
+
+function esquecerSessao() {
+  try { sessionStorage.removeItem(chaveSessao()); } catch (e) { /* sem armazenamento */ }
+  try { localStorage.removeItem(chaveSessao()); } catch (e) { /* sem armazenamento */ }
+}
+
+/** Devolve a sessão guardada, se ainda valer. */
+function sessaoGuardada() {
+  const ler = deposito => {
+    try {
+      const bruto = deposito.getItem(chaveSessao());
+      return bruto ? JSON.parse(bruto) : null;
+    } catch (e) { return null; }
+  };
+  // A da janela viva não tem prazo: enquanto o app estiver aberto, vale.
+  const daJanela = ler(sessionStorage);
+  if (daJanela && daJanela.papel && daJanela.pin) return daJanela;
+
+  const doAparelho = ler(localStorage);
+  if (!doAparelho || !doAparelho.papel || !doAparelho.pin) return null;
+  if (Date.now() - (doAparelho.em || 0) > HORAS_DE_SESSAO * 3600 * 1000) {
+    esquecerSessao();
+    return null;
+  }
+  return doAparelho;
+}
+
+/**
+ * Tenta voltar direto para o painel. Devolve false se não houver sessão ou se
+ * ela não valer mais — e aí a tela do código aparece como sempre.
+ *
+ * O código é conferido de novo, no Supabase ou na planilha: se o administrador
+ * trocou o PIN ou excluiu o membro da equipe, a entrada é recusada mesmo com a
+ * sessão guardada aqui.
+ */
+async function retomarSessao() {
+  const s = sessaoGuardada();
+  if (!s) return false;
+
+  try {
+    if (s.papel === "admin") {
+      const { data, error } = await sb.rpc("conferir_pin", { p_token: tokenAtual, p_pin: s.pin });
+      if (error || data !== true) { esquecerSessao(); return false; }
+      papelAtual = "admin";
+      membroAtual = null;
+      tokenEquipe = null;
+      pinGuardado = s.pin;
+    } else {
+      if (!webAppUrl) return false;
+      const membro = await appsScriptFetch("validarEquipe", { equipe: s.pin });
+      papelAtual = membro.funcao === "recepcionista" ? "recepcionista" : "missionario";
+      membroAtual = membro;
+      tokenEquipe = s.pin;
+    }
+  } catch (e) {
+    // Sem internet não dá para conferir. Melhor pedir o código do que deixar
+    // entrar sem validar — e melhor ainda não apagar a sessão, porque ela
+    // volta a valer assim que a conexão voltar.
+    console.error(e);
+    return false;
+  }
+
+  guardarSessao();
+  if (papelAtual === "admin" && !webAppUrl) {
+    $("tela-aguardando").style.display = "block";
+    return true;
+  }
+  await abrirPainel();
+  return true;
 }
 
 function abrirTelaPin() {
@@ -1552,7 +1674,9 @@ async function entrarComPin() {
       papelAtual = "admin";
       membroAtual = null;
       tokenEquipe = null;
+      pinGuardado = pin;
       guardarPin(pin);
+      guardarSessao();
       $("tela-pin").style.display = "none";
 
       if (webAppUrl) await abrirPainel();
@@ -1569,7 +1693,9 @@ async function entrarComPin() {
     papelAtual = membro.funcao === "recepcionista" ? "recepcionista" : "missionario";
     membroAtual = membro;
     tokenEquipe = pin;
+    pinGuardado = null;
     guardarPin(pin);
+    guardarSessao();
     $("tela-pin").style.display = "none";
     await abrirPainel();
 
@@ -1589,9 +1715,11 @@ function sairDaConta() {
     `Sair agora mantém a fila guardada, mas ela só será enviada quando alguém entrar de novo neste aparelho.\n\nSair mesmo assim?`
   )) return;
 
+  esquecerSessao();
   papelAtual = null;
   membroAtual = null;
   tokenEquipe = null;
+  pinGuardado = null;
   cacheParticipantes = [];
   cacheSaldos = {};
   cacheEquipe = [];
@@ -2887,6 +3015,28 @@ function dadosRuas() {
 }
 
 /**
+ * Pessoas por bairro. Mesma ideia do gráfico de ruas, sem campo de busca: um
+ * evangelismo costuma cobrir um punhado de bairros, não centenas de ruas.
+ */
+function dadosBairros() {
+  const porBairro = {};
+  cacheParticipantes.forEach(p => {
+    const bairro = (p.bairro || "").trim() || "Sem bairro informado";
+    porBairro[bairro] = (porBairro[bairro] || 0) + 1;
+  });
+
+  const todos = Object.keys(porBairro)
+    .map(b => ({ rotulo: b.length > 26 ? b.slice(0, 25) + "…" : b, rotuloLongo: b, valor: porBairro[b] }))
+    .sort((a, b) => b.valor - a.valor || a.rotuloLongo.localeCompare(b.rotuloLongo, "pt-BR"));
+
+  $("legenda-bairros").textContent = todos.length
+    ? `Quantas pessoas cadastradas moram em cada bairro — ${todos.length} no total.`
+    : "Quantas pessoas cadastradas moram em cada bairro.";
+
+  return todos;
+}
+
+/**
  * Contagem por classe. As três cores foram conferidas no validador de paleta —
  * banda de luminosidade, saturação mínima, separação para daltonismo e
  * contraste contra o fundo. A letra no eixo e o número em cima da coluna fazem
@@ -2958,11 +3108,14 @@ function desenharGraficos() {
   }
   graficoColunas($("gr-novatos"), nov);
   graficoBarras($("gr-ruas"), dadosRuasCache.grafico, "Nenhuma rua encontrada com esse nome.");
+  const bairros = dadosBairros();
+  graficoBarras($("gr-bairros"), bairros, "Nenhum bairro cadastrado ainda.");
   graficoColunas($("gr-idades"), idades);
 
   tabelaNumeros("tb-frequencia", "Dia", freq);
   tabelaNumeros("tb-novatos", "Dia", nov);
   tabelaNumeros("tb-ruas", "Rua", dadosRuasCache.completo);
+  tabelaNumeros("tb-bairros", "Bairro", bairros);
   tabelaNumeros("tb-idades", "Faixa etária", idades);
 }
 
@@ -4663,8 +4816,8 @@ function renderizarTabelaEquipe() {
       <tr>
         <td class="celula-acoes">
           <div class="icones-linha">
-            <button class="icon-btn" title="Editar" data-acao="editar" data-id="${esc(m.id)}">✏️</button>
-            <button class="icon-btn" title="Excluir" data-acao="excluir" data-id="${esc(m.id)}">🗑️</button>
+            <button class="btn-acao" data-acao="editar" data-id="${esc(m.id)}">✏️ Editar</button>
+            <button class="btn-acao perigo" data-acao="excluir" data-id="${esc(m.id)}">🗑️ Excluir</button>
           </div>
         </td>
         <td data-label="Nome">${esc(m.nome)}</td>
@@ -5065,6 +5218,12 @@ $("modal-lote-confirmar").addEventListener("click", gerarCartoesEmLote);
 $("modal-lote").addEventListener("click", e => { if (e.target.id === "modal-lote") $("modal-lote").classList.remove("show"); });
 
 // O "/copy" no fim do endereço faz o Google abrir direto a janela de cópia, em
+// Cada volta ao app renova o prazo da sessão: quem está usando o sistema no
+// meio do evento não pode ser desconectado por causa do relógio.
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && papelAtual) guardarSessao();
+});
+
 // --- Barra de abas ---
 $("tabs").addEventListener("scroll", atualizarSombrasDasAbas, { passive: true });
 window.addEventListener("resize", atualizarSombrasDasAbas);
